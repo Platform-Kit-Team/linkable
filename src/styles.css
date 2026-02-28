@@ -81,11 +81,13 @@ body::before {
   -webkit-backdrop-filter: blur(18px);
 }
 
-/* PrimeVue: Dialog backdrop (THIS fixes "hard to see" and adds iOS-like depth) */
+/* PrimeVue: strong modal backdrop (80% black) to reduce clutter */
 .p-dialog-mask.p-component-overlay {
-  background: rgba(10, 16, 28, 0.35) !important;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  position: fixed !important;
+  inset: 0 !important;
+  background: rgba(0, 0, 0, 0.8) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 /* Dialog surface */
