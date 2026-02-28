@@ -38,8 +38,9 @@
                 </p>
               </div>
 
-              <div v-if="isDev" class="flex items-center gap-2">
+              <div class="flex items-center gap-2">
                 <Button
+                  v-if="canUseCms"
                   severity="secondary"
                   rounded
                   class="!px-3 !py-2 !text-sm"
@@ -49,12 +50,22 @@
                   <span class="ml-2 hidden sm:inline">{{ previewMode ? "Edit" : "Preview" }}</span>
                 </Button>
                 <Button
+                  v-if="canUseCms"
                   rounded
                   class="!border-0 !bg-[color:var(--color-brand)] !px-4 !py-2.5 !text-sm shadow-[0_14px_38px_rgba(37,99,235,0.22)] hover:shadow-[0_18px_52px_rgba(37,99,235,0.26)]"
                   @click="cmsOpen = true"
                 >
                   <i class="pi pi-sliders-h" />
                   <span class="ml-2 hidden sm:inline">CMS</span>
+                </Button>
+                <Button
+                  severity="secondary"
+                  rounded
+                  class="!px-3 !py-2 !text-sm"
+                  @click="githubDialogOpen = true"
+                >
+                  <i class="pi pi-github" />
+                  <span class="ml-2 hidden sm:inline">GitHub</span>
                 </Button>
               </div>
             </div>
@@ -79,13 +90,14 @@
           <div class="text-xs text-[color:var(--color-ink-soft)]">
             <span class="inline-flex items-center gap-2">
               <span
-                class="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_0_4px_rgba(16,185,129,0.14)]"
+                class="h-2 w-2 rounded-full transition-all"
+                :class="syncIndicatorClass"
               ></span>
-              <span>Static site · Saved locally</span>
+              <span>{{ syncStatusText }}</span>
             </span>
           </div>
 
-          <div v-if="isDev" class="flex items-center gap-2">
+          <div v-if="canUseCms" class="flex items-center gap-2">
             <Button
               v-if="!previewMode"
               rounded
@@ -97,7 +109,7 @@
               <span class="ml-2 hidden sm:inline">Export</span>
             </Button>
             <Button
-              v-if="!previewMode"
+              v-if="!previewMode && isDev"
               rounded
               severity="secondary"
               class="!px-3 !py-2 !text-sm"
@@ -113,7 +125,7 @@
 
     <main class="mx-auto w-full max-w-[740px] px-4 pb-10 pt-5 sm:pt-6">
       <section class="glass rounded-[var(--radius-xl)] p-3 sm:p-4">
-        <div class="grid gap-2">
+        <div class="grid gap-2" v-if="enabledLinks.length">
           <a
             v-for="link in enabledLinks"
             :key="link.id"
@@ -150,13 +162,13 @@
           </a>
         </div>
 
-        <div v-if="enabledLinks.length === 0" class="p-6 text-center">
+        <div v-else class="p-6 text-center">
           <div class="text-sm font-semibold">No links yet</div>
           <div class="mt-1 text-sm text-[color:var(--color-ink-soft)]">
             Open the CMS and add your first button.
           </div>
           <Button
-            v-if="isDev"
+            v-if="canUseCms"
             rounded
             class="mt-4 !border-0 !bg-[color:var(--color-brand)] !px-4 !py-2.5 shadow-[0_14px_38px_rgba(37,99,235,0.22)]"
             @click="cmsOpen = true"
@@ -177,9 +189,20 @@
       </footer>
     </main>
 
-    <CmsDialog v-if="isDev" v-model:open="cmsOpen" :model="model" @update:model="updateModel" />
+    <CmsDialog
+      v-if="canUseCms"
+      v-model:open="cmsOpen"
+      :model="model"
+      @update:model="updateModel"
+    />
 
-    <Dialog v-if="isDev" v-model:visible="importOpen" modal header="Import JSON" :style="{ width: 'min(680px, 92vw)' }">
+    <Dialog
+      v-if="isDev"
+      v-model:visible="importOpen"
+      modal
+      header="Import JSON"
+      :style="{ width: 'min(680px, 92vw)' }"
+    >
       <div class="space-y-3">
         <p class="text-sm text-[color:var(--color-ink-soft)]">
           Paste an exported JSON to restore your profile/links.
@@ -197,12 +220,21 @@
       </div>
     </Dialog>
 
+    <GithubSettingsDialog v-model:open="githubDialogOpen" />
+
     <Toast />
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent, computed, onMounted, ref, watch } from "vue";
+import {
+  computed,
+  defineComponent,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  watch,
+} from "vue";
 import Button from "primevue/button";
 import Dialog from "primevue/dialog";
 import Textarea from "primevue/textarea";
@@ -210,13 +242,20 @@ import Toast from "primevue/toast";
 import { useToast } from "primevue/usetoast";
 
 import CmsDialog from "./components/CmsDialog.vue";
+import GithubSettingsDialog from "./components/GithubSettingsDialog.vue";
 import {
   defaultModel,
   type BioModel,
   sanitizeModel,
   stableStringify,
 } from "./lib/model";
-import { fetchModel, persistModel } from "./lib/persistence";
+import { fetchModel, persistModel, type PersistResult } from "./lib/persistence";
+import {
+  GITHUB_SYNC_EVENT,
+  canUseGithubSync,
+  loadGithubSettings,
+  type GithubSettings,
+} from "./lib/github";
 
 export default defineComponent({
   name: "App",
@@ -226,35 +265,50 @@ export default defineComponent({
     Textarea,
     Toast,
     CmsDialog,
+    GithubSettingsDialog,
   },
   setup() {
     const isDev = import.meta.env.DEV;
-
     const toast = useToast();
 
     const model = ref<BioModel>(defaultModel());
     const modelLoaded = ref(false);
+    const suppressPersist = ref(true);
+    const cmsOpen = ref(false);
+    const githubDialogOpen = ref(false);
+    const previewMode = ref(true);
+
+    const githubReady = ref(false);
+    const githubSettings = ref<GithubSettings>(loadGithubSettings());
+    const syncing = ref(false);
+
+    const updateGithubStatus = () => {
+      githubReady.value = canUseGithubSync();
+      githubSettings.value = loadGithubSettings();
+    };
 
     onMounted(async () => {
       const remoteModel = await fetchModel();
       model.value = remoteModel;
       modelLoaded.value = true;
+
+      setTimeout(() => {
+        suppressPersist.value = false;
+      }, 0);
+
+      updateGithubStatus();
+      if (typeof window !== "undefined") {
+        window.addEventListener(GITHUB_SYNC_EVENT, updateGithubStatus);
+      }
     });
 
-    watch(
-      model,
-      (next) => {
-        if (!modelLoaded.value) {
-          return;
-        }
+    onBeforeUnmount(() => {
+      if (typeof window !== "undefined") {
+        window.removeEventListener(GITHUB_SYNC_EVENT, updateGithubStatus);
+      }
+    });
 
-        void persistModel(next);
-      },
-      { deep: true }
-    );
-
-    const cmsOpen = ref(false);
-    const previewMode = ref(true);
+    const canUseCms = computed(() => isDev || githubReady.value);
 
     const enabledLinks = computed(() => model.value.links.filter((l) => l.enabled));
     const enabledSocials = computed(() => model.value.socials.filter((s) => s.enabled && s.url));
@@ -278,7 +332,7 @@ export default defineComponent({
       () => model.value.profile.avatarUrl,
       () => {
         avatarErrored.value = false;
-      }
+      },
     );
 
     const onAvatarError = () => {
@@ -322,17 +376,100 @@ export default defineComponent({
     };
 
     const applyImport = () => {
-      const parsed = sanitizeModel(JSON.parse(importText.value));
-      updateModel(parsed);
-      importOpen.value = false;
-      importText.value = "";
-      toast.add({
-        severity: "success",
-        summary: "Imported",
-        detail: "Your site content was updated.",
-        life: 2200,
-      });
+      try {
+        const parsed = sanitizeModel(JSON.parse(importText.value));
+        updateModel(parsed);
+        importOpen.value = false;
+        importText.value = "";
+        toast.add({
+          severity: "success",
+          summary: "Imported",
+          detail: "Your site content was updated.",
+          life: 2200,
+        });
+      } catch {
+        toast.add({
+          severity: "error",
+          summary: "Invalid JSON",
+          detail: "Please paste a valid export file.",
+          life: 2600,
+        });
+      }
     };
+
+    let persistChain: Promise<void> = Promise.resolve();
+    let lastGithubToastAt = 0;
+
+    watch(
+      model,
+      () => {
+        if (!modelLoaded.value || suppressPersist.value) {
+          return;
+        }
+
+        persistChain = persistChain.then(async () => {
+          syncing.value = true;
+          try {
+            const result = await persistModel(model.value);
+            if (result === "github") {
+              const now = Date.now();
+              if (now - lastGithubToastAt > 1500) {
+                toast.add({
+                  severity: "success",
+                  summary: "Synced",
+                  detail: "Changes pushed to GitHub.",
+                  life: 2200,
+                });
+                lastGithubToastAt = now;
+              }
+            }
+          } catch (error) {
+            const message =
+              error instanceof Error
+                ? error.message
+                : "Unable to save changes.";
+            toast.add({
+              severity: "error",
+              summary: "Save failed",
+              detail: message,
+              life: 3200,
+            });
+          } finally {
+            syncing.value = false;
+          }
+        });
+      },
+      { deep: true },
+    );
+
+    const repoLabel = computed(() => {
+      const owner = githubSettings.value.owner;
+      const repo = githubSettings.value.repo;
+      return owner && repo ? `${owner}/${repo}` : "GitHub not configured";
+    });
+
+    const syncStatusText = computed(() => {
+      if (isDev) {
+        return "Static site · Saved locally";
+      }
+      if (syncing.value) {
+        return `Syncing with GitHub · ${repoLabel.value}`;
+      }
+      if (githubReady.value) {
+        return `Synced to GitHub · ${repoLabel.value}`;
+      }
+      return "Static site · Read-only · Add GitHub sync to enable editing";
+    });
+
+    const syncIndicatorClass = computed(() => {
+      if (syncing.value) {
+        return "bg-[color:var(--color-brand)] shadow-[0_0_0_4px_rgba(59,130,246,0.18)] animate-pulse";
+      }
+      if (isDev || githubReady.value) {
+        return "bg-emerald-500 shadow-[0_0_0_4px_rgba(16,185,129,0.14)]";
+      }
+      return "bg-amber-400 shadow-[0_0_0_4px_rgba(245,158,11,0.20)]";
+    });
 
     return {
       isDev,
@@ -350,6 +487,10 @@ export default defineComponent({
       importText,
       applyImport,
       updateModel,
+      canUseCms,
+      githubDialogOpen,
+      syncStatusText,
+      syncIndicatorClass,
     };
   },
 });

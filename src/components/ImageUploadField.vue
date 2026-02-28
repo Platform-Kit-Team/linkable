@@ -49,11 +49,10 @@
           <i class="pi pi-image text-lg"></i>
         </div>
         <div class="text-sm font-semibold text-[color:var(--color-ink)]">
-          {{ canUpload ? "Drop an image or click to browse" : "Uploads available in dev" }}
+          {{ uploadHeadline }}
         </div>
         <div class="text-xs font-medium leading-relaxed text-[color:var(--color-ink-soft)]">
-          <span v-if="canUpload">{{ description }}</span>
-          <span v-else>For production builds, paste a hosted URL below.</span>
+          {{ helperCopy }}
         </div>
       </div>
 
@@ -71,17 +70,22 @@
 
     <div class="text-xs font-semibold text-[color:var(--color-ink-soft)]">
       <slot name="helper">
-        Files are saved to
-        <code class="rounded bg-white/70 px-2 py-0.5 text-[color:var(--color-ink)]">public/uploads</code>
-        while you iterate locally.
+        {{ defaultHelper }}
       </slot>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { computed, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { useToast } from "primevue/usetoast";
+
+import {
+  canUseGithubSync,
+  loadGithubSettings,
+  uploadImageToGithub,
+  GITHUB_SYNC_EVENT,
+} from "../lib/github";
 
 const props = withDefaults(
   defineProps<{
@@ -105,11 +109,66 @@ const fileInput = ref<HTMLInputElement | null>(null);
 const dragging = ref(false);
 const uploading = ref(false);
 
-const canUpload = import.meta.env.DEV;
+const isDev = import.meta.env.DEV;
+const githubReady = ref(false);
+const githubUploadsDir = ref("public/uploads");
+
+const refreshGithubState = () => {
+  githubReady.value = canUseGithubSync();
+  githubUploadsDir.value = loadGithubSettings().uploadsDir || "public/uploads";
+};
+
+onMounted(() => {
+  if (!isDev) {
+    refreshGithubState();
+    window.addEventListener(GITHUB_SYNC_EVENT, refreshGithubState);
+  } else {
+    githubReady.value = true;
+  }
+});
+
+onBeforeUnmount(() => {
+  if (!isDev) {
+    window.removeEventListener(GITHUB_SYNC_EVENT, refreshGithubState);
+  }
+});
+
+const canUpload = computed(() => isDev || githubReady.value);
+
+const uploadHeadline = computed(() =>
+  canUpload.value ? "Drop an image or click to browse" : "Configure GitHub sync to upload",
+);
+
+const helperCopy = computed(() => {
+  if (canUpload.value) {
+    return props.description;
+  }
+  return isDev ? "Uploads are disabled outside local development." : "Open GitHub sync settings to enable uploads.";
+});
+
+const displayUploadsDir = computed(() => {
+  const raw = githubUploadsDir.value || "public/uploads";
+  const normalized = raw.replace(/\\/g, "/").replace(/^\/+/, "");
+  if (!normalized) return "/";
+  if (normalized.startsWith("public/")) {
+    return `/${normalized.slice("public/".length) || ""}`.replace(/\/+/g, "/");
+  }
+  return `/${normalized}`.replace(/\/+/g, "/");
+});
+
+const defaultHelper = computed(() => {
+  if (isDev) {
+    return "Files are saved to public/uploads while you iterate locally.";
+  }
+  if (!githubReady.value) {
+    return "Images will sync once GitHub settings are configured.";
+  }
+  return `Images are committed to GitHub under ${displayUploadsDir.value}.`;
+});
 
 const dropZoneState = computed(() => {
   const classes = ["px-4 py-3 sm:px-5 sm:py-6"];
-  if (canUpload && !uploading.value) {
+  if (canUpload.value && !uploading.value) {
     classes.push("cursor-pointer hover:border-[rgba(59,130,246,0.55)] hover:bg-white/70");
   } else {
     classes.push("cursor-not-allowed opacity-80");
@@ -124,7 +183,7 @@ const dropZoneState = computed(() => {
 });
 
 const browse = () => {
-  if (!canUpload || uploading.value) return;
+  if (!canUpload.value || uploading.value) return;
   fileInput.value?.click();
 };
 
@@ -140,12 +199,12 @@ const resetInputValue = () => {
 };
 
 const onDragEnter = () => {
-  if (!canUpload || uploading.value) return;
+  if (!canUpload.value || uploading.value) return;
   dragging.value = true;
 };
 
 const onDragOver = () => {
-  if (!canUpload || uploading.value) return;
+  if (!canUpload.value || uploading.value) return;
   dragging.value = true;
 };
 
@@ -154,20 +213,20 @@ const onDragLeave = () => {
 };
 
 const onDrop = (event: DragEvent) => {
-  if (!canUpload || uploading.value) return;
+  if (!canUpload.value || uploading.value) return;
   dragging.value = false;
   const file = event.dataTransfer?.files?.item(0);
   void processFile(file ?? undefined);
 };
 
 const onFileChange = (event: Event) => {
-  if (!canUpload || uploading.value) return;
+  if (!canUpload.value || uploading.value) return;
   const input = event.target as HTMLInputElement;
   const file = input.files?.item(0);
   void processFile(file ?? undefined);
 };
 
-const uploadThroughApi = async (file: File) => {
+const uploadViaDevServer = async (file: File) => {
   const formData = new FormData();
   formData.append("file", file, file.name);
   const response = await fetch("/cms-upload", {
@@ -186,6 +245,18 @@ const uploadThroughApi = async (file: File) => {
   }
 
   return payload.url;
+};
+
+const performUpload = async (file: File) => {
+  if (isDev) {
+    return uploadViaDevServer(file);
+  }
+
+  if (!githubReady.value) {
+    throw new Error("Configure GitHub sync to enable uploads.");
+  }
+
+  return uploadImageToGithub(file);
 };
 
 const processFile = async (file?: File) => {
@@ -208,13 +279,15 @@ const processFile = async (file?: File) => {
   uploading.value = true;
 
   try {
-    const url = await uploadThroughApi(file);
+    const url = await performUpload(file);
     emit("update:modelValue", url);
     toast.add({
       severity: "success",
       summary: "Uploaded",
-      detail: "Image saved locally and ready to use.",
-      life: 2000,
+      detail: isDev
+        ? "Image saved locally and ready to use."
+        : "Image committed to your GitHub repository.",
+      life: 2200,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to upload image.";

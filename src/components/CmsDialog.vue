@@ -71,9 +71,25 @@
               </div>
 
               <div class="cms__field">
+                <ImageUploadField
+                  v-model="draft.profile.avatarUrl"
+                  label="Avatar image (optional)"
+                  description="Use a crisp, square image to headline your profile."
+                >
+                  <template #helper>
+                    <div class="cms__help">
+                      Uploads sync to public/uploads in dev and commit to GitHub in production.
+                    </div>
+                  </template>
+                </ImageUploadField>
+              </div>
+
+              <div class="cms__field">
                 <label class="cms__label">Avatar URL (optional)</label>
                 <InputText v-model="draft.profile.avatarUrl" class="w-full" placeholder="https://..." />
-                <div class="cms__help">If empty or invalid, initials will show.</div>
+                <div class="cms__help">
+                  Paste a hosted URL if you prefer; if left blank, initials will render.
+                </div>
               </div>
             </div>
           </div>
@@ -202,7 +218,7 @@
           </Button>
 
           <Button rounded class="cms__primary" :disabled="!hasChanges" @click="save">
-            <i className="pi pi-check" />
+            <i class="pi pi-check" />
             <span class="ml-2">Save</span>
           </Button>
         </div>
@@ -235,6 +251,7 @@ import Tag from "primevue/tag";
 import Textarea from "primevue/textarea";
 import { useToast } from "primevue/usetoast";
 
+import ImageUploadField from "./ImageUploadField.vue";
 import LinkEditorDrawer from "./LinkEditorDrawer.vue";
 import SocialEditorDrawer from "./SocialEditorDrawer.vue";
 import {
@@ -259,6 +276,7 @@ export default defineComponent({
     draggable,
     LinkEditorDrawer,
     SocialEditorDrawer,
+    ImageUploadField,
   },
   props: {
     open: { type: Boolean, required: true },
@@ -271,7 +289,7 @@ export default defineComponent({
     const visible = ref(props.open);
     watch(
       () => props.open,
-      (v) => (visible.value = v)
+      (v) => (visible.value = v),
     );
     watch(visible, (v) => emit("update:open", v));
 
@@ -283,13 +301,13 @@ export default defineComponent({
       (m) => {
         draft.value = sanitizeModel(m);
       },
-      { deep: true }
+      { deep: true },
     );
 
     const hasChanges = computed(
       () =>
         stableStringify(sanitizeModel(draft.value)) !==
-        stableStringify(sanitizeModel(props.model))
+        stableStringify(sanitizeModel(props.model)),
     );
 
     const linkEditorOpen = ref(false);
@@ -354,7 +372,7 @@ export default defineComponent({
       },
       set(v) {
         const idx = draft.value.socials.findIndex((s) => s.id === v.id);
-        if (idx >= 0) (draft.value.socials[idx] as any) = v as any;
+        if (idx >= 0) draft.value.socials[idx] = v as SocialLink;
       },
     });
 
@@ -424,7 +442,12 @@ export default defineComponent({
     const save = () => {
       emit("update:model", sanitizeModel(draft.value));
       visible.value = false;
-      toast.add({ severity: "success", summary: "Saved", detail: "Your content was updated.", life: 1800 });
+      toast.add({
+        severity: "success",
+        summary: "Saved",
+        detail: "Your content was updated.",
+        life: 1800,
+      });
     };
 
     if (!draft.value) draft.value = defaultModel();
@@ -664,6 +687,10 @@ export default defineComponent({
   gap: 8px;
 }
 
+cms__row {
+  width: 100%;
+}
+
 .cms__row {
   width: 100%;
   text-align: left;
@@ -739,6 +766,10 @@ export default defineComponent({
   text-overflow: ellipsis;
 }
 
+cms__row-meta {
+  display: inline-flex;
+}
+
 .cms__row-meta {
   display: inline-flex;
   align-items: center;
@@ -772,6 +803,10 @@ export default defineComponent({
   align-items: center;
   justify-content: space-between;
   gap: 10px;
+}
+
+cms__footer-right {
+  display: flex;
 }
 
 .cms__footer-right {

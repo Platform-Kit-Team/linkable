@@ -1,8 +1,11 @@
 import type { BioModel } from "./model";
 import { sanitizeModel, stableStringify } from "./model";
+import { canUseGithubSync, pushCmsDataToGithub } from "./github";
 
 const DEV_ENDPOINT = "/cms-data";
 const PROD_ENDPOINT = "/data.json";
+
+export type PersistResult = "dev" | "github" | "skipped";
 
 export const fetchModel = async (): Promise<BioModel> => {
   const endpoint = import.meta.env.DEV ? DEV_ENDPOINT : PROD_ENDPOINT;
@@ -19,15 +22,23 @@ export const fetchModel = async (): Promise<BioModel> => {
   return sanitizeModel(payload);
 };
 
-export const persistModel = async (input: BioModel): Promise<void> => {
-  if (!import.meta.env.DEV) {
-    return;
+export const persistModel = async (input: BioModel): Promise<PersistResult> => {
+  const sanitized = sanitizeModel(input);
+  const serialized = stableStringify(sanitized);
+
+  if (import.meta.env.DEV) {
+    await fetch(DEV_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: serialized,
+    });
+    return "dev";
   }
 
-  const sanitized = sanitizeModel(input);
-  await fetch(DEV_ENDPOINT, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: stableStringify(sanitized),
-  });
+  if (!canUseGithubSync()) {
+    throw new Error("Configure GitHub sync to save changes.");
+  }
+
+  await pushCmsDataToGithub(serialized);
+  return "github";
 };
