@@ -2,11 +2,11 @@
   <div class="min-h-dvh">
     <header class="mx-auto w-full max-w-[740px] px-4 pt-6 sm:pt-10">
       <div
-        class="rounded-[var(--radius-xl)] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-4 sm:p-6"
+        class="glass rounded-[var(--radius-xl)] p-4 sm:p-6"
       >
         <div class="flex items-start gap-4">
           <div
-            class="relative h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-2)]"
+            class="relative h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-white/50 bg-white/40 shadow-sm backdrop-blur-md"
           >
             <img
               v-if="model.profile.avatarUrl"
@@ -49,7 +49,11 @@
                   <i class="pi" :class="previewMode ? 'pi-pencil' : 'pi-eye'" />
                   <span class="ml-2 hidden sm:inline">{{ previewMode ? "Edit" : "Preview" }}</span>
                 </Button>
-                <Button rounded class="!bg-[color:var(--color-brand)] !border-0" @click="cmsOpen = true">
+                <Button
+                  rounded
+                  class="!border-0 !bg-[color:var(--color-brand)] shadow-[0_14px_36px_rgba(99,102,241,0.28)]"
+                  @click="cmsOpen = true"
+                >
                   <i class="pi pi-sliders-h" />
                   <span class="ml-2 hidden sm:inline">CMS</span>
                 </Button>
@@ -60,7 +64,7 @@
               <a
                 v-for="s in enabledSocials"
                 :key="s.id"
-                class="inline-flex items-center gap-2 rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-surface-2)] px-3 py-1.5 text-xs font-medium text-[color:var(--color-ink)] transition hover:bg-white"
+                class="inline-flex items-center gap-2 rounded-full border border-white/55 bg-white/45 px-3 py-1.5 text-xs font-medium text-[color:var(--color-ink)] shadow-sm backdrop-blur-md transition hover:bg-white/60"
                 :href="s.url"
                 target="_blank"
                 rel="noreferrer"
@@ -75,7 +79,7 @@
         <div class="mt-4 flex items-center justify-between gap-3">
           <div class="text-xs text-[color:var(--color-ink-soft)]">
             <span class="inline-flex items-center gap-2">
-              <span class="h-2 w-2 rounded-full bg-[color:var(--color-brand-2)]"></span>
+              <span class="h-2 w-2 rounded-full bg-[color:var(--color-brand-2)] shadow-[0_0_0_4px_rgba(34,197,94,0.18)]"></span>
               <span>Static site · Saved locally</span>
             </span>
           </div>
@@ -106,14 +110,12 @@
     </header>
 
     <main class="mx-auto w-full max-w-[740px] px-4 pb-10 pt-5 sm:pt-6">
-      <section
-        class="rounded-[var(--radius-xl)] border border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-3 sm:p-4"
-      >
+      <section class="glass rounded-[var(--radius-xl)] p-3 sm:p-4">
         <div class="grid gap-2">
           <a
             v-for="link in enabledLinks"
             :key="link.id"
-            class="group relative flex items-center justify-between gap-3 rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-surface)] px-4 py-3 transition hover:bg-[color:var(--color-surface-2)]"
+            class="group relative flex items-center justify-between gap-3 rounded-2xl border border-white/60 bg-white/50 px-4 py-3 shadow-sm backdrop-blur-md transition hover:bg-white/65 hover:shadow-[0_16px_40px_rgba(15,23,42,0.14)]"
             :href="link.url"
             target="_blank"
             rel="noreferrer"
@@ -121,7 +123,7 @@
             <div class="min-w-0">
               <div class="flex items-center gap-2">
                 <span
-                  class="grid h-9 w-9 place-items-center rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-2)] text-sm"
+                  class="grid h-9 w-9 place-items-center rounded-xl border border-white/60 bg-white/55 text-sm shadow-sm backdrop-blur-md"
                 >
                   <i class="pi" :class="linkIcon(link.icon)" />
                 </span>
@@ -149,7 +151,7 @@
           </div>
           <Button
             rounded
-            class="mt-4 !bg-[color:var(--color-brand)] !border-0"
+            class="mt-4 !border-0 !bg-[color:var(--color-brand)] shadow-[0_14px_36px_rgba(99,102,241,0.28)]"
             @click="cmsOpen = true"
             >Add links</Button
           >
@@ -157,8 +159,8 @@
       </section>
 
       <footer class="mt-6 text-center text-xs text-[color:var(--color-ink-soft)]">
-        <div class="inline-flex items-center gap-2 rounded-full bg-white/70 px-3 py-1.5">
-          <span class="h-1.5 w-1.5 rounded-full bg-[color:var(--color-accent)]"></span>
+        <div class="inline-flex items-center gap-2 rounded-full border border-white/50 bg-white/40 px-3 py-1.5 shadow-sm backdrop-blur-md">
+          <span class="h-1.5 w-1.5 rounded-full bg-[color:var(--color-accent)] shadow-[0_0_0_4px_rgba(251,113,133,0.16)]"></span>
           <span>Tip: drag links in the CMS to reorder.</span>
         </div>
       </footer>
@@ -178,7 +180,7 @@
         <Textarea v-model="importText" autoResize rows="7" class="w-full" />
         <div class="flex justify-end gap-2">
           <Button severity="secondary" rounded @click="importOpen = false">Cancel</Button>
-          <Button rounded class="!bg-[color:var(--color-brand)] !border-0" @click="applyImport"
+          <Button rounded class="!border-0 !bg-[color:var(--color-brand)] shadow-[0_14px_36px_rgba(99,102,241,0.28)]" @click="applyImport"
             >Import</Button
           >
         </div>

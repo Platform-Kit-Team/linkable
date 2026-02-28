@@ -6,9 +6,7 @@
     :style="{ width: 'min(860px, 94vw)' }"
   >
     <div class="grid gap-4 md:grid-cols-[1.2fr_0.8fr]">
-      <section
-        class="rounded-[var(--radius-xl)] border border-[color:var(--color-border)] bg-white p-4"
-      >
+      <section class="rounded-[var(--radius-xl)] border border-white/55 bg-white/45 p-4 shadow-sm backdrop-blur-md">
         <div class="flex items-center justify-between gap-3">
           <div>
             <div class="text-sm font-semibold">Links</div>
@@ -16,7 +14,7 @@
               Drag to reorder · Toggle to hide
             </div>
           </div>
-          <Button rounded class="!bg-[color:var(--color-brand)] !border-0" @click="addLink">
+          <Button rounded class="!border-0 !bg-[color:var(--color-brand)] shadow-[0_14px_36px_rgba(99,102,241,0.28)]" @click="addLink">
             <i class="pi pi-plus" />
             <span class="ml-2">Add</span>
           </Button>
@@ -31,13 +29,11 @@
             class="grid gap-2"
           >
             <template #item="{ element, index }">
-              <div
-                class="group rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-3"
-              >
+              <div class="group rounded-2xl border border-white/60 bg-white/50 p-3 shadow-sm backdrop-blur-md transition hover:bg-white/65">
                 <div class="flex items-start gap-3">
                   <button
                     type="button"
-                    class="drag mt-1 grid h-9 w-9 place-items-center rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-2)] text-[color:var(--color-ink-soft)] transition group-hover:bg-white"
+                    class="drag mt-1 grid h-9 w-9 place-items-center rounded-xl border border-white/60 bg-white/55 text-[color:var(--color-ink-soft)] shadow-sm backdrop-blur-md transition group-hover:bg-white/70"
                     aria-label="Drag"
                   >
                     <i class="pi pi-bars" />
@@ -106,7 +102,7 @@
 
           <div
             v-if="draft.links.length === 0"
-            class="mt-3 rounded-2xl border border-dashed border-[color:var(--color-border)] bg-[color:var(--color-surface-2)] p-6 text-center"
+            class="mt-3 rounded-2xl border border-dashed border-white/60 bg-white/35 p-6 text-center shadow-sm backdrop-blur-md"
           >
             <div class="text-sm font-semibold">Your buttons will appear here</div>
             <div class="mt-1 text-sm text-[color:var(--color-ink-soft)]">
@@ -116,9 +112,7 @@
         </div>
       </section>
 
-      <section
-        class="rounded-[var(--radius-xl)] border border-[color:var(--color-border)] bg-white p-4"
-      >
+      <section class="rounded-[var(--radius-xl)] border border-white/55 bg-white/45 p-4 shadow-sm backdrop-blur-md">
         <div class="text-sm font-semibold">Profile</div>
         <div class="mt-3 grid gap-3">
           <div class="grid gap-1">
@@ -151,7 +145,7 @@
             <div
               v-for="(s, i) in draft.socials"
               :key="s.id"
-              class="rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-3"
+              class="rounded-2xl border border-white/60 bg-white/50 p-3 shadow-sm backdrop-blur-md transition hover:bg-white/65"
             >
               <div class="flex items-start justify-between gap-3">
                 <div class="grid flex-1 gap-2">
@@ -186,7 +180,7 @@
         <Button rounded severity="secondary" @click="resetToDefaults">Reset</Button>
         <div class="flex items-center gap-2">
           <Button rounded severity="secondary" @click="visible = false">Close</Button>
-          <Button rounded class="!bg-[color:var(--color-brand)] !border-0" @click="save">
+          <Button rounded class="!border-0 !bg-[color:var(--color-brand)] shadow-[0_14px_36px_rgba(99,102,241,0.28)]" @click="save">
             Save
           </Button>
         </div>
