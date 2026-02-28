@@ -262,18 +262,27 @@ export default defineComponent({
     const githubSettings = ref<GithubSettings>(loadGithubSettings());
     const syncing = ref(false);
 
+    const canUseCms = computed(() => isDev || githubReady.value);
+
     const updateGithubStatus = () => {
       githubReady.value = canUseGithubSync();
       githubSettings.value = loadGithubSettings();
     };
 
     const handleGlobalKeydown = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !cmsOpen.value) {
+      const key = event.key;
+      if (!canUseCms.value) return;
+      if ((key === "Escape" || key === "Esc") && !cmsOpen.value) {
         cmsButtonVisible.value = true;
       }
     };
 
     onMounted(async () => {
+      if (typeof window !== "undefined") {
+        window.addEventListener(GITHUB_SYNC_EVENT, updateGithubStatus);
+        window.addEventListener("keydown", handleGlobalKeydown);
+      }
+
       const remoteModel = await fetchModel();
       model.value = remoteModel;
       modelLoaded.value = true;
@@ -283,10 +292,6 @@ export default defineComponent({
       }, 0);
 
       updateGithubStatus();
-      if (typeof window !== "undefined") {
-        window.addEventListener(GITHUB_SYNC_EVENT, updateGithubStatus);
-        window.addEventListener("keydown", handleGlobalKeydown);
-      }
     });
 
     onBeforeUnmount(() => {
@@ -301,8 +306,6 @@ export default defineComponent({
         cmsButtonVisible.value = false;
       }
     });
-
-    const canUseCms = computed(() => isDev || githubReady.value);
 
     const enabledLinks = computed(() => model.value.links.filter((l) => l.enabled));
     const enabledSocials = computed(() =>
