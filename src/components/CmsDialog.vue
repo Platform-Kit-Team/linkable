@@ -505,7 +505,7 @@ export default defineComponent({
   padding: 10px;
 }
 
-/* Compact, consistent tabs (smaller + no extra vertical space) */
+/* Compact, consistent tabs */
 .cms__tab {
   width: 100%;
   height: 38px;
@@ -542,7 +542,7 @@ export default defineComponent({
   width: 26px;
   display: grid;
   place-items: center;
-  border-radius: 11px;
+  border-radius: 10px;
   border: 1px solid rgba(11, 18, 32, 0.06);
   background: rgba(255, 255, 255, 0.55);
   color: rgba(11, 18, 32, 0.58);
@@ -813,25 +813,49 @@ export default defineComponent({
     height: min(80vh, 820px);
     min-height: 560px;
   }
+
+  /*
+    Critical change: Make the horizontal tab row a fixed 3-column grid,
+    so active tab styling can't push neighbors around.
+  */
   .cms__nav {
     grid-template-rows: auto;
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 8px;
-    overflow: auto;
     align-items: center;
     padding: 10px;
+    overflow: hidden;
   }
+
   .cms__tab {
     margin: 0;
-    min-width: 142px;
+    width: 100%;
+    min-width: 0;
     height: 36px;
-    grid-template-columns: 28px 1fr 32px;
+    grid-template-columns: 26px 1fr 28px;
+    gap: 8px;
+    padding: 0 8px;
+    border-radius: 14px;
   }
+
   .cms__tab-icon {
-    height: 24px;
-    width: 24px;
-    border-radius: 10px;
+    height: 22px;
+    width: 22px;
+    border-radius: 9px;
   }
+
+  .cms__tab-label {
+    font-size: 12px;
+  }
+
+  .cms__tab-pill {
+    min-width: 22px;
+    height: 18px;
+    padding: 0 6px;
+    font-size: 10px;
+  }
+
   .cms__nav-footer {
     display: none;
   }
