@@ -73,7 +73,11 @@
 
               <div class="cms__field">
                 <label class="cms__label">Avatar URL (optional)</label>
-                <InputText v-model="draft.profile.avatarUrl" class="w-full" placeholder="https://..." />
+                <InputText
+                  v-model="draft.profile.avatarUrl"
+                  class="w-full"
+                  placeholder="https://..."
+                />
                 <div class="cms__help">If empty or invalid, initials will show.</div>
               </div>
             </div>
@@ -115,7 +119,12 @@
                   </span>
 
                   <span class="cms__row-thumb">
-                    <img v-if="element.imageUrl" :src="element.imageUrl" alt="" class="h-full w-full object-cover" />
+                    <img
+                      v-if="element.imageUrl"
+                      :src="element.imageUrl"
+                      alt=""
+                      class="h-full w-full object-cover"
+                    />
                     <i v-else class="pi pi-link text-[color:var(--color-ink-soft)]" />
                   </span>
 
@@ -125,7 +134,12 @@
                   </span>
 
                   <span class="cms__row-meta">
-                    <Tag v-if="!element.enabled" severity="warning" value="Hidden" class="!rounded-full" />
+                    <Tag
+                      v-if="!element.enabled"
+                      severity="warning"
+                      value="Hidden"
+                      class="!rounded-full"
+                    />
                     <i v-else class="pi pi-check-circle cms__ok" />
                     <i class="pi pi-angle-right text-[color:var(--color-ink-soft)]" />
                   </span>
@@ -152,7 +166,9 @@
           <div class="cms__card">
             <div v-if="draft.socials.length === 0" class="cms__empty">
               <div class="cms__empty-title">No socials yet</div>
-              <div class="cms__empty-sub">Add GitHub, Instagram, X, YouTube, TikTok, or Website.</div>
+              <div class="cms__empty-sub">
+                Add GitHub, Instagram, X, YouTube, TikTok, or Website.
+              </div>
             </div>
 
             <div v-else class="cms__socialList">
@@ -470,6 +486,13 @@ export default defineComponent({
   min-height: 520px;
 }
 
+/* Stable layout: always reserve potential scrollbar space so widths don't jump */
+.cms__main {
+  scrollbar-gutter: stable both-edges;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
 .cms__nav {
   border-radius: 22px;
   border: 1px solid rgba(11, 18, 32, 0.08);
@@ -482,16 +505,16 @@ export default defineComponent({
   padding: 10px;
 }
 
-/* New: compact, consistent tabs */
+/* Compact, consistent tabs (smaller + no extra vertical space) */
 .cms__tab {
   width: 100%;
-  height: 44px;
+  height: 38px;
   display: grid;
-  grid-template-columns: 34px 1fr 36px;
+  grid-template-columns: 30px 1fr 34px;
   gap: 10px;
   align-items: center;
   padding: 0 10px;
-  border-radius: 16px;
+  border-radius: 14px;
   border: 1px solid transparent;
   background: transparent;
   color: rgba(11, 18, 32, 0.88);
@@ -499,7 +522,7 @@ export default defineComponent({
   letter-spacing: -0.01em;
   cursor: pointer;
   transition: background 140ms ease, border-color 140ms ease, box-shadow 140ms ease;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   text-align: left;
 }
 
@@ -515,11 +538,11 @@ export default defineComponent({
 }
 
 .cms__tab-icon {
-  height: 30px;
-  width: 30px;
+  height: 26px;
+  width: 26px;
   display: grid;
   place-items: center;
-  border-radius: 12px;
+  border-radius: 11px;
   border: 1px solid rgba(11, 18, 32, 0.06);
   background: rgba(255, 255, 255, 0.55);
   color: rgba(11, 18, 32, 0.58);
@@ -532,7 +555,7 @@ export default defineComponent({
 }
 
 .cms__tab-label {
-  font-size: 13px;
+  font-size: 12px;
   line-height: 1;
   white-space: nowrap;
   overflow: hidden;
@@ -541,8 +564,8 @@ export default defineComponent({
 
 .cms__tab-pill {
   justify-self: end;
-  min-width: 28px;
-  height: 22px;
+  min-width: 26px;
+  height: 20px;
   padding: 0 8px;
   display: inline-flex;
   align-items: center;
@@ -550,7 +573,7 @@ export default defineComponent({
   border-radius: 999px;
   border: 1px solid rgba(11, 18, 32, 0.08);
   background: rgba(255, 255, 255, 0.55);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 950;
   color: rgba(11, 18, 32, 0.62);
 }
@@ -591,13 +614,13 @@ export default defineComponent({
   box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.14);
 }
 
+/* Keep the rest of your existing styling as-is */
 .cms__main {
   border-radius: 22px;
   border: 1px solid rgba(11, 18, 32, 0.08);
   background: rgba(255, 255, 255, 0.62);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  overflow: auto;
   padding: 14px;
 }
 
@@ -800,14 +823,14 @@ export default defineComponent({
   }
   .cms__tab {
     margin: 0;
-    min-width: 150px;
-    height: 40px;
-    grid-template-columns: 30px 1fr 34px;
+    min-width: 142px;
+    height: 36px;
+    grid-template-columns: 28px 1fr 32px;
   }
   .cms__tab-icon {
-    height: 26px;
-    width: 26px;
-    border-radius: 11px;
+    height: 24px;
+    width: 24px;
+    border-radius: 10px;
   }
   .cms__nav-footer {
     display: none;
