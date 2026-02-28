@@ -11,32 +11,35 @@
       <aside class="cms__nav">
         <button
           type="button"
-          class="cms__nav-item"
+          class="cms__tab"
           :class="{ 'is-active': tab === 'profile' }"
           @click="tab = 'profile'"
         >
-          <i class="pi pi-user" />
-          <span>Profile</span>
+          <span class="cms__tab-icon"><i class="pi pi-user" /></span>
+          <span class="cms__tab-label">Profile</span>
+          <span class="cms__tab-pill cms__tab-pill--ghost" aria-hidden="true">0</span>
         </button>
+
         <button
           type="button"
-          class="cms__nav-item"
+          class="cms__tab"
           :class="{ 'is-active': tab === 'links' }"
           @click="tab = 'links'"
         >
-          <i class="pi pi-link" />
-          <span>Links</span>
-          <span class="cms__pill">{{ draft.links.length }}</span>
+          <span class="cms__tab-icon"><i class="pi pi-link" /></span>
+          <span class="cms__tab-label">Links</span>
+          <span class="cms__tab-pill">{{ draft.links.length }}</span>
         </button>
+
         <button
           type="button"
-          class="cms__nav-item"
+          class="cms__tab"
           :class="{ 'is-active': tab === 'socials' }"
           @click="tab = 'socials'"
         >
-          <i class="pi pi-share-alt" />
-          <span>Socials</span>
-          <span class="cms__pill">{{ draft.socials.length }}</span>
+          <span class="cms__tab-icon"><i class="pi pi-share-alt" /></span>
+          <span class="cms__tab-label">Socials</span>
+          <span class="cms__tab-pill">{{ draft.socials.length }}</span>
         </button>
 
         <div class="cms__nav-footer">
@@ -231,7 +234,16 @@ import { useToast } from "primevue/usetoast";
 
 import LinkEditorDrawer from "./LinkEditorDrawer.vue";
 import SocialEditorDrawer from "./SocialEditorDrawer.vue";
-import { type BioLink, type BioModel, type SocialLink, defaultModel, newLink, newSocial, sanitizeModel, stableStringify } from "../lib/model";
+import {
+  type BioLink,
+  type BioModel,
+  type SocialLink,
+  defaultModel,
+  newLink,
+  newSocial,
+  sanitizeModel,
+  stableStringify,
+} from "../lib/model";
 
 export default defineComponent({
   name: "CmsDialog",
@@ -271,7 +283,11 @@ export default defineComponent({
       { deep: true }
     );
 
-    const hasChanges = computed(() => stableStringify(sanitizeModel(draft.value)) !== stableStringify(sanitizeModel(props.model)));
+    const hasChanges = computed(
+      () =>
+        stableStringify(sanitizeModel(draft.value)) !==
+        stableStringify(sanitizeModel(props.model))
+    );
 
     // --- Links editor
     const linkEditorOpen = ref(false);
@@ -300,7 +316,7 @@ export default defineComponent({
 
     const createAndEditLink = () => {
       const l = newLink();
-      l.subtitle = ""; // optional description field
+      l.subtitle = "";
       draft.value.links.unshift(l);
       activeLinkId.value = l.id;
       tab.value = "links";
@@ -466,42 +482,82 @@ export default defineComponent({
   padding: 10px;
 }
 
-.cms__nav-item {
+/* New: compact, consistent tabs */
+.cms__tab {
   width: 100%;
+  height: 44px;
   display: grid;
-  grid-template-columns: 18px 1fr auto;
+  grid-template-columns: 34px 1fr 36px;
   gap: 10px;
   align-items: center;
-  padding: 10px 10px;
+  padding: 0 10px;
   border-radius: 16px;
   border: 1px solid transparent;
   background: transparent;
   color: rgba(11, 18, 32, 0.88);
-  font-weight: 900;
+  font-weight: 950;
   letter-spacing: -0.01em;
   cursor: pointer;
-  transition: background 140ms ease, border-color 140ms ease;
+  transition: background 140ms ease, border-color 140ms ease, box-shadow 140ms ease;
   margin-bottom: 8px;
+  text-align: left;
 }
 
-.cms__nav-item:hover {
+.cms__tab:hover {
   background: rgba(255, 255, 255, 0.55);
   border-color: rgba(11, 18, 32, 0.06);
 }
 
-.cms__nav-item.is-active {
+.cms__tab.is-active {
   background: rgba(59, 130, 246, 0.12);
   border-color: rgba(59, 130, 246, 0.24);
+  box-shadow: 0 10px 28px rgba(11, 18, 32, 0.06);
 }
 
-.cms__pill {
-  font-size: 12px;
-  font-weight: 950;
-  color: rgba(11, 18, 32, 0.62);
-  padding: 2px 8px;
+.cms__tab-icon {
+  height: 30px;
+  width: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  border: 1px solid rgba(11, 18, 32, 0.06);
+  background: rgba(255, 255, 255, 0.55);
+  color: rgba(11, 18, 32, 0.58);
+}
+
+.cms__tab.is-active .cms__tab-icon {
+  background: rgba(59, 130, 246, 0.14);
+  border-color: rgba(59, 130, 246, 0.22);
+  color: rgba(37, 99, 235, 0.95);
+}
+
+.cms__tab-label {
+  font-size: 13px;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cms__tab-pill {
+  justify-self: end;
+  min-width: 28px;
+  height: 22px;
+  padding: 0 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 999px;
   border: 1px solid rgba(11, 18, 32, 0.08);
   background: rgba(255, 255, 255, 0.55);
+  font-size: 12px;
+  font-weight: 950;
+  color: rgba(11, 18, 32, 0.62);
+}
+
+.cms__tab-pill--ghost {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .cms__nav-footer {
@@ -740,10 +796,18 @@ export default defineComponent({
     gap: 8px;
     overflow: auto;
     align-items: center;
+    padding: 10px;
   }
-  .cms__nav-item {
+  .cms__tab {
     margin: 0;
     min-width: 150px;
+    height: 40px;
+    grid-template-columns: 30px 1fr 34px;
+  }
+  .cms__tab-icon {
+    height: 26px;
+    width: 26px;
+    border-radius: 11px;
   }
   .cms__nav-footer {
     display: none;
