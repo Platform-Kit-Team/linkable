@@ -6,6 +6,13 @@
     :style="{ width: 'min(980px, 96vw)' }"
     :contentStyle="{ overflow: 'hidden' }"
   >
+    <template #icons>
+      <div class="cms__status" :class="{ 'is-dirty': hasChanges }">
+        <span class="cms__dot" />
+        <span>{{ hasChanges ? "Unsaved changes" : "Saved" }}</span>
+      </div>
+    </template>
+
     <div class="cms">
       <div class="cms__tabBar">
         <div class="cms__tabs">
@@ -41,11 +48,6 @@
             <span class="cms__tab-label">Socials</span>
             <span class="cms__tab-pill">{{ draft.socials.length }}</span>
           </button>
-        </div>
-
-        <div class="cms__status" :class="{ 'is-dirty': hasChanges }">
-          <span class="cms__dot" />
-          <span>{{ hasChanges ? "Unsaved changes" : "Saved" }}</span>
         </div>
       </div>
 
@@ -200,7 +202,7 @@
           </Button>
 
           <Button rounded class="cms__primary" :disabled="!hasChanges" @click="save">
-            <i class="pi pi-check" />
+            <i className="pi pi-check" />
             <span class="ml-2">Save</span>
           </Button>
         </div>
@@ -463,9 +465,6 @@ export default defineComponent({
 }
 
 .cms__tabBar {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
   padding: 12px;
   border-radius: 22px;
   border: 1px solid rgba(11, 18, 32, 0.08);
@@ -556,7 +555,6 @@ export default defineComponent({
 }
 
 .cms__status {
-  align-self: flex-end;
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -567,6 +565,7 @@ export default defineComponent({
   font-size: 12px;
   font-weight: 800;
   color: rgba(11, 18, 32, 0.7);
+  margin-right: 0.25rem;
 }
 
 .cms__dot {
