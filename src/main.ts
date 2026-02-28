@@ -1,5 +1,7 @@
 import { createApp } from "vue";
+
 import PrimeVue from "primevue/config";
+import ToastService from "primevue/toastservice";
 
 import "./styles.css";
 import "primeicons/primeicons.css";
@@ -10,4 +12,5 @@ createApp(App)
   .use(PrimeVue, {
     ripple: true,
   })
+  .use(ToastService)
   .mount("#app");
