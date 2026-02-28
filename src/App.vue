@@ -38,7 +38,7 @@
                 </p>
               </div>
 
-              <div class="flex items-center gap-2">
+              <div v-if="isDev" class="flex items-center gap-2">
                 <Button
                   severity="secondary"
                   rounded
@@ -84,7 +84,8 @@
               <span>Static site · Saved locally</span>
             </span>
           </div>
-          <div class="flex items-center gap-2">
+
+          <div v-if="isDev" class="flex items-center gap-2">
             <Button
               v-if="!previewMode"
               rounded
@@ -146,6 +147,7 @@
             Open the CMS and add your first button.
           </div>
           <Button
+            v-if="isDev"
             rounded
             class="mt-4 !border-0 !bg-[color:var(--color-brand)] shadow-[0_14px_38px_rgba(37,99,235,0.22)]"
             @click="cmsOpen = true"
@@ -164,9 +166,20 @@
       </footer>
     </main>
 
-    <CmsDialog v-model:open="cmsOpen" :model="model" @update:model="(m) => (model = m)" />
+    <CmsDialog
+      v-if="isDev"
+      v-model:open="cmsOpen"
+      :model="model"
+      @update:model="(m) => (model = m)"
+    />
 
-    <Dialog v-model:visible="importOpen" modal header="Import JSON" :style="{ width: 'min(680px, 92vw)' }">
+    <Dialog
+      v-if="isDev"
+      v-model:visible="importOpen"
+      modal
+      header="Import JSON"
+      :style="{ width: 'min(680px, 92vw)' }"
+    >
       <div class="space-y-3">
         <p class="text-sm text-[color:var(--color-ink-soft)]">
           Paste an exported JSON to restore your profile/links.
@@ -212,6 +225,8 @@ export default defineComponent({
     CmsDialog,
   },
   setup() {
+    const isDev = import.meta.env.DEV;
+
     const toast = useToast();
 
     const stored = useLocalStorage<BioModel>("libio:model", defaultModel(), {
@@ -240,9 +255,7 @@ export default defineComponent({
     const previewMode = ref(true);
 
     const enabledLinks = computed(() => model.value.links.filter((l) => l.enabled));
-    const enabledSocials = computed(() =>
-      model.value.socials.filter((s) => s.enabled && s.url)
-    );
+    const enabledSocials = computed(() => model.value.socials.filter((s) => s.enabled && s.url));
 
     const initials = computed(() => {
       const name = (model.value.profile.displayName || "").trim();
@@ -251,7 +264,6 @@ export default defineComponent({
       return parts.map((p) => (p[0] || "").toUpperCase()).join("");
     });
 
-    // Robust avatar (avoid broken image look)
     const avatarErrored = ref(false);
     const avatarSrc = computed(() => {
       const u = (model.value.profile.avatarUrl || "").trim();
@@ -348,6 +360,7 @@ export default defineComponent({
     };
 
     return {
+      isDev,
       model,
       cmsOpen,
       previewMode,
