@@ -808,17 +808,14 @@ export default defineComponent({
 }
 
 @media (max-width: 820px) {
-  .cms {
+  /* Use :deep so it applies inside PrimeVue Dialog portal reliably */
+  :deep(.cms) {
     grid-template-columns: 1fr;
     height: min(80vh, 820px);
     min-height: 560px;
   }
 
-  /*
-    Critical change: Make the horizontal tab row a fixed 3-column grid,
-    so active tab styling can't push neighbors around.
-  */
-  .cms__nav {
+  :deep(.cms__nav) {
     grid-template-rows: auto;
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -828,35 +825,35 @@ export default defineComponent({
     overflow: hidden;
   }
 
-  .cms__tab {
+  :deep(.cms__tab) {
     margin: 0;
     width: 100%;
     min-width: 0;
-    height: 36px;
-    grid-template-columns: 26px 1fr 28px;
+    height: 34px;
+    grid-template-columns: 24px 1fr 26px;
     gap: 8px;
     padding: 0 8px;
     border-radius: 14px;
   }
 
-  .cms__tab-icon {
-    height: 22px;
-    width: 22px;
-    border-radius: 9px;
+  :deep(.cms__tab-icon) {
+    height: 20px;
+    width: 20px;
+    border-radius: 8px;
   }
 
-  .cms__tab-label {
-    font-size: 12px;
+  :deep(.cms__tab-label) {
+    font-size: 11px;
   }
 
-  .cms__tab-pill {
+  :deep(.cms__tab-pill) {
     min-width: 22px;
     height: 18px;
     padding: 0 6px;
     font-size: 10px;
   }
 
-  .cms__nav-footer {
+  :deep(.cms__nav-footer) {
     display: none;
   }
 }
