@@ -3,6 +3,8 @@ import { createApp } from "vue";
 import PrimeVue from "primevue/config";
 import ToastService from "primevue/toastservice";
 
+import "@primevue/themes/aura/theme.css";
+
 import "./styles.css";
 import "primeicons/primeicons.css";
 
