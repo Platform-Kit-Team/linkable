@@ -81,13 +81,36 @@ body::before {
   -webkit-backdrop-filter: blur(18px);
 }
 
-/* PrimeVue: strong modal backdrop (80% black) to reduce clutter */
-.p-dialog-mask.p-component-overlay {
+/* -----------------------------
+   PrimeVue: MODAL BACKDROP
+   Force a visible 80% black overlay that fills the viewport.
+   (PrimeVue class names can differ between versions/themes.)
+-------------------------------- */
+.p-dialog-mask,
+.p-component-overlay,
+.p-overlay-mask,
+.p-dialog-mask.p-component-overlay,
+.p-dialog-mask.p-overlay-mask,
+.p-component-overlay.p-overlay-mask {
   position: fixed !important;
   inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
   background: rgba(0, 0, 0, 0.8) !important;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+}
+
+/* Ensure mask is actually above app content */
+.p-dialog-mask,
+.p-overlay-mask,
+.p-component-overlay {
+  z-index: 1100 !important;
+}
+
+/* Ensure dialog is above the mask */
+.p-dialog {
+  z-index: 1101 !important;
 }
 
 /* Dialog surface */
