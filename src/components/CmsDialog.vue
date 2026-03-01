@@ -114,7 +114,8 @@
 
             <Button rounded class="cms__primary" @click="createAndEditLink">
               <i class="pi pi-plus" />
-              <span class="ml-2">Add link</span>
+              <span class="cms__btn-label">Add link</span>
+              <span class="cms__btn-label--compact">Add</span>
             </Button>
           </div>
 
@@ -172,13 +173,9 @@
             </div>
 
             <Button rounded class="cms__primary" @click="createAndEditSocial">
-              <i
-                class="
-                  pi
-                  pi-plus
-                "
-              />
-              <span class="ml-2">Add social</span>
+              <i class="pi pi-plus" />
+              <span class="cms__btn-label">Add social</span>
+              <span class="cms__btn-label--compact">Add</span>
             </Button>
           </div>
 
@@ -702,6 +699,15 @@ export default defineComponent({
   box-shadow: 0 16px 44px rgba(37, 99, 235, 0.22) !important;
 }
 
+.cms__btn-label,
+.cms__btn-label--compact {
+  margin-left: 0.5rem;
+}
+
+.cms__btn-label--compact {
+  display: none;
+}
+
 .cms__list {
   display: grid;
   gap: 8px;
@@ -874,6 +880,14 @@ export default defineComponent({
   .cms__tab-label,
   .cms__tab-pill {
     display: none;
+  }
+
+  .cms__btn-label {
+    display: none;
+  }
+
+  .cms__btn-label--compact {
+    display: inline;
   }
 }
 </style>
