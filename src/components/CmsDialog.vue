@@ -172,7 +172,12 @@
             </div>
 
             <Button rounded class="cms__primary" @click="createAndEditSocial">
-              <i class="pi pi-plus" />
+              <i
+                class="
+                  pi
+                  pi-plus
+                "
+              />
               <span class="ml-2">Add social</span>
             </Button>
           </div>
@@ -847,6 +852,28 @@ export default defineComponent({
     min-width: 24px;
     height: 18px;
     font-size: 10px;
+  }
+}
+
+@media (max-width: 640px) {
+  .cms__tabBarInner {
+    gap: 10px;
+  }
+
+  .cms__tab {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    padding: 0;
+  }
+
+  .cms__tab-icon {
+    height: 32px;
+    width: 32px;
+  }
+
+  .cms__tab-label,
+  .cms__tab-pill {
+    display: none;
   }
 }
 </style>
