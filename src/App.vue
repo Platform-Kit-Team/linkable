@@ -605,6 +605,8 @@
     <div
       v-if="canUseCms"
       class="fixed bottom-4 left-3 z-50 flex max-w-[calc(100vw-5rem)] items-center gap-2 rounded-full border border-white/65 bg-white/70 px-4 py-2.5 text-[11px] text-[color:var(--color-ink-soft)] shadow-sm backdrop-blur-md sm:bottom-6 sm:left-6 sm:gap-3 sm:px-5 sm:py-3 sm:text-xs"
+      :class="{ 'cursor-pointer sm:cursor-default': unsynced }"
+      @click="unsynced ? gitDialogOpen = true : undefined"
     >
       <span class="inline-flex items-center gap-1.5 sm:gap-2">
         <span
@@ -615,23 +617,23 @@
         <span class="hidden truncate sm:inline">{{ syncStatusText }}</span>
       </span>
 
-      <div class="flex items-center gap-1.5">
+      <div class="hidden items-center gap-1.5 sm:flex">
         <Button
           v-if="unsynced"
           rounded
           severity="secondary"
           class="!px-2.5 !py-1.5 !text-xs"
-          @click="gitDialogOpen = true"
+          @click.stop="gitDialogOpen = true"
         >
           <i class="pi pi-git-branch" />
-          <span class="ml-1.5 hidden sm:inline">Commit</span>
+          <span class="ml-1.5">Commit</span>
         </Button>
         <Button
           v-if="!previewMode"
           rounded
           severity="secondary"
           class="!px-2.5 !py-1.5 !text-xs"
-          @click="exportJson"
+          @click.stop="exportJson"
         >
           <i class="pi pi-download" />
         </Button>
@@ -640,7 +642,7 @@
           rounded
           severity="secondary"
           class="!px-2.5 !py-1.5 !text-xs"
-          @click="importOpen = true"
+          @click.stop="importOpen = true"
         >
           <i class="pi pi-upload" />
         </Button>
@@ -1199,7 +1201,7 @@ export default defineComponent({
 
     const syncStatusShort = computed(() => {
       if (syncing.value) return "Syncing…";
-      if (unsynced.value) return "Uncommitted";
+      if (unsynced.value) return "Publish";
       if (isDev || githubReady.value) return "Synced";
       return "Read-only";
     });
