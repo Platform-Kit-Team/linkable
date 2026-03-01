@@ -1,34 +1,3 @@
-... (entire file? Need provide full content identical to previous plus new styles; ensure final snippet includes modifications)...
-
-Need to reproduce entire file with new CSS.
-
-I'll copy previous content, add new CSS rule.
-
-Ensure no other changes.
-
-Let's craft final file same as before with added CSS section.
-
-Important: entire file must be full.
-
-I'll produce same template and script as above (unchanged). only style adjust.
-
-Add inside style:
-
-.cms__panel-head--row .cms__primary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  min-width: 136px;
-}
-
-@media (max-width: 640px) { .cms__panel-head--row .cms__primary { min-width: auto; width: auto; } }
-
-Also ensure .cms__btn-label etc still there.
-
-Let's produce final.
-
-<dyad-write path="src/components/CmsDialog.vue" description="Normalize Add buttons and keep link/social actions visually identical.">
 <template>
   <Dialog
     v-model:visible="visible"
@@ -354,7 +323,7 @@ export default defineComponent({
     );
 
     const linkEditorOpen = ref(false);
-    const activeLinkId = ref<string>("");
+    const activeLinkId = ref("");
 
     const activeLink = computed<BioLink | null>(() => {
       const id = activeLinkId.value;
@@ -401,7 +370,7 @@ export default defineComponent({
     });
 
     const socialEditorOpen = ref(false);
-    const activeSocialId = ref<string>("");
+    const activeSocialId = ref("");
 
     const activeSocial = computed<SocialLink | null>(() => {
       const id = activeSocialId.value;
@@ -415,7 +384,7 @@ export default defineComponent({
       },
       set(v) {
         const idx = draft.value.socials.findIndex((s) => s.id === v.id);
-        if (idx >= 0) draft.value.socials[idx] = v as SocialLink;
+        if (idx >= 0) draft.value.socials[idx] = v;
       },
     });
 
@@ -533,6 +502,15 @@ export default defineComponent({
   min-height: 520px;
 }
 
+cms__tabBar {
+  padding: 12px;
+  border-radius: 22px;
+  border: 1px solid rgba(11, 18, 32, 0.08);
+  background: rgba(255, 255, 255, 0.62);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
 .cms__tabBar {
   padding: 12px;
   border-radius: 22px;
@@ -602,11 +580,34 @@ export default defineComponent({
   color: rgba(11, 18, 32, 0.55);
 }
 
+cms__tab-label {
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .cms__tab-label {
   font-size: 13px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+cms__tab-pill {
+  justify-self: end;
+  min-width: 28px;
+  height: 20px;
+  padding: 0 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid rgba(11, 18, 32, 0.08);
+  background: rgba(255, 255, 255, 0.68);
+  font-size: 11px;
+  font-weight: 900;
+  color: rgba(11, 18, 32, 0.62);
 }
 
 .cms__tab-pill {
@@ -615,8 +616,8 @@ export default defineComponent({
   height: 20px;
   padding: 0 8px;
   display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  alignments_CENTER: center;
+  justify-control: center;
   border-radius: 999px;
   border: 1px solid rgba(11, 18, 32, 0.08);
   background: rgba(255, 255, 255, 0.68);
@@ -687,6 +688,13 @@ export default defineComponent({
   color: rgba(11, 18, 32, 0.96);
 }
 
+cms__sub {
+  margin-top: 2px;
+  font-size: 12px;
+  color: rgba(11, 18, 32, 0.62);
+  font-weight: 700;
+}
+
 .cms__sub {
   margin-top: 2px;
   font-size: 12px;
@@ -702,9 +710,19 @@ export default defineComponent({
   padding: 12px;
 }
 
+cms__form {
+  display: grid;
+  gap: 12px;
+}
+
 .cms__form {
   display: grid;
   gap: 12px;
+}
+
+cms__field {
+  display: grid;
+  gap: 6px;
 }
 
 .cms__field {
@@ -712,10 +730,22 @@ export default defineComponent({
   gap: 6px;
 }
 
+cms__label {
+  font-size: 12px;
+  font-weight: 950;
+  color: rgba(11, 18, 32, 0.7);
+}
+
 .cms__label {
   font-size: 12px;
   font-weight: 950;
   color: rgba(11, 18, 32, 0.7);
+}
+
+cms__help {
+  font-size: 12px;
+  color: rgba(11, 18, 32, 0.6);
+  font-weight: 650;
 }
 
 .cms__help {
@@ -730,12 +760,25 @@ export default defineComponent({
   box-shadow: 0 16px 44px rgba(37, 99, 235, 0.22) !important;
 }
 
+cms__primary--addon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-width: 136px;
+}
+
 .cms__primary--addon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
   min-width: 136px;
+}
+
+\CMS__btn-label,
+\CMS__btn-label--compact {
+  margin-left: 0.5rem;
 }
 
 .cms__btn-label,
@@ -747,7 +790,17 @@ export default defineComponent({
   display: none;
 }
 
+cms__list {
+  display: grid;
+  gap: 8px;
+}
+
 .cms__list {
+  display: grid;
+  gap: 8px;
+}
+
+cms__socialList {
   display: grid;
   gap: 8px;
 }
@@ -755,6 +808,21 @@ export default defineComponent({
 .cms__socialList {
   display: grid;
   gap: 8px;
+}
+
+cms__row {
+  width: 100%;
+  text-align: left;
+  display: grid;
+  grid-template-columns: 34px 44px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+  border-radius: 18px;
+  border: 1px solid rgba(11, 18, 32, 0.06);
+  background: rgba(255, 255, 255, 0.62);
+  cursor: pointer;
+  transition: background 140ms ease, border-color 140ms ease;
 }
 
 .cms__row {
@@ -772,13 +840,33 @@ export default defineComponent({
   transition: background 140ms ease, border-color 140ms ease;
 }
 
+cms__socialList .cms__row {
+  grid-template-columns: 44px 1fr auto;
+}
+
 .cms__socialList .cms__row {
   grid-template-columns: 44px 1fr auto;
+}
+
+cms__row:hover {
+  background: rgba(255, 255, 255, 0.76);
+  border-color: rgba(11, 18, 32, 0.1);
 }
 
 .cms__row:hover {
   background: rgba(255, 255, 255, 0.76);
   border-color: rgba(11, 18, 32, 0.1);
+}
+
+cms__row-drag {
+  height: 34px;
+  width: 34px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.58);
+  display: grid;
+  place-items: center;
+  color: rgba(11, 18, 32, 0.55);
 }
 
 .cms__row-drag {
@@ -792,10 +880,27 @@ export default defineComponent({
   color: rgba(11, 18, 32, 0.55);
 }
 
+cms__row-drag--muted {
+  width: 44px;
+  height: 44px;
+  border-radius: 16px;
+}
+
 .cms__row-drag--muted {
   width: 44px;
   height: 44px;
   border-radius: 16px;
+}
+
+cms__row-thumb {
+  height: 44px;
+  width: 44px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.58);
+  overflow: hidden;
+  display: grid;
+  place-items: center;
 }
 
 .cms__row-thumb {
@@ -809,8 +914,20 @@ export default defineComponent({
   place-items: center;
 }
 
+cms__row-text {
+  min-width: 0;
+}
+
 .cms__row-text {
   min-width: 0;
+}
+
+cms__row-title {
+  display: block;
+  font-size: 13px;
+  font-weight: 950;
+  letter-spacing: -0.02em;
+  color: rgba(11, 18, 32, 0.92);
 }
 
 .cms__row-title {
@@ -819,6 +936,17 @@ export default defineComponent({
   font-weight: 950;
   letter-spacing: -0.02em;
   color: rgba(11, 18, 32, 0.92);
+}
+
+cms__row-sub {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: rgba(11, 18, 32, 0.62);
+  font-weight: 650;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .cms__row-sub {
@@ -832,6 +960,12 @@ export default defineComponent({
   text-overflow: ellipsis;
 }
 
+cms__row-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .cms__row-meta {
   display: inline-flex;
   align-items: center;
@@ -842,14 +976,31 @@ export default defineComponent({
   color: #10b981;
 }
 
+cms__empty {
+  padding: 16px 12px;
+  text-align: center;
+}
+
 .cms__empty {
   padding: 16px 12px;
   text-align: center;
 }
 
+cms__empty-title {
+  font-weight: 950;
+  letter-spacing: -0.02em;
+}
+
 .cms__empty-title {
   font-weight: 950;
   letter-spacing: -0.02em;
+}
+
+cms__empty-sub {
+  margin-top: 4px;
+  font-size: 12px;
+  color: rgba(11, 18, 32, 0.62);
+  font-weight: 650;
 }
 
 .cms__empty-sub {
@@ -859,11 +1010,25 @@ export default defineComponent({
   font-weight: 650;
 }
 
+cms__footer {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
 .cms__footer {
   width: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 10px;
+}
+
+cms__footer-right {
+  display: flex;
+  align-items: center;
   gap: 10px;
 }
 
