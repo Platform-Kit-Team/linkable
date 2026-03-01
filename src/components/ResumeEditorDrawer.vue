@@ -137,6 +137,9 @@ export default defineComponent({
     watch(() => props.open, (v) => (visible.value = v));
     watch(visible, (v) => emit("update:open", v));
 
+    // Guard flag to prevent infinite prop ↔ draft watcher loop
+    let syncingFromProp = false;
+
     const draftEducation = ref<EducationEntry | null>(
       props.education ? { ...props.education } : null
     );
@@ -147,29 +150,36 @@ export default defineComponent({
       props.achievement ? { ...props.achievement } : null
     );
 
+    // When props change (e.g. switching which item is edited), update drafts
     watch(() => props.education, (v) => {
+      syncingFromProp = true;
       draftEducation.value = v ? { ...v } : null;
-    }, { deep: true });
+      syncingFromProp = false;
+    });
 
     watch(() => props.employment, (v) => {
+      syncingFromProp = true;
       draftEmployment.value = v ? { ...v } : null;
-    }, { deep: true });
+      syncingFromProp = false;
+    });
 
     watch(() => props.achievement, (v) => {
+      syncingFromProp = true;
       draftAchievement.value = v ? { ...v } : null;
-    }, { deep: true });
+      syncingFromProp = false;
+    });
 
     // Live-sync edits back to parent (inline editing pattern same as CmsDialog)
     watch(draftEducation, (v) => {
-      if (v) emit("update:education", { ...v });
+      if (!syncingFromProp && v) emit("update:education", { ...v });
     }, { deep: true });
 
     watch(draftEmployment, (v) => {
-      if (v) emit("update:employment", { ...v });
+      if (!syncingFromProp && v) emit("update:employment", { ...v });
     }, { deep: true });
 
     watch(draftAchievement, (v) => {
-      if (v) emit("update:achievement", { ...v });
+      if (!syncingFromProp && v) emit("update:achievement", { ...v });
     }, { deep: true });
 
     return { visible, draftEducation, draftEmployment, draftAchievement };
