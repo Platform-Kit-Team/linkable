@@ -56,18 +56,6 @@
               severity="secondary"
               rounded
               class="!px-3 !py-2 !text-sm"
-              @click="togglePreview"
-            >
-              <i class="pi" :class="previewMode ? 'pi-pencil' : 'pi-eye'" />
-              <span class="ml-2 hidden sm:inline">
-                {{ previewMode ? "Enter Edit Mode" : "Return to Preview" }}
-              </span>
-            </Button>
-
-            <Button
-              severity="secondary"
-              rounded
-              class="!px-3 !py-2 !text-sm"
               @click="openGithub"
             >
               <i class="pi pi-github" />
@@ -307,9 +295,8 @@ export default defineComponent({
   props: {
     open: { type: Boolean, required: true },
     model: { type: Object as () => BioModel, required: true },
-    previewMode: { type: Boolean, default: true },
   },
-  emits: ["update:open", "update:model", "toggle-preview", "open-github"],
+  emits: ["update:open", "update:model", "open-github"],
   setup(props, { emit }) {
     const toast = useToast();
 
@@ -479,8 +466,6 @@ export default defineComponent({
 
     if (!draft.value) draft.value = defaultModel();
 
-    const previewMode = computed(() => props.previewMode);
-    const togglePreview = () => emit("toggle-preview");
     const openGithub = () => emit("open-github");
 
     return {
@@ -504,8 +489,6 @@ export default defineComponent({
       deleteActiveSocial,
       socialLabel,
       primeSocialIcon,
-      previewMode,
-      togglePreview,
       openGithub,
     };
   },
@@ -513,6 +496,17 @@ export default defineComponent({
 </script>
 
 <style scoped>
+cms__row {
+  width: 100%;
+}
+
+cms__row-meta {
+  display: inline-flex;
+}
+
+cms__footer-right {
+  display: flex;
+}
 .cms {
   display: flex;
   flex-direction: column;
@@ -700,6 +694,10 @@ export default defineComponent({
   font-weight: 700;
 }
 
+cms__row {
+  width: 100%;
+}
+
 .cms__card {
   border-radius: 22px;
   border: 1px solid rgba(11, 18, 32, 0.08);
@@ -724,6 +722,10 @@ export default defineComponent({
   color: rgba(11, 18, 32, 0.7);
 }
 
+cms__row-meta {
+  display: inline-flex;
+}
+
 .cms__help {
   font-size: 12px;
   color: rgba(11, 18, 32, 0.6);
@@ -741,13 +743,13 @@ export default defineComponent({
   gap: 8px;
 }
 
+cms__row {
+  width: 100%;
+}
+
 .cms__socialList {
   display: grid;
   gap: 8px;
-}
-
-cms__row {
-  width: 100%;
 }
 
 .cms__row {
@@ -802,6 +804,10 @@ cms__row {
   place-items: center;
 }
 
+cms__row-meta {
+  display: inline-flex;
+}
+
 .cms__row-text {
   min-width: 0;
 }
@@ -825,10 +831,6 @@ cms__row {
   text-overflow: ellipsis;
 }
 
-cms__row-meta {
-  display: inline-flex;
-}
-
 .cms__row-meta {
   display: inline-flex;
   align-items: center;
@@ -839,6 +841,10 @@ cms__row-meta {
   color: #10b981;
 }
 
+cms__row-meta {
+  display: inline-flex;
+}
+
 .cms__empty {
   padding: 16px 12px;
   text-align: center;
@@ -847,6 +853,10 @@ cms__row-meta {
 .cms__empty-title {
   font-weight: 950;
   letter-spacing: -0.02em;
+}
+
+cms__footer-right {
+  display: flex;
 }
 
 .cms__empty-sub {
@@ -862,10 +872,6 @@ cms__row-meta {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-}
-
-cms__footer-right {
-  display: flex;
 }
 
 .cms__footer-right {
