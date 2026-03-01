@@ -588,27 +588,31 @@
     <Toast />
 
     <!-- Floating CMS button -->
-    <Button
-      v-if="canUseCms"
-      rounded
-      class="!fixed !bottom-4 !right-3 !z-50 !border-0 !bg-[color:var(--color-brand)] !px-4 !py-2.5 !text-sm !shadow-[0_14px_38px_rgba(37,99,235,0.28)] sm:!bottom-6 sm:!right-6 sm:!px-5 sm:!py-3 hover:!shadow-[0_18px_52px_rgba(37,99,235,0.32)]"
-      @click="cmsOpen = true"
-    >
-      <i class="pi pi-sliders-h" />
-      <span class="ml-2">CMS</span>
-    </Button>
+    <Transition name="cms-slide-right">
+      <Button
+        v-if="canUseCms"
+        rounded
+        class="!fixed !bottom-4 !right-3 !z-50 !border-0 !bg-[color:var(--color-brand)] !px-4 !py-2.5 !text-sm !shadow-[0_14px_38px_rgba(37,99,235,0.28)] sm:!bottom-6 sm:!right-6 sm:!px-5 sm:!py-3 hover:!shadow-[0_18px_52px_rgba(37,99,235,0.32)]"
+        @click="cmsOpen = true"
+      >
+        <i class="pi pi-sliders-h" />
+        <span class="ml-2">CMS</span>
+      </Button>
+    </Transition>
 
     <!-- Floating status bar -->
+    <Transition name="cms-slide-left">
     <div
       v-if="canUseCms"
-      class="fixed bottom-4 left-3 z-50 flex max-w-[calc(100vw-5rem)] items-center gap-2 rounded-full border border-white/65 bg-white/70 px-3 py-1.5 text-[11px] text-[color:var(--color-ink-soft)] shadow-sm backdrop-blur-md sm:bottom-6 sm:left-6 sm:gap-3 sm:px-4 sm:py-2 sm:text-xs"
+      class="fixed bottom-4 left-3 z-50 flex max-w-[calc(100vw-5rem)] items-center gap-2 rounded-full border border-white/65 bg-white/70 px-4 py-2.5 text-[11px] text-[color:var(--color-ink-soft)] shadow-sm backdrop-blur-md sm:bottom-6 sm:left-6 sm:gap-3 sm:px-5 sm:py-3 sm:text-xs"
     >
       <span class="inline-flex items-center gap-1.5 sm:gap-2">
         <span
           class="h-2 w-2 shrink-0 rounded-full transition-all"
           :class="syncIndicatorClass"
         ></span>
-        <span class="truncate">{{ syncStatusText }}</span>
+        <span class="truncate sm:hidden">{{ syncStatusShort }}</span>
+        <span class="hidden truncate sm:inline">{{ syncStatusText }}</span>
       </span>
 
       <div class="flex items-center gap-1.5">
@@ -642,6 +646,7 @@
         </Button>
       </div>
     </div>
+    </Transition>
   </div>
 </template>
 
@@ -729,15 +734,33 @@ export default defineComponent({
     let keydownListener: ((e: KeyboardEvent) => void) | null = null;
 
     onMounted(async () => {
+      // Handle hash-based tab navigation
+      const applyHashTab = () => {
+        if (typeof window === "undefined") return;
+        const hash = window.location.hash.toLowerCase();
+        if (hash === "#links" && enabledLinks.value.length > 0) {
+          activeTab.value = "links";
+        } else if (hash === "#resume" && resumeHasContent.value) {
+          activeTab.value = "resume";
+        } else if (hash === "#gallery" && galleryHasContent.value) {
+          activeTab.value = "gallery";
+        } else if (hash === "#cms") {
+          cmsBtnVisible.value = true;
+          localStorage.setItem("cms-button-visible", "true");
+        }
+      };
+
       // initialize visibility, keyboard, and other window stuff first
       if (typeof window !== "undefined") {
         window.addEventListener(GITHUB_SYNC_EVENT, updateGithubStatus);
 
         const storedCmsVisible =
           localStorage.getItem("cms-button-visible") === "true";
-        const urlParams = new URLSearchParams(window.location.search);
-        const cmsFromUrl = urlParams.has("cms");
-        cmsBtnVisible.value = storedCmsVisible || cmsFromUrl;
+        const hashCms = window.location.hash === "#cms";
+        cmsBtnVisible.value = storedCmsVisible || hashCms;
+
+        // Listen for hash changes
+        window.addEventListener("hashchange", applyHashTab);
         // kick off unsynced flag if there's pending JSON or uploads stored
         if (
           localStorage.getItem("pending-cms") ||
@@ -772,6 +795,9 @@ export default defineComponent({
       }
 
       modelLoaded.value = true;
+
+      // Apply hash-based tab after model is available
+      applyHashTab();
 
       setTimeout(() => {
         suppressPersist.value = false;
@@ -1171,6 +1197,13 @@ export default defineComponent({
       return "Static site · Read-only · Add GitHub sync to enable editing";
     });
 
+    const syncStatusShort = computed(() => {
+      if (syncing.value) return "Syncing…";
+      if (unsynced.value) return "Uncommitted";
+      if (isDev || githubReady.value) return "Synced";
+      return "Read-only";
+    });
+
     const syncIndicatorClass = computed(() => {
       if (syncing.value) {
         return "bg-[color:var(--color-brand)] shadow-[0_0_0_4px_rgba(59,130,246,0.18)] animate-pulse";
@@ -1230,6 +1263,7 @@ export default defineComponent({
       gitDialogOpen,
       performCommit,
       syncStatusText,
+      syncStatusShort,
       syncIndicatorClass,
       togglePreviewMode,
       openGithubSettings,
@@ -1239,3 +1273,29 @@ export default defineComponent({
   },
 });
 </script>
+
+<style scoped>
+/* CMS button: slide in from right */
+.cms-slide-right-enter-active,
+.cms-slide-right-leave-active {
+  transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.cms-slide-right-enter-from,
+.cms-slide-right-leave-to {
+  opacity: 0;
+  transform: translateY(16px) translateX(12px);
+}
+
+/* Status bar: slide in from left */
+.cms-slide-left-enter-active,
+.cms-slide-left-leave-active {
+  transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.cms-slide-left-enter-from,
+.cms-slide-left-leave-to {
+  opacity: 0;
+  transform: translateY(16px) translateX(-12px);
+}
+</style>
