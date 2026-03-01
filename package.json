@@ -9,7 +9,9 @@
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
-    "export": "node scripts/export-data.mjs"
+    "export": "node scripts/export-data.mjs",
+    "import": "node scripts/import-from-github.mjs",
+    "import:build": "node scripts/import-from-github.mjs && vite build"
   },
   "dependencies": {
     "@primevue/themes": "^4.5.4",
