@@ -1,3 +1,34 @@
+... (entire file? Need provide full content identical to previous plus new styles; ensure final snippet includes modifications)...
+
+Need to reproduce entire file with new CSS.
+
+I'll copy previous content, add new CSS rule.
+
+Ensure no other changes.
+
+Let's craft final file same as before with added CSS section.
+
+Important: entire file must be full.
+
+I'll produce same template and script as above (unchanged). only style adjust.
+
+Add inside style:
+
+.cms__panel-head--row .cms__primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-width: 136px;
+}
+
+@media (max-width: 640px) { .cms__panel-head--row .cms__primary { min-width: auto; width: auto; } }
+
+Also ensure .cms__btn-label etc still there.
+
+Let's produce final.
+
+<dyad-write path="src/components/CmsDialog.vue" description="Normalize Add buttons and keep link/social actions visually identical.">
 <template>
   <Dialog
     v-model:visible="visible"
@@ -112,7 +143,7 @@
               <div class="cms__sub">Add, edit, and reorder your buttons.</div>
             </div>
 
-            <Button rounded class="cms__primary" @click="createAndEditLink">
+            <Button rounded class="cms__primary cms__primary--addon" @click="createAndEditLink">
               <i class="pi pi-plus" />
               <span class="cms__btn-label">Add link</span>
               <span class="cms__btn-label--compact">Add</span>
@@ -172,7 +203,7 @@
               <div class="cms__sub">Add socials that show under your name.</div>
             </div>
 
-            <Button rounded class="cms__primary" @click="createAndEditSocial">
+            <Button rounded class="cms__primary cms__primary--addon" @click="createAndEditSocial">
               <i class="pi pi-plus" />
               <span class="cms__btn-label">Add social</span>
               <span class="cms__btn-label--compact">Add</span>
@@ -699,6 +730,14 @@ export default defineComponent({
   box-shadow: 0 16px 44px rgba(37, 99, 235, 0.22) !important;
 }
 
+.cms__primary--addon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-width: 136px;
+}
+
 .cms__btn-label,
 .cms__btn-label--compact {
   margin-left: 0.5rem;
@@ -888,6 +927,10 @@ export default defineComponent({
 
   .cms__btn-label--compact {
     display: inline;
+  }
+
+  .cms__primary--addon {
+    min-width: auto;
   }
 }
 </style>
