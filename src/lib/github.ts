@@ -20,8 +20,8 @@ const DEFAULT_SETTINGS: GithubSettings = {
   dataPath: "cms-data.json",
   staticDataPath: "public/data.json",
   uploadsDir: "public/uploads",
-  committerName: "Nova CMS",
-  committerEmail: "cms@nova.local",
+  committerName: "Linkable CMS",
+  committerEmail: "cms@linkable.local",
 };
 
 const API_BASE = "https://api.github.com";
@@ -36,8 +36,8 @@ const normalizeSettings = (input?: Partial<GithubSettings>): GithubSettings => (
   dataPath: input?.dataPath?.trim() || "cms-data.json",
   staticDataPath: input?.staticDataPath?.trim() || "public/data.json",
   uploadsDir: input?.uploadsDir?.trim() || "public/uploads",
-  committerName: input?.committerName?.trim() || "Nova CMS",
-  committerEmail: input?.committerEmail?.trim() || "cms@nova.local",
+  committerName: input?.committerName?.trim() || "Linkable CMS",
+  committerEmail: input?.committerEmail?.trim() || "cms@linkable.local",
 });
 
 const dispatchSyncEvent = () => {

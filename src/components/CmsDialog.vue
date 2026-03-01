@@ -249,7 +249,7 @@
 
                   <div class="grid gap-2">
                     <label class="text-xs font-bold text-[color:var(--color-ink-soft)]">Repository</label>
-                    <InputText v-model="githubForm.repo" placeholder="e.g. link-in-bio" />
+                    <InputText v-model="githubForm.repo" placeholder="e.g. linkable" />
                   </div>
 
                   <div class="grid gap-2">
@@ -280,12 +280,12 @@
 
                   <div class="grid gap-2">
                     <label class="text-xs font-bold text-[color:var(--color-ink-soft)]">Committer name</label>
-                    <InputText v-model="githubForm.committerName" placeholder="Nova CMS" />
+                    <InputText v-model="githubForm.committerName" placeholder="Linkable CMS" />
                   </div>
 
                   <div class="grid gap-2">
                     <label class="text-xs font-bold text-[color:var(--color-ink-soft)]">Committer email</label>
-                    <InputText v-model="githubForm.committerEmail" placeholder="cms@nova.local" />
+                    <InputText v-model="githubForm.committerEmail" placeholder="cms@linkable.local" />
                   </div>
 
                   <div class="md:col-span-2 grid gap-2">

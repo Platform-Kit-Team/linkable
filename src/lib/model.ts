@@ -59,7 +59,7 @@ export const newSocial = (): SocialLink => ({
 
 export const defaultModel = (): BioModel => ({
   profile: {
-    displayName: "Nova Studio",
+    displayName: "Linkable",
     tagline: "Design-forward links. Clean, fast, yours.",
     avatarUrl: "",
   },
@@ -93,14 +93,14 @@ export const defaultModel = (): BioModel => ({
     {
       id: newId(),
       type: "instagram",
-      label: "@novastudio",
+      label: "@linkable",
       url: "https://instagram.com",
       enabled: true,
     },
     {
       id: newId(),
       type: "github",
-      label: "github.com/novastudio",
+      label: "github.com/linkable",
       url: "https://github.com",
       enabled: false,
     },

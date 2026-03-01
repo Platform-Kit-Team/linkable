@@ -1,6 +1,6 @@
 {
   "profile": {
-    "displayName": "Nova Studio",
+    "displayName": "Linkable",
     "tagline": "Design-forward links. Clean, fast, yours.",
     "avatarUrl": ""
   },
@@ -34,14 +34,14 @@
     {
       "id": "social-instagram",
       "type": "instagram",
-      "label": "@novastudio",
+      "label": "@linkable",
       "url": "https://instagram.com/",
       "enabled": true
     },
     {
       "id": "social-github",
       "type": "github",
-      "label": "github.com/novastudio",
+      "label": "github.com/linkable",
       "url": "https://github.com/",
       "enabled": false
     }
