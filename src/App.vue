@@ -364,42 +364,59 @@ export default defineComponent({
     const performCommit = async (message: string) => {
       if (!message.trim()) return;
 
-      if (isDev) {
-        toast.add({
-          severity: "info",
-          summary: "Dev commit",
-          detail: "Commit logic is handled externally in development.",
-          life: 2200,
-        });
-        unsynced.value = false;
-        return;
-      }
-
-      // production: push staged CMS JSON + queued uploads to GitHub
       syncing.value = true;
       try {
-        const payload = getStagedData() || stableStringify(model.value);
+        if (isDev) {
+          // dev: call the push endpoint which runs export-to-github.mjs
+          const res = await fetch("/__cms-push", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message: message.trim() }),
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            throw new Error(data.error || `Push failed (${res.status})`);
+          }
+        } else {
+          // production: push staged CMS JSON + queued uploads to GitHub
+          const payload = getStagedData() || stableStringify(model.value);
 
-        // first commit any queued uploads that are still referenced
-        const settings = loadGithubSettings();
-        const token = getGithubToken();
-        const usedPaths = [model.value.profile.avatarUrl, model.value.profile.bannerUrl];
-        model.value.links.forEach((l) => {
-          if (l.imageUrl) usedPaths.push(l.imageUrl);
-        });
-        await commitPendingUploads(settings, token, usedPaths.filter(Boolean), message);
+          // first commit any queued uploads that are still referenced
+          const settings = loadGithubSettings();
+          const token = getGithubToken();
 
-        // then commit the CMS JSON
-        await pushCmsDataToGithub(payload, message);
+          console.warn("[Linkable commit]", {
+            owner: settings.owner,
+            repo: settings.repo,
+            branch: settings.branch,
+            dataPath: settings.dataPath,
+            staticDataPath: settings.staticDataPath,
+            hasToken: !!token,
+            payloadLength: payload?.length ?? 0,
+          });
 
-        // clear staged data on success
-        clearStagedData();
+          const usedPaths = [model.value.profile.avatarUrl, model.value.profile.bannerUrl];
+          model.value.links.forEach((l: any) => {
+            if (l.imageUrl) usedPaths.push(l.imageUrl);
+          });
+          await commitPendingUploads(settings, token, usedPaths.filter(Boolean), message);
+
+          // then commit the CMS JSON
+          await pushCmsDataToGithub(payload, message);
+
+          // clear staged data on success
+          clearStagedData();
+        }
+
+        const commitTarget = isDev
+          ? "local → GitHub"
+          : `${loadGithubSettings().owner}/${loadGithubSettings().repo} → ${loadGithubSettings().dataPath}`;
         unsynced.value = false;
         toast.add({
           severity: "success",
           summary: "Committed",
-          detail: "Changes pushed to GitHub.",
-          life: 2200,
+          detail: commitTarget,
+          life: 4000,
         });
       } catch (error) {
         const msg = error instanceof Error ? error.message : "Unable to push to GitHub.";
@@ -549,13 +566,10 @@ export default defineComponent({
           persistChain = persistChain.then(async () => {
             syncing.value = true;
             try {
-              const result = await persistModel(model.value);
-              if (result === "dev") {
-                // dev: written to local file, clear unsynced
-                unsynced.value = false;
-              }
-              // "staged": keep unsynced=true so the user knows
-              // there are uncommitted changes to push
+              await persistModel(model.value);
+              // Keep unsynced=true in both dev and prod.
+              // In dev: local file is saved but not pushed to GitHub yet.
+              // In prod: staged in localStorage, not committed yet.
             } catch (error) {
               const message =
                 error instanceof Error ? error.message : "Unable to save changes.";
@@ -581,17 +595,18 @@ export default defineComponent({
     });
 
     const syncStatusText = computed(() => {
-      if (unsynced.value && !syncing.value) {
-        if (isDev) {
-          return "Static site · Unsaved changes";
-        }
-        return `Uncommitted changes · ${repoLabel.value}`;
+      if (syncing.value) {
+        return isDev
+          ? "Pushing to GitHub…"
+          : `Syncing with GitHub · ${repoLabel.value}`;
+      }
+      if (unsynced.value) {
+        return isDev
+          ? "Uncommitted changes · Saved locally"
+          : `Uncommitted changes · ${repoLabel.value}`;
       }
       if (isDev) {
-        return "Static site · Saved locally";
-      }
-      if (syncing.value) {
-        return `Syncing with GitHub · ${repoLabel.value}`;
+        return "Up to date";
       }
       if (githubReady.value) {
         return `Synced to GitHub · ${repoLabel.value}`;
@@ -639,6 +654,7 @@ export default defineComponent({
       toggleCmsButton,
       githubDialogOpen,
       gitDialogOpen,
+      performCommit,
       syncStatusText,
       syncIndicatorClass,
       togglePreviewMode,

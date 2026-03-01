@@ -168,6 +168,8 @@ const run = async () => {
     process.exit(1);
   }
 
+  const commitMsg = process.env.CMS_COMMIT_MESSAGE?.trim() || "Update CMS data";
+
   const dataContent = readFileSync(cmsDataFile, "utf8");
   const dataBase64 = Buffer.from(dataContent).toString("base64");
 
@@ -178,7 +180,7 @@ const run = async () => {
     token,
     repoPath: dataPath,
     content: dataBase64,
-    message: "Update CMS data",
+    message: commitMsg,
   });
   console.log(`  ✔ cms-data.json → ${dataPath}`);
 
@@ -210,7 +212,7 @@ const run = async () => {
           token,
           repoPath,
           content: fileBase64,
-          message: `Upload ${file}`,
+          message: `${commitMsg} (upload ${file})`,
         });
         count++;
       }

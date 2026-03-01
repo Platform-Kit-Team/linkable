@@ -255,6 +255,62 @@ const cmsMiddlewarePlugin = () => ({
         return;
       }
 
+      if (url === "/__cms-push" && req.method === "POST") {
+        // Run the export-to-github script to push content to the remote repo
+        const scriptPath = path.resolve(__dirname, "scripts/export-to-github.mjs");
+        if (!fs.existsSync(scriptPath)) {
+          res.statusCode = 500;
+          res.setHeader("Content-Type", "application/json");
+          res.end(JSON.stringify({ error: "Push script not found." }));
+          return;
+        }
+
+        // Read optional commit message from body
+        const body = await collectRequestBody(req);
+        let commitMessage = "Update CMS data";
+        try {
+          const parsed = JSON.parse(body);
+          if (parsed?.message) commitMessage = sanitizeCommitMessage(parsed.message);
+        } catch {
+          // ignore
+        }
+
+        // Sync cms-data.json → public/data.json before pushing
+        if (fs.existsSync(dataFilePath)) {
+          fs.writeFileSync(publicDataFilePath, fs.readFileSync(dataFilePath, "utf8"));
+        }
+
+        const proc = spawn("node", [scriptPath], {
+          cwd: __dirname,
+          env: { ...process.env, CMS_COMMIT_MESSAGE: commitMessage },
+          stdio: ["ignore", "pipe", "pipe"],
+        });
+
+        let stdout = "";
+        let stderr = "";
+        proc.stdout?.on("data", (chunk) => { stdout += chunk.toString(); });
+        proc.stderr?.on("data", (chunk) => { stderr += chunk.toString(); });
+
+        proc.on("close", (code) => {
+          res.setHeader("Content-Type", "application/json");
+          if (code === 0) {
+            res.statusCode = 200;
+            res.end(JSON.stringify({ ok: true, stdout: stdout.trim() }));
+          } else {
+            res.statusCode = 500;
+            res.end(JSON.stringify({ error: `Push failed (exit ${code})`, stdout: stdout.trim(), stderr: stderr.trim() }));
+          }
+        });
+
+        proc.on("error", (err) => {
+          res.statusCode = 500;
+          res.setHeader("Content-Type", "application/json");
+          res.end(JSON.stringify({ error: err.message }));
+        });
+
+        return;
+      }
+
       // not a CMS request — continue to other middleware
       next();
     });

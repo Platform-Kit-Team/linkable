@@ -45,7 +45,7 @@
 
           <div class="grid gap-2">
             <label class="text-xs font-bold text-[color:var(--color-ink-soft)]">Uploads directory</label>
-            <InputText v-model="form.uploadsDir" placeholder="public/uploads" />
+            <InputText v-model="form.uploadsDir" placeholder="uploads" />
             <span class="text-[11px] font-semibold text-[color:var(--color-ink-soft)]">
               Image uploads will be stored in this path.
             </span>
@@ -53,12 +53,12 @@
 
           <div class="grid gap-2">
             <label class="text-xs font-bold text-[color:var(--color-ink-soft)]">Data file path</label>
-            <InputText v-model="form.dataPath" placeholder="cms-data.json" />
+            <InputText v-model="form.dataPath" placeholder="data.json" />
           </div>
 
           <div class="grid gap-2">
             <label class="text-xs font-bold text-[color:var(--color-ink-soft)]">Static data path</label>
-            <InputText v-model="form.staticDataPath" placeholder="public/data.json" />
+            <InputText v-model="form.staticDataPath" placeholder="" />
             <span class="text-[11px] font-semibold text-[color:var(--color-ink-soft)]">
               Optional second file to keep your exported JSON in sync.
             </span>

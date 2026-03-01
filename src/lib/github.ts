@@ -17,9 +17,9 @@ const DEFAULT_SETTINGS: GithubSettings = {
   owner: "",
   repo: "",
   branch: "main",
-  dataPath: "cms-data.json",
-  staticDataPath: "public/data.json",
-  uploadsDir: "public/uploads",
+  dataPath: "data.json",
+  staticDataPath: "",
+  uploadsDir: "uploads",
   committerName: "Linkable CMS",
   committerEmail: "cms@linkable.local",
 };
@@ -33,9 +33,9 @@ const normalizeSettings = (input?: Partial<GithubSettings>): GithubSettings => (
   owner: input?.owner?.trim() ?? "",
   repo: input?.repo?.trim() ?? "",
   branch: input?.branch?.trim() || "main",
-  dataPath: input?.dataPath?.trim() || "cms-data.json",
-  staticDataPath: input?.staticDataPath?.trim() || "public/data.json",
-  uploadsDir: input?.uploadsDir?.trim() || "public/uploads",
+  dataPath: input?.dataPath?.trim() || "data.json",
+  staticDataPath: input?.staticDataPath?.trim() ?? "",
+  uploadsDir: input?.uploadsDir?.trim() || "uploads",
   committerName: input?.committerName?.trim() || "Linkable CMS",
   committerEmail: input?.committerEmail?.trim() || "cms@linkable.local",
 });
@@ -45,18 +45,68 @@ const dispatchSyncEvent = () => {
   window.dispatchEvent(new Event(GITHUB_SYNC_EVENT));
 };
 
+/** Build-time env vars injected by Vite's `define` config. */
+const envDefaults = (): Partial<GithubSettings> => ({
+  owner: import.meta.env.VITE_GITHUB_OWNER || "",
+  repo: import.meta.env.VITE_GITHUB_REPO || "",
+  branch: import.meta.env.VITE_GITHUB_BRANCH || "main",
+});
+
+/**
+ * Stale defaults from earlier versions that may be frozen in localStorage.
+ * When detected, replace them with current defaults so pushes target the
+ * correct paths in the content repo.
+ */
+const STALE_PATH_DEFAULTS: Record<string, string> = {
+  dataPath: "cms-data.json",
+  staticDataPath: "public/data.json",
+  uploadsDir: "public/uploads",
+};
+
+const migrateStalePathDefaults = (
+  parsed: Partial<GithubSettings>,
+): Partial<GithubSettings> => {
+  const migrated = { ...parsed };
+  if (migrated.dataPath === STALE_PATH_DEFAULTS.dataPath) {
+    migrated.dataPath = DEFAULT_SETTINGS.dataPath;
+  }
+  if (migrated.staticDataPath === STALE_PATH_DEFAULTS.staticDataPath) {
+    migrated.staticDataPath = DEFAULT_SETTINGS.staticDataPath;
+  }
+  if (migrated.uploadsDir === STALE_PATH_DEFAULTS.uploadsDir) {
+    migrated.uploadsDir = DEFAULT_SETTINGS.uploadsDir;
+  }
+  return migrated;
+};
+
 export const loadGithubSettings = (): GithubSettings => {
   const storage = getStorage();
-  if (!storage) return { ...DEFAULT_SETTINGS };
+  const env = envDefaults();
+
+  if (!storage) {
+    return normalizeSettings(env);
+  }
 
   const raw = storage.getItem(SETTINGS_KEY);
-  if (!raw) return { ...DEFAULT_SETTINGS };
+  if (!raw) {
+    // No saved settings — use env vars as defaults
+    return normalizeSettings(env);
+  }
 
   try {
-    const parsed = JSON.parse(raw) as Partial<GithubSettings>;
-    return normalizeSettings(parsed);
+    const parsed = migrateStalePathDefaults(
+      JSON.parse(raw) as Partial<GithubSettings>,
+    );
+    // Merge: saved settings take priority, env vars fill in blanks
+    return normalizeSettings({
+      ...env,
+      ...parsed,
+      owner: parsed.owner?.trim() || env.owner,
+      repo: parsed.repo?.trim() || env.repo,
+      branch: parsed.branch?.trim() || env.branch,
+    });
   } catch {
-    return { ...DEFAULT_SETTINGS };
+    return normalizeSettings(env);
   }
 };
 
@@ -211,11 +261,15 @@ const commitBase64Content = async (
     body.committer = { name: settings.committerName, email: settings.committerEmail };
   }
 
+  console.warn("[Linkable] PUT", url, { branch: body.branch, sha: existing?.sha ?? "(new file)" });
+
   const response = await fetch(url, {
     method: "PUT",
     headers: { ...requestHeaders(token), "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
+
+  console.warn("[Linkable] response", response.status, response.statusText);
 
   if (!response.ok) {
     let reason = `${response.status} ${response.statusText}`;
@@ -263,10 +317,10 @@ const savePendingUploads = (uploads: PendingUpload[]) => {
 
 export const addPendingUpload = async (file: File): Promise<string> => {
   const { settings } = ensureGithubCredentials();
-  const uploadsDir = normalizeUploadsDir(settings.uploadsDir || "public/uploads");
+  const uploadsDir = normalizeUploadsDir(settings.uploadsDir || DEFAULT_SETTINGS.uploadsDir);
   const fileName = generateUploadFileName(file.name || "image.png");
   const repoPath = uploadsDir ? `${uploadsDir}/${fileName}` : fileName;
-  const publicPath = toPublicPath(settings.uploadsDir || "public/uploads", fileName);
+  const publicPath = toPublicPath(settings.uploadsDir || DEFAULT_SETTINGS.uploadsDir, fileName);
 
   const buffer = await file.arrayBuffer();
   const base64Content = arrayBufferToBase64(buffer);
@@ -355,7 +409,7 @@ const toPublicPath = (uploadsDir: string, fileName: string): string => {
 export const uploadImageToGithub = async (file: File): Promise<string> => {
   const { settings, token } = ensureGithubCredentials();
 
-  const uploadsDir = normalizeUploadsDir(settings.uploadsDir || "public/uploads");
+  const uploadsDir = normalizeUploadsDir(settings.uploadsDir || DEFAULT_SETTINGS.uploadsDir);
   const fileName = generateUploadFileName(file.name || "image.png");
   const repoPath = uploadsDir ? `${uploadsDir}/${fileName}` : fileName;
 
@@ -364,7 +418,7 @@ export const uploadImageToGithub = async (file: File): Promise<string> => {
   const message = file.name ? `Upload image ${file.name}` : "Upload image";
 
   await commitBase64Content(settings, token, repoPath, base64Content, message);
-  return toPublicPath(settings.uploadsDir || "public/uploads", fileName);
+  return toPublicPath(settings.uploadsDir || DEFAULT_SETTINGS.uploadsDir, fileName);
 };
 
 export const pushCmsDataToGithub = async (json: string, commitMessage?: string): Promise<void> => {
