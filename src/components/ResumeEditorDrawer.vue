@@ -137,9 +137,6 @@ export default defineComponent({
     watch(() => props.open, (v) => (visible.value = v));
     watch(visible, (v) => emit("update:open", v));
 
-    // Guard flag to prevent infinite prop ↔ draft watcher loop
-    let syncingFromProp = false;
-
     const draftEducation = ref<EducationEntry | null>(
       props.education ? { ...props.education } : null
     );
@@ -150,36 +147,34 @@ export default defineComponent({
       props.achievement ? { ...props.achievement } : null
     );
 
+    // Deep-equal helper to break the prop ↔ draft watcher cycle.
+    // Without this, editing a field triggers: draft→emit→prop update→draft overwrite→emit… (infinite loop).
+    const eq = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+
     // When props change (e.g. switching which item is edited), update drafts
     watch(() => props.education, (v) => {
-      syncingFromProp = true;
-      draftEducation.value = v ? { ...v } : null;
-      syncingFromProp = false;
+      if (!eq(v, draftEducation.value)) draftEducation.value = v ? { ...v } : null;
     });
 
     watch(() => props.employment, (v) => {
-      syncingFromProp = true;
-      draftEmployment.value = v ? { ...v } : null;
-      syncingFromProp = false;
+      if (!eq(v, draftEmployment.value)) draftEmployment.value = v ? { ...v } : null;
     });
 
     watch(() => props.achievement, (v) => {
-      syncingFromProp = true;
-      draftAchievement.value = v ? { ...v } : null;
-      syncingFromProp = false;
+      if (!eq(v, draftAchievement.value)) draftAchievement.value = v ? { ...v } : null;
     });
 
-    // Live-sync edits back to parent (inline editing pattern same as CmsDialog)
+    // Live-sync edits back to parent
     watch(draftEducation, (v) => {
-      if (!syncingFromProp && v) emit("update:education", { ...v });
+      if (v && !eq(v, props.education)) emit("update:education", { ...v });
     }, { deep: true });
 
     watch(draftEmployment, (v) => {
-      if (!syncingFromProp && v) emit("update:employment", { ...v });
+      if (v && !eq(v, props.employment)) emit("update:employment", { ...v });
     }, { deep: true });
 
     watch(draftAchievement, (v) => {
-      if (!syncingFromProp && v) emit("update:achievement", { ...v });
+      if (v && !eq(v, props.achievement)) emit("update:achievement", { ...v });
     }, { deep: true });
 
     return { visible, draftEducation, draftEmployment, draftAchievement };
