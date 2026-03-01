@@ -192,8 +192,24 @@ const cmsMiddlewarePlugin = () => ({
         const bb = createBusboy({ headers: req.headers });
         let returnedUrl = "";
 
-        bb.on("file", (_fieldname: string, fileStream: NodeJS.ReadableStream, filename: string) => {
-          const safe = generateUploadFileName(filename || "image.png");
+        bb.on("file", (_fieldname: string, fileStream: NodeJS.ReadableStream, filename: any) => {
+          // debug: inspect incoming filename argument and fileStream properties
+          // incoming filename argument may already be an object produced by busboy
+          // containing { filename, encoding, mimeType }
+          let orig = filename;
+          if (orig && typeof orig === "object" && typeof orig.filename === "string") {
+            orig = orig.filename;
+          }
+
+          if (!orig || typeof orig !== "string") {
+            const f = fileStream as any;
+            if (f && typeof f.name === "string") orig = f.name;
+            else if (f && typeof f.filename === "string") orig = f.filename;
+            else if (f && typeof f.path === "string") orig = path.basename(f.path as string);
+            else orig = String(filename || "image.png");
+          }
+
+          const safe = generateUploadFileName(orig);
           const outPath = path.join(uploadsDir, safe);
           const write = fs.createWriteStream(outPath);
           fileStream.pipe(write);

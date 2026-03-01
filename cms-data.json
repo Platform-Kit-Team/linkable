@@ -2,14 +2,14 @@
   "profile": {
     "displayName": "Nova Studio",
     "tagline": "Design-forward links. Clean, fast, yours.",
-    "avatarUrl": "https://images.unsplash.com/photo-1520975747332-21bdb8e569ab?auto=format&fit=crop&w=256&q=80"
+    "avatarUrl": ""
   },
   "links": [
     {
       "id": "link-portfolio",
       "title": "My portfolio",
       "subtitle": "Selected work & case studies",
-      "url": "https://example.com",
+      "url": "https://example.com/",
       "imageUrl": "",
       "enabled": true
     },
@@ -17,7 +17,7 @@
       "id": "link-book-call",
       "title": "Book a call",
       "subtitle": "15 minutes to see if we fit",
-      "url": "https://example.com",
+      "url": "https://example.com/",
       "imageUrl": "",
       "enabled": true
     },
@@ -25,7 +25,7 @@
       "id": "link-shop-presets",
       "title": "Shop presets",
       "subtitle": "UI kits, templates, packs",
-      "url": "https://example.com",
+      "url": "https://example.com/",
       "imageUrl": "",
       "enabled": true
     }
@@ -35,14 +35,14 @@
       "id": "social-instagram",
       "type": "instagram",
       "label": "@novastudio",
-      "url": "https://instagram.com",
+      "url": "https://instagram.com/",
       "enabled": true
     },
     {
       "id": "social-github",
       "type": "github",
       "label": "github.com/novastudio",
-      "url": "https://github.com",
+      "url": "https://github.com/",
       "enabled": false
     }
   ]
