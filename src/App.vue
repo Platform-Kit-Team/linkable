@@ -491,10 +491,10 @@
         </div>
       </Teleport>
 
-      <!-- Video player overlay -->
+      <!-- Video player overlay — always mounted so players pre-load -->
       <Teleport to="body">
         <div
-          v-if="videoPlayerOpen && videoPlayerItem"
+          v-show="videoPlayerOpen"
           class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/85 p-2 backdrop-blur-sm sm:p-4"
           @click.self="closeVideoPlayer"
         >
@@ -506,17 +506,19 @@
             <i class="pi pi-times text-lg" />
           </button>
           <div class="relative w-full max-w-4xl" style="max-height: 85vh; max-height: 85dvh;">
-            <VideoPlayer
-              :key="videoPlayerItem.src"
-              :src="resolveUploadUrl(videoPlayerItem.src)"
-              :poster="
-                videoPlayerItem.coverUrl
-                  ? resolveUploadUrl(videoPlayerItem.coverUrl)
-                  : ''
-              "
-              :autoplay="true"
-            />
-            <div v-if="videoPlayerItem.title" class="mt-3 text-center">
+            <!-- One pre-loaded VideoPlayer per video, only the active one is visible -->
+            <div
+              v-for="(vItem, vIdx) in videoGalleryItems"
+              :key="vItem.src"
+              v-show="activeVideoIdx === vIdx"
+            >
+              <VideoPlayer
+                :ref="(el: any) => setVideoPlayerRef(vIdx, el)"
+                :src="resolveUploadUrl(vItem.src)"
+                :poster="vItem.coverUrl ? resolveUploadUrl(vItem.coverUrl) : ''"
+              />
+            </div>
+            <div v-if="videoPlayerItem?.title" class="mt-3 text-center">
               <div class="text-sm font-semibold text-white">
                 {{ videoPlayerItem.title }}
               </div>
@@ -1014,8 +1016,19 @@ export default defineComponent({
       lightboxItem.value = null;
     };
 
-    // Video player state
+    // Video player state — pre-loaded players
+    const videoGalleryItems = computed(() =>
+      enabledGalleryItems.value.filter((i: any) => i.type === 'video'),
+    );
+
+    const videoPlayerRefs = ref<Record<number, any>>({});
+    const setVideoPlayerRef = (idx: number, el: any) => {
+      if (el) videoPlayerRefs.value[idx] = el;
+      else delete videoPlayerRefs.value[idx];
+    };
+
     const videoPlayerOpen = ref(false);
+    const activeVideoIdx = ref<number | null>(null);
     const videoPlayerItem = ref<
       (typeof model.value.gallery.items)[number] | null
     >(null);
@@ -1023,12 +1036,33 @@ export default defineComponent({
     const openVideoPlayer = (
       item: (typeof model.value.gallery.items)[number],
     ) => {
+      // Find the index in the pre-loaded pool
+      const idx = videoGalleryItems.value.findIndex(
+        (v: any) => v.src === item.src,
+      );
       videoPlayerItem.value = item;
+      activeVideoIdx.value = idx >= 0 ? idx : null;
       videoPlayerOpen.value = true;
+
+      // Call play() synchronously — we're still in the user-gesture context
+      if (idx >= 0) {
+        const playerComp = videoPlayerRefs.value[idx];
+        if (playerComp?.play) {
+          playerComp.play();
+        }
+      }
     };
 
     const closeVideoPlayer = () => {
+      // Pause the active player so it doesn't keep playing in the background
+      if (activeVideoIdx.value !== null) {
+        const playerComp = videoPlayerRefs.value[activeVideoIdx.value];
+        if (playerComp?.pause) {
+          playerComp.pause();
+        }
+      }
       videoPlayerOpen.value = false;
+      activeVideoIdx.value = null;
       videoPlayerItem.value = null;
     };
 
@@ -1267,6 +1301,10 @@ export default defineComponent({
       closeLightbox,
       videoPlayerOpen,
       videoPlayerItem,
+      videoGalleryItems,
+      videoPlayerRefs,
+      setVideoPlayerRef,
+      activeVideoIdx,
       openVideoPlayer,
       closeVideoPlayer,
       initials,
