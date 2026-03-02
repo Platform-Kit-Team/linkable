@@ -29,7 +29,7 @@
 
 // ── current version ──────────────────────────────────────────────────
 
-export const CURRENT_SCHEMA_VERSION = 6;
+export const CURRENT_SCHEMA_VERSION = 7;
 
 // ── migration registry ──────────────────────────────────────────────
 
@@ -141,6 +141,20 @@ const migrations: Migration[] = [
         data.theme.radiusLg ??= "1.2rem";
       }
       data.schemaVersion = 6;
+      return data;
+    },
+  },
+
+  {
+    toVersion: 7,
+    migrate: (data) => {
+      // v6 → v7: add section label overrides to profile
+      if (data.profile && typeof data.profile === "object") {
+        data.profile.linksLabel ??= "";
+        data.profile.resumeLabel ??= "";
+        data.profile.galleryLabel ??= "";
+      }
+      data.schemaVersion = 7;
       return data;
     },
   },

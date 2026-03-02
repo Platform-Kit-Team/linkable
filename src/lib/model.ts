@@ -29,6 +29,9 @@ export type BioProfile = {
   tagline: string;
   avatarUrl: string;
   bannerUrl: string;
+  linksLabel: string;
+  resumeLabel: string;
+  galleryLabel: string;
 };
 
 export type EducationEntry = {
@@ -206,6 +209,9 @@ export const defaultModel = (): BioModel => ({
     tagline: "Design-forward links. Clean, fast, yours.",
     avatarUrl: "",
     bannerUrl: "",
+    linksLabel: "",
+    resumeLabel: "",
+    galleryLabel: "",
   },
   links: [
     {
@@ -304,6 +310,9 @@ export const sanitizeModel = (input: unknown): BioModel => {
     tagline: asString(obj.profile?.tagline).slice(0, 140),
     avatarUrl: sanitizeUrl(obj.profile?.avatarUrl),
     bannerUrl: sanitizeUrl(obj.profile?.bannerUrl),
+    linksLabel: asString(obj.profile?.linksLabel).slice(0, 30),
+    resumeLabel: asString(obj.profile?.resumeLabel).slice(0, 30),
+    galleryLabel: asString(obj.profile?.galleryLabel).slice(0, 30),
   };
 
   const linksRaw = Array.isArray(obj.links) ? obj.links : [];

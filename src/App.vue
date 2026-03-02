@@ -101,7 +101,7 @@
           @click="activeTab = 'links'"
         >
           <i class="pi pi-link" />
-          Links
+          {{ model.profile.linksLabel || 'Links' }}
         </button>
         <button
           v-if="resumeHasContent"
@@ -114,7 +114,7 @@
           @click="activeTab = 'resume'"
         >
           <i class="pi pi-file" />
-          Resume
+          {{ model.profile.resumeLabel || 'Resume' }}
         </button>
         <button
           v-if="galleryHasContent"
@@ -127,7 +127,7 @@
           @click="activeTab = 'gallery'"
         >
           <i class="pi pi-images" />
-          Gallery
+          {{ model.profile.galleryLabel || 'Gallery' }}
         </button>
       </div>
 

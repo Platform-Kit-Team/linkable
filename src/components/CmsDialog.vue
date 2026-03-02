@@ -293,6 +293,16 @@
             </Button>
           </div>
 
+          <div class="cms__card" style="margin-bottom: 10px">
+            <div class="cms__form">
+              <div class="cms__field">
+                <label class="cms__label">Tab label</label>
+                <InputText v-model="draft.profile.linksLabel" class="w-full" placeholder="Links" />
+                <div class="cms__help">Customise the tab name shown on the public page.</div>
+              </div>
+            </div>
+          </div>
+
           <div class="cms__card">
             <div v-if="draft.links.length === 0" class="cms__empty">
               <div class="cms__empty-title">No links yet</div>
@@ -393,6 +403,16 @@
             <div>
               <div class="cms__title">Resume</div>
               <div class="cms__sub">Add your bio, education, experience, and skills.</div>
+            </div>
+          </div>
+
+          <div class="cms__card" style="margin-bottom: 10px">
+            <div class="cms__form">
+              <div class="cms__field">
+                <label class="cms__label">Tab label</label>
+                <InputText v-model="draft.profile.resumeLabel" class="w-full" placeholder="Resume" />
+                <div class="cms__help">Customise the tab name shown on the public page.</div>
+              </div>
             </div>
           </div>
 
@@ -569,6 +589,16 @@
               <span class="cms__btn-label">Add item</span>
               <span class="cms__btn-label--compact">Add</span>
             </Button>
+          </div>
+
+          <div class="cms__card" style="margin-bottom: 10px">
+            <div class="cms__form">
+              <div class="cms__field">
+                <label class="cms__label">Tab label</label>
+                <InputText v-model="draft.profile.galleryLabel" class="w-full" placeholder="Gallery" />
+                <div class="cms__help">Customise the tab name shown on the public page.</div>
+              </div>
+            </div>
           </div>
 
           <div class="cms__card">
