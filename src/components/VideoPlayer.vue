@@ -105,4 +105,16 @@ export default defineComponent({
   width: 100% !important;
   height: 100% !important;
 }
+
+/*
+ * Hide Vidstack's play/pause gesture indicator overlay.
+ * For YouTube embeds it's redundant (YouTube has its own controls)
+ * and it lingers awkwardly after playback starts.
+ */
+.vidstack-wrapper [data-media-gesture],
+.vidstack-wrapper .vds-gesture,
+.vidstack-wrapper .vds-buffering-indicator,
+.vidstack-wrapper media-gesture {
+  display: none !important;
+}
 </style>
