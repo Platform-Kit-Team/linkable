@@ -52,6 +52,7 @@
               v-model="draftItem.src"
               label="Image"
               description="PNG, JPG, WEBP — the image to display in the gallery."
+              :targetFilename="`${draftItem.id}.jpg`"
             />
             <div class="grid gap-1.5">
               <label class="text-xs font-extrabold text-[color:var(--color-ink-soft)]">Image URL (optional)</label>
@@ -118,6 +119,7 @@
               v-model="draftItem.coverUrl"
               label="Cover image (optional)"
               description="A poster thumbnail shown before the video plays."
+              :targetFilename="`${draftItem.id}-cover.jpg`"
             />
             <div class="grid gap-1.5">
               <label class="text-xs font-extrabold text-[color:var(--color-ink-soft)]">Cover URL (optional)</label>

@@ -41,6 +41,7 @@
               v-model="draft.imageUrl"
               label="Thumbnail image (optional)"
               description="Drag in a square image to give this button extra presence."
+              :targetFilename="`${draft.id}.jpg`"
             >
               <template #helper>
                 <div class="text-xs font-semibold text-[color:var(--color-ink-soft)]">

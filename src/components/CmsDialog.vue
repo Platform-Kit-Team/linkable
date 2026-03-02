@@ -111,6 +111,7 @@
                   v-model="draft.profile.bannerUrl"
                   label="Banner image (optional)"
                   description="A wide image displayed full-width above your profile card."
+                  targetFilename="banner.jpg"
                 >
                   <template #helper>
                     <div class="cms__help">
@@ -133,6 +134,7 @@
                   v-model="draft.profile.avatarUrl"
                   label="Avatar image (optional)"
                   description="Use a crisp, square image to headline your profile."
+                  targetFilename="avatar.jpg"
                 >
                   <template #helper>
                     <div class="cms__help">

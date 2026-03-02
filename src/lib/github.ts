@@ -318,14 +318,20 @@ const savePendingUploads = (uploads: PendingUpload[]) => {
 export const addPendingUpload = async (file: File): Promise<string> => {
   const { settings } = ensureGithubCredentials();
   const uploadsDir = normalizeUploadsDir(settings.uploadsDir || DEFAULT_SETTINGS.uploadsDir);
-  const fileName = generateUploadFileName(file.name || "image.png");
+
+  // If the file already has a deterministic name (e.g. "avatar.jpg",
+  // "<uuid>.jpg") use it directly so re-uploads replace the previous file.
+  const isDeterministic = /^[a-zA-Z0-9_-]+\.jpg$/i.test(file.name);
+  const fileName = isDeterministic ? file.name : generateUploadFileName(file.name || "image.png");
   const repoPath = uploadsDir ? `${uploadsDir}/${fileName}` : fileName;
   const publicPath = toPublicPath(settings.uploadsDir || DEFAULT_SETTINGS.uploadsDir, fileName);
 
   const buffer = await file.arrayBuffer();
   const base64Content = arrayBufferToBase64(buffer);
 
-  const uploads = loadPendingUploads();
+  // Replace any existing pending upload with the same publicPath so we don't
+  // accumulate stale entries for the same deterministic slot.
+  const uploads = loadPendingUploads().filter((u) => u.publicPath !== publicPath);
   uploads.push({ repoPath, publicPath, base64Content, fileName: file.name });
   savePendingUploads(uploads);
 

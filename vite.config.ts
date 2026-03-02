@@ -209,7 +209,11 @@ const cmsMiddlewarePlugin = () => ({
             else orig = String(filename || "image.png");
           }
 
-          const safe = generateUploadFileName(orig);
+          // If the filename already looks like a deterministic target (e.g.
+          // "avatar.jpg", "<uuid>.jpg") use it directly so re-uploads
+          // overwrite the previous file instead of accumulating copies.
+          const isDeterministic = /^[a-zA-Z0-9_-]+\.jpg$/i.test(orig);
+          const safe = isDeterministic ? orig : generateUploadFileName(orig);
           const outPath = path.join(uploadsDir, safe);
           const write = fs.createWriteStream(outPath);
           fileStream.pipe(write);

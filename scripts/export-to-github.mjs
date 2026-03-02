@@ -95,6 +95,42 @@ const putFile = async ({ owner, repo, branch, token, repoPath, content, message 
   }
 };
 
+/**
+ * Delete a file from the repo via the GitHub Contents API.
+ */
+const deleteFile = async ({ owner, repo, branch, token, repoPath, sha, message }) => {
+  const url = `${API_BASE}/repos/${owner}/${repo}/contents/${repoPath}`;
+
+  const res = await ghFetch(url, token, {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message, sha, branch }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`Failed to delete ${repoPath}: ${res.status}\n${text}`);
+  }
+};
+
+/**
+ * List files in a directory in the repo. Returns an array of { name, sha }.
+ */
+const listRemoteDir = async ({ owner, repo, branch, token, dirPath }) => {
+  const url = `${API_BASE}/repos/${owner}/${repo}/contents/${dirPath}?ref=${branch}`;
+  const res = await ghFetch(url, token);
+  if (res.status === 404) return []; // directory doesn't exist yet
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`Failed to list ${dirPath}: ${res.status}\n${text}`);
+  }
+  const items = await res.json();
+  if (!Array.isArray(items)) return []; // not a directory
+  return items
+    .filter((i) => i.type === "file")
+    .map((i) => ({ name: i.name, sha: i.sha }));
+};
+
 // ── main ─────────────────────────────────────────────────────────────
 
 const run = async () => {
@@ -217,6 +253,29 @@ const run = async () => {
         count++;
       }
       console.log(`  ✔ ${count} file(s) → ${uploadsDir}/`);
+    }
+
+    // ── 3. Delete remote files that no longer exist locally ──────────
+    const localFileSet = new Set(files);
+    const remoteFiles = await listRemoteDir({ owner, repo, branch, token, dirPath: uploadsDir });
+    const orphans = remoteFiles.filter((rf) => !localFileSet.has(rf.name));
+
+    if (orphans.length > 0) {
+      let deleted = 0;
+      for (const orphan of orphans) {
+        const repoPath = `${uploadsDir}/${orphan.name}`;
+        await deleteFile({
+          owner,
+          repo,
+          branch,
+          token,
+          repoPath,
+          sha: orphan.sha,
+          message: `${commitMsg} (remove unused ${orphan.name})`,
+        });
+        deleted++;
+      }
+      console.log(`  🗑 ${deleted} orphaned remote file(s) removed.`);
     }
   }
 

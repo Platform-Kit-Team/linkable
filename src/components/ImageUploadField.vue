@@ -87,16 +87,22 @@ import {
   addPendingUpload,
   GITHUB_SYNC_EVENT,
 } from "../lib/github";
+import { convertToJpeg } from "../lib/image-convert";
 
 const props = withDefaults(
   defineProps<{
     modelValue: string;
     label?: string;
     description?: string;
+    /** Fixed output filename (e.g. "avatar.jpg"). When set, the file is
+     *  converted to JPEG and saved under this name, replacing any previous
+     *  upload instead of accumulating files. */
+    targetFilename?: string;
   }>(),
   {
     label: "Image",
     description: "PNG, JPG, WEBP — aim for at least 1200px on the long edge.",
+    targetFilename: undefined,
   },
 );
 
@@ -248,9 +254,19 @@ const uploadViaDevServer = async (file: File) => {
   return payload.url;
 };
 
+/** Convert raw file to JPEG with the deterministic target filename. */
+const prepareFile = async (raw: File): Promise<File> => {
+  const target = props.targetFilename;
+  if (!target) return raw; // no target → legacy behaviour
+  return convertToJpeg(raw, target, 0.9);
+};
+
 const performUpload = async (file: File) => {
+  // Convert to JPEG with a deterministic name when targetFilename is set
+  const prepared = await prepareFile(file);
+
   if (isDev) {
-    return uploadViaDevServer(file);
+    return uploadViaDevServer(prepared);
   }
 
   if (!githubReady.value) {
@@ -258,7 +274,7 @@ const performUpload = async (file: File) => {
   }
 
   // in production, queue the upload and return its future public path
-  return addPendingUpload(file);
+  return addPendingUpload(prepared);
 };
 
 const processFile = async (file?: File) => {
