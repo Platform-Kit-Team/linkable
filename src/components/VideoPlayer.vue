@@ -7,8 +7,8 @@
       ref="playerEl"
       :src="playerSrc"
       :poster="poster || ''"
-      :autoPlay="shouldAutoplay"
-      load="idle"
+      :autoPlay="autoplay"
+      load="eager"
       playsInline
       class="vds-video-player"
     >
@@ -59,58 +59,52 @@ export default defineComponent({
   setup(props) {
     const playerEl = ref<HTMLElement | null>(null);
 
-    /**
-     * On mobile, YouTube embeds often stay in the "unstarted" state and never
-     * fire the Cued → can-play sequence that Vidstack expects. Autoplay then
-     * causes Vidstack's invalidPlay loop to lock the player up. Disabling
-     * autoplay on mobile lets the user tap Vidstack's play button, providing
-     * the user-gesture context YouTube requires.
-     */
     const isEmbedSrc = computed(() => isYouTubeUrl(props.src || ""));
-    const shouldAutoplay = computed(
-      () => props.autoplay && !(isMobile && isEmbedSrc.value),
-    );
 
     const playerSrc = computed(() => {
       const s = props.src || "";
-
-      // YouTube — pass the full URL; vidstack handles it natively
       if (isYouTubeUrl(s)) return s;
-
-      // Vimeo — pass the full URL
       if (s.match(/vimeo\.com\/(?:video\/)?\d+/)) return s;
-
-      // Direct video URL (mp4 etc.)
       return s;
     });
 
-    /**
-     * Mobile recovery: YouTube's IFrame API handshake relies on a single
-     * postMessage({ event: "listening" }) sent 100 ms after the iframe's
-     * load event. On slower mobile CPUs/connections that 100 ms can be too
-     * short — YouTube hasn't finished initialising its message listener yet,
-     * so the handshake never completes and the player hangs.
-     *
-     * We periodically re-send the "listening" message until Vidstack sets
-     * the `can-play` attribute (indicating the handshake succeeded).
-     */
-    let retryTimer: ReturnType<typeof setInterval> | undefined;
+    // ── Mobile recovery ──────────────────────────────────────────────
+    // Two problems on mobile YouTube embeds:
+    //
+    // 1) The IFrame API handshake: Vidstack sends { event: "listening" }
+    //    once, 100 ms after the iframe loads. On slow mobile CPUs that
+    //    can be too early — we retry every second until can-play is set.
+    //
+    // 2) Autoplay hang: Vidstack's YouTube provider awaits a playVideo
+    //    deferred promise that never resolves if YouTube silently ignores
+    //    the command (no user-gesture on the iframe). The player stays in
+    //    a "loading/buffering" state forever.
+    //
+    //    Fix: after a timeout we force-pause the <media-player> element
+    //    to abort the stuck autoplay attempt. This surfaces Vidstack's
+    //    big play button so the user can tap once to play.
+    //    On modern browsers where autoplay succeeds, none of this fires.
 
-    const startRetry = () => {
-      stopRetry();
+    let retryTimer: ReturnType<typeof setInterval> | undefined;
+    let autoplayTimeout: ReturnType<typeof setTimeout> | undefined;
+
+    const startRecovery = () => {
+      stopRecovery();
       if (!isMobile || !isEmbedSrc.value) return;
 
+      // ── Handshake retry ──
       let attempts = 0;
-      const MAX = 15; // up to ~15 s
+      const MAX_RETRIES = 15;
       retryTimer = setInterval(() => {
         const el = playerEl.value;
-        if (!el || attempts >= MAX) {
-          stopRetry();
+        if (!el || attempts >= MAX_RETRIES) {
+          clearInterval(retryTimer);
+          retryTimer = undefined;
           return;
         }
-        // Vidstack reflects can-play as a boolean attribute on <media-player>
         if (el.hasAttribute("can-play")) {
-          stopRetry();
+          clearInterval(retryTimer);
+          retryTimer = undefined;
           return;
         }
         attempts++;
@@ -122,26 +116,46 @@ export default defineComponent({
               "*",
             );
           } catch {
-            // cross-origin postMessage can throw in edge cases — ignore
+            // cross-origin – ignore
           }
         }
       }, 1000);
+
+      // ── Autoplay hang recovery ──
+      if (props.autoplay) {
+        autoplayTimeout = setTimeout(() => {
+          const el = playerEl.value as any;
+          if (!el) return;
+          // If the video hasn't started yet, autoplay is stuck.
+          // Calling pause() rejects the pending playVideo promise and
+          // resets the player UI to show the play button.
+          if (!el.hasAttribute("started")) {
+            try {
+              el.pause?.();
+            } catch {
+              // swallow
+            }
+          }
+        }, 5000);
+      }
     };
 
-    const stopRetry = () => {
+    const stopRecovery = () => {
       if (retryTimer !== undefined) {
         clearInterval(retryTimer);
         retryTimer = undefined;
       }
+      if (autoplayTimeout !== undefined) {
+        clearTimeout(autoplayTimeout);
+        autoplayTimeout = undefined;
+      }
     };
 
-    onMounted(() => startRetry());
-    onUnmounted(() => stopRetry());
+    onMounted(() => startRecovery());
+    onUnmounted(() => stopRecovery());
+    watch(() => props.src, () => startRecovery());
 
-    // Restart retry when src changes (user picks a different video)
-    watch(() => props.src, () => startRetry());
-
-    return { playerEl, playerSrc, shouldAutoplay };
+    return { playerEl, playerSrc };
   },
 });
 </script>
@@ -165,18 +179,15 @@ export default defineComponent({
 }
 
 /*
- * On mobile, Vidstack inserts a .vds-blocker div over YouTube/Vimeo iframes
- * to intercept clicks. If the YouTube API handshake hasn't completed yet the
- * player is stuck in a loading state and the blocker prevents the user from
- * tapping YouTube's native play button. We make the blocker pass-through
- * until the player signals it can play.
+ * On mobile, Vidstack inserts .vds-blocker over YouTube/Vimeo iframes.
+ * If the API handshake hasn't completed the player is stuck loading and
+ * the blocker prevents tapping YouTube's native play button.
  */
 @media (hover: none) and (pointer: coarse) {
   media-player:not([can-play]) .vds-blocker {
     pointer-events: none !important;
   }
 
-  /* Ensure the YouTube iframe is interactable while Vidstack hasn't loaded */
   media-player:not([can-play]) iframe {
     pointer-events: auto !important;
     position: relative;
