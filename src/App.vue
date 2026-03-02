@@ -495,17 +495,17 @@
       <Teleport to="body">
         <div
           v-if="videoPlayerOpen && videoPlayerItem"
-          class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/85 p-4 backdrop-blur-sm"
+          class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/85 p-2 backdrop-blur-sm sm:p-4"
           @click.self="closeVideoPlayer"
         >
           <button
             type="button"
-            class="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-white transition hover:bg-white/30"
+            class="absolute right-2 top-2 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-white transition hover:bg-white/30 sm:right-4 sm:top-4"
             @click="closeVideoPlayer"
           >
             <i class="pi pi-times text-lg" />
           </button>
-          <div class="relative w-full max-w-4xl">
+          <div class="relative w-full max-w-4xl" style="max-height: 85vh; max-height: 85dvh;">
             <VideoPlayer
               :src="resolveUploadUrl(videoPlayerItem.src)"
               :poster="

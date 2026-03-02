@@ -1,10 +1,11 @@
 <template>
-  <div class="vidstack-wrapper relative w-full" style="aspect-ratio: 16/9;">
+  <div class="vidstack-wrapper relative w-full rounded-xl border border-white/15 shadow-[0_24px_80px_rgba(0,0,0,0.45),0_0_0_1px_rgba(255,255,255,0.15),0_2px_40px_rgba(255,255,255,0.12),0_4px_80px_rgba(120,160,255,0.10)] overflow-hidden" style="aspect-ratio: 16/9; max-height: 80vh; max-height: 80dvh;">
     <media-player
       ref="playerEl"
       :src="playerSrc"
       :poster="poster || ''"
       :autoPlay="autoplay"
+      load="eager"
       crossOrigin
       playsInline
       class="vds-video-player"
@@ -82,7 +83,12 @@ export default defineComponent({
   overflow: hidden;
 }
 
-.vidstack-wrapper media-player .vds-poster {
-  object-fit: cover;
+.vidstack-wrapper media-player .vds-poster,
+.vidstack-wrapper media-player .vds-poster img,
+.vidstack-wrapper media-player media-poster,
+.vidstack-wrapper media-player media-poster img {
+  object-fit: cover !important;
+  width: 100% !important;
+  height: 100% !important;
 }
 </style>
