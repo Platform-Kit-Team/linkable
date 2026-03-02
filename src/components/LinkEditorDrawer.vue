@@ -17,7 +17,7 @@
     </template>
 
     <div class="space-y-4 p-2">
-      <div class="rounded-2xl border border-white/60 bg-white/55 p-3 shadow-sm">
+      <div class="rounded-2xl border border-[var(--color-border)] bg-[var(--glass)] p-3 shadow-sm">
         <div class="grid gap-3">
           <div class="grid gap-1.5">
             <label class="text-xs font-extrabold text-[color:var(--color-ink-soft)]">Title</label>
@@ -47,7 +47,7 @@
                 <div class="text-xs font-semibold text-[color:var(--color-ink-soft)]">
                   Uploaded files live in
                   <span
-                    class="rounded-full bg-white/60 px-2 py-0.5 font-bold text-[color:var(--color-ink)]"
+                    class="rounded-full bg-[var(--glass)] px-2 py-0.5 font-bold text-[color:var(--color-ink)]"
                     >public/uploads</span
                   >
                   while you iterate locally.
@@ -66,7 +66,7 @@
             </div>
           </div>
 
-          <div class="flex items-center justify-between gap-3 rounded-xl border border-white/60 bg-white/45 p-3">
+          <div class="flex items-center justify-between gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--glass-2)] p-3">
             <div>
               <div class="text-xs font-extrabold text-[color:var(--color-ink)]">Enabled</div>
               <div class="mt-0.5 text-xs font-semibold text-[color:var(--color-ink-soft)]">

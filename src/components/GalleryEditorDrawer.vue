@@ -17,7 +17,7 @@
     </template>
 
     <div v-if="draftItem" class="space-y-4 p-2">
-      <div class="rounded-2xl border border-white/60 bg-white/55 p-3 shadow-sm">
+      <div class="rounded-2xl border border-[var(--color-border)] bg-[var(--glass)] p-3 shadow-sm">
         <div class="grid gap-3">
           <!-- Type selector -->
           <div class="grid gap-1.5">
@@ -28,7 +28,7 @@
                 class="flex-1 rounded-xl border px-3 py-2 text-xs font-semibold transition"
                 :class="draftItem.type === 'image'
                   ? 'border-[color:var(--color-brand)]/30 bg-[color:var(--color-brand)]/10 text-[color:var(--color-brand)]'
-                  : 'border-white/65 bg-white/50 text-[color:var(--color-ink-soft)] hover:bg-white/65'"
+                  : 'border-[var(--color-border)] bg-[var(--glass-2)] text-[color:var(--color-ink-soft)] hover:bg-[var(--glass)]'"
                 @click="setType('image')"
               >
                 <i class="pi pi-image mr-1" /> Image
@@ -38,7 +38,7 @@
                 class="flex-1 rounded-xl border px-3 py-2 text-xs font-semibold transition"
                 :class="draftItem.type === 'video'
                   ? 'border-[color:var(--color-brand)]/30 bg-[color:var(--color-brand)]/10 text-[color:var(--color-brand)]'
-                  : 'border-white/65 bg-white/50 text-[color:var(--color-ink-soft)] hover:bg-white/65'"
+                  : 'border-[var(--color-border)] bg-[var(--glass-2)] text-[color:var(--color-ink-soft)] hover:bg-[var(--glass)]'"
                 @click="setType('video')"
               >
                 <i class="pi pi-video mr-1" /> Video
@@ -78,7 +78,7 @@
             <div class="grid gap-1.5">
               <label class="text-xs font-extrabold text-[color:var(--color-ink-soft)]">Upload MP4 (optional)</label>
               <div
-                class="group relative cursor-pointer overflow-hidden rounded-2xl border-2 border-dashed border-white/70 bg-white/55 transition hover:border-[rgba(59,130,246,0.55)] hover:bg-white/70"
+                class="group relative cursor-pointer overflow-hidden rounded-2xl border-2 border-dashed border-[var(--color-border)] bg-[var(--glass)] transition hover:border-[rgba(59,130,246,0.55)] hover:bg-[var(--glass-strong)]"
                 :class="{ 'pointer-events-none opacity-60': videoUploading }"
                 @click="browseVideo"
                 @dragenter.prevent
@@ -95,13 +95,13 @@
 
                 <div
                   v-if="videoUploading"
-                  class="absolute inset-0 z-10 grid place-items-center bg-white/80 text-sm font-semibold text-[color:var(--color-ink)]"
+                  class="absolute inset-0 z-10 grid place-items-center bg-[var(--glass-strong)] text-sm font-semibold text-[color:var(--color-ink)]"
                 >
                   Uploading…
                 </div>
 
                 <div class="flex flex-col items-center justify-center gap-2 px-6 py-6 text-center">
-                  <div class="flex h-12 w-12 items-center justify-center rounded-full border border-white/70 bg-white/80 text-[color:var(--color-ink-soft)] shadow-sm">
+                  <div class="flex h-12 w-12 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--glass-strong)] text-[color:var(--color-ink-soft)] shadow-sm">
                     <i class="pi pi-upload text-base"></i>
                   </div>
                   <div class="text-xs font-semibold text-[color:var(--color-ink)]">
@@ -141,7 +141,7 @@
           </div>
 
           <!-- Enabled toggle -->
-          <div class="flex items-center justify-between gap-3 rounded-xl border border-white/60 bg-white/45 p-3">
+          <div class="flex items-center justify-between gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--glass-2)] p-3">
             <div>
               <div class="text-xs font-extrabold text-[color:var(--color-ink)]">Visible</div>
               <div class="mt-0.5 text-[11px] font-semibold text-[color:var(--color-ink-soft)]">

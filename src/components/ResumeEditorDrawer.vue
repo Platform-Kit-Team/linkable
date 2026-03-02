@@ -18,7 +18,7 @@
 
     <div class="space-y-4 p-2">
       <!-- Education entry editing -->
-      <div v-if="editMode === 'education' && draftEducation" class="rounded-2xl border border-white/60 bg-white/55 p-3 shadow-sm">
+      <div v-if="editMode === 'education' && draftEducation" class="rounded-2xl border border-[var(--color-border)] bg-[var(--glass)] p-3 shadow-sm">
         <div class="grid gap-3">
           <div class="grid gap-1.5">
             <label class="text-xs font-extrabold text-[color:var(--color-ink-soft)]">Institution</label>
@@ -46,7 +46,7 @@
       </div>
 
       <!-- Employment entry editing -->
-      <div v-if="editMode === 'employment' && draftEmployment" class="rounded-2xl border border-white/60 bg-white/55 p-3 shadow-sm">
+      <div v-if="editMode === 'employment' && draftEmployment" class="rounded-2xl border border-[var(--color-border)] bg-[var(--glass)] p-3 shadow-sm">
         <div class="grid gap-3">
           <div class="grid gap-1.5">
             <label class="text-xs font-extrabold text-[color:var(--color-ink-soft)]">Company</label>
@@ -74,7 +74,7 @@
       </div>
 
       <!-- Achievement entry editing -->
-      <div v-if="editMode === 'achievement' && draftAchievement" class="rounded-2xl border border-white/60 bg-white/55 p-3 shadow-sm">
+      <div v-if="editMode === 'achievement' && draftAchievement" class="rounded-2xl border border-[var(--color-border)] bg-[var(--glass)] p-3 shadow-sm">
         <div class="grid gap-3">
           <div class="grid gap-1.5">
             <label class="text-xs font-extrabold text-[color:var(--color-ink-soft)]">Title</label>

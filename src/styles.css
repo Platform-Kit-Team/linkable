@@ -52,10 +52,10 @@ body {
 
   background-color: var(--bg);
   background-image:
-    radial-gradient(900px 700px at 18% 8%, rgba(59, 130, 246, 0.14), transparent 60%),
-    radial-gradient(820px 620px at 86% 18%, rgba(255, 90, 122, 0.10), transparent 62%),
-    radial-gradient(900px 720px at 45% 92%, rgba(16, 185, 129, 0.08), transparent 62%),
-    linear-gradient(180deg, #f7f9ff 0%, var(--bg) 55%, #ffffff 100%);
+    radial-gradient(900px 700px at 18% 8%, color-mix(in srgb, var(--color-brand) 14%, transparent), transparent 60%),
+    radial-gradient(820px 620px at 86% 18%, color-mix(in srgb, var(--color-accent) 10%, transparent), transparent 62%),
+    radial-gradient(900px 720px at 45% 92%, color-mix(in srgb, #10b981 8%, transparent), transparent 62%),
+    linear-gradient(180deg, var(--bg) 0%, var(--bg) 55%, var(--bg) 100%);
   background-attachment: fixed;
   background-size: 100% 100%;
 }
@@ -84,6 +84,27 @@ body::before {
   box-shadow: var(--shadow-soft);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
+}
+
+/* -----------------------------
+   CMS: force light-mode inside dialogs & drawers
+   so the admin UI is unaffected by the public theme.
+-------------------------------- */
+.p-dialog,
+.p-drawer {
+  --bg: #f5f7fb;
+  --color-ink: #0b1220;
+  --color-ink-soft: rgba(11, 18, 32, 0.62);
+  --glass: rgba(255, 255, 255, 0.66);
+  --glass-2: rgba(255, 255, 255, 0.52);
+  --glass-strong: rgba(255, 255, 255, 0.82);
+  --color-border: rgba(255, 255, 255, 0.62);
+  --color-border-2: rgba(11, 18, 32, 0.10);
+  --color-brand: #3b82f6;
+  --color-brand-strong: #2563eb;
+  --color-accent: #ff5a7a;
+  --radius-xl: 1.6rem;
+  --radius-lg: 1.2rem;
 }
 
 /* -----------------------------
@@ -124,16 +145,16 @@ body::before {
 .p-dialog {
   border-radius: 26px !important;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.65);
-  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid var(--color-border);
+  background: var(--glass-strong);
   backdrop-filter: blur(22px);
   -webkit-backdrop-filter: blur(22px);
   box-shadow: var(--shadow-strong);
 }
 
 .p-dialog .p-dialog-header {
-  background: rgba(255, 255, 255, 0.50);
-  border-bottom: 1px solid rgba(11, 18, 32, 0.08);
+  background: var(--glass-2);
+  border-bottom: 1px solid var(--color-border-2);
   padding: 1rem 1.1rem;
 }
 
@@ -148,8 +169,8 @@ body::before {
 }
 
 .p-dialog .p-dialog-footer {
-  background: rgba(255, 255, 255, 0.50);
-  border-top: 1px solid rgba(11, 18, 32, 0.08);
+  background: var(--glass-2);
+  border-top: 1px solid var(--color-border-2);
   padding: 0.9rem 1.1rem;
 }
 
@@ -181,9 +202,9 @@ body::before {
 
 /* Secondary */
 .p-button.p-button-secondary {
-  background: rgba(255, 255, 255, 0.62) !important;
-  border: 1px solid rgba(255, 255, 255, 0.70) !important;
-  color: rgba(11, 18, 32, 0.92) !important;
+  background: var(--glass) !important;
+  border: 1px solid var(--color-border) !important;
+  color: var(--color-ink) !important;
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
 }
@@ -206,8 +227,8 @@ body::before {
 .p-textarea,
 .p-dropdown {
   border-radius: 16px !important;
-  border: 1px solid rgba(11, 18, 32, 0.10) !important;
-  background: rgba(255, 255, 255, 0.74) !important;
+  border: 1px solid var(--color-border-2) !important;
+  background: var(--glass-strong) !important;
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
 }

@@ -7,7 +7,7 @@
     :contentStyle="{ overflow: 'auto' }"
   >
     <div class="space-y-6">
-      <div class="rounded-2xl border border-white/70 bg-white/60 p-4 shadow-sm">
+      <div class="rounded-2xl border border-[var(--color-border)] bg-[var(--glass)] p-4 shadow-sm">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div>
             <div class="text-sm font-extrabold text-[color:var(--color-ink)]">
@@ -90,7 +90,7 @@
       </div>
 
       <div
-        class="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-dashed border-white/70 bg-white/40 p-4 text-[13px] font-semibold text-[color:var(--color-ink-soft)]"
+        class="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-dashed border-[var(--color-border)] bg-[var(--glass-2)] p-4 text-[13px] font-semibold text-[color:var(--color-ink-soft)]"
       >
         <div>
           <div class="font-extrabold text-[color:var(--color-ink)]">Tips</div>

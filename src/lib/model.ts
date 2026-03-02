@@ -88,7 +88,10 @@ export type BioGallery = {
   items: GalleryItem[];
 };
 
+export type ThemePreset = "light" | "dark" | "custom";
+
 export type BioTheme = {
+  preset: ThemePreset;
   colorBrand: string;
   colorBrandStrong: string;
   colorAccent: string;
@@ -187,6 +190,7 @@ export const defaultGallery = (): BioGallery => ({
 });
 
 export const defaultTheme = (): BioTheme => ({
+  preset: "light",
   colorBrand: "#3b82f6",
   colorBrandStrong: "#2563eb",
   colorAccent: "#ff5a7a",
@@ -201,6 +205,28 @@ export const defaultTheme = (): BioTheme => ({
   radiusXl: "1.6rem",
   radiusLg: "1.2rem",
 });
+
+export const darkTheme = (): BioTheme => ({
+  preset: "dark",
+  colorBrand: "#60a5fa",
+  colorBrandStrong: "#3b82f6",
+  colorAccent: "#f472b6",
+  colorInk: "#f1f5f9",
+  colorInkSoft: "rgba(241, 245, 249, 0.55)",
+  bg: "#0f1629",
+  glass: "rgba(30, 41, 59, 0.72)",
+  glass2: "rgba(30, 41, 59, 0.55)",
+  glassStrong: "rgba(30, 41, 59, 0.88)",
+  colorBorder: "rgba(148, 163, 184, 0.18)",
+  colorBorder2: "rgba(148, 163, 184, 0.10)",
+  radiusXl: "1.6rem",
+  radiusLg: "1.2rem",
+});
+
+export const THEME_PRESETS: Record<string, () => BioTheme> = {
+  light: defaultTheme,
+  dark: darkTheme,
+};
 
 export const defaultModel = (): BioModel => ({
   schemaVersion: 1,
@@ -405,7 +431,10 @@ export const sanitizeModel = (input: unknown): BioModel => {
 
   const themeRaw = obj.theme && typeof obj.theme === "object" ? obj.theme : {};
   const defaults = defaultTheme();
+  const presetVal = asString(themeRaw.preset);
+  const preset: ThemePreset = (presetVal === "light" || presetVal === "dark" || presetVal === "custom") ? presetVal : "light";
   const theme: BioTheme = {
+    preset,
     colorBrand: asString(themeRaw.colorBrand).slice(0, 40) || defaults.colorBrand,
     colorBrandStrong: asString(themeRaw.colorBrandStrong).slice(0, 40) || defaults.colorBrandStrong,
     colorAccent: asString(themeRaw.colorAccent).slice(0, 40) || defaults.colorAccent,

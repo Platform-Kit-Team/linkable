@@ -29,7 +29,7 @@
 
 // ── current version ──────────────────────────────────────────────────
 
-export const CURRENT_SCHEMA_VERSION = 7;
+export const CURRENT_SCHEMA_VERSION = 8;
 
 // ── migration registry ──────────────────────────────────────────────
 
@@ -155,6 +155,18 @@ const migrations: Migration[] = [
         data.profile.galleryLabel ??= "";
       }
       data.schemaVersion = 7;
+      return data;
+    },
+  },
+
+  {
+    toVersion: 8,
+    migrate: (data) => {
+      // v7 → v8: add preset field to theme
+      if (data.theme && typeof data.theme === "object") {
+        data.theme.preset ??= "light";
+      }
+      data.schemaVersion = 8;
       return data;
     },
   },

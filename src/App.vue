@@ -14,7 +14,7 @@
         <div class="p-3 sm:p-6">
           <div class="flex items-start gap-3 sm:gap-4">
             <div
-              class="relative h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-white/60 bg-white/45 shadow-sm backdrop-blur-md"
+              class="relative h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--glass-2)] shadow-sm backdrop-blur-md"
             >
               <img
                 v-if="avatarSrc"
@@ -25,7 +25,7 @@
               />
               <div
                 v-else
-                class="grid h-full w-full place-items-center bg-white/55 text-sm font-semibold text-[color:var(--color-ink-soft)]"
+                class="grid h-full w-full place-items-center bg-[var(--glass)] text-sm font-semibold text-[color:var(--color-ink-soft)]"
               >
                 {{ initials }}
               </div>
@@ -63,7 +63,7 @@
                 <a
                   v-for="s in enabledSocials"
                   :key="s.id"
-                  class="inline-flex items-center gap-1.5 rounded-full border border-white/65 bg-white/50 px-2.5 py-1 text-xs font-semibold text-[color:var(--color-ink)] shadow-sm backdrop-blur-md transition hover:bg-white/65 sm:gap-2 sm:px-3 sm:py-1.5"
+                  class="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-border)] bg-[var(--glass-2)] px-2.5 py-1 text-xs font-semibold text-[color:var(--color-ink)] shadow-sm backdrop-blur-md transition hover:bg-[var(--glass)] sm:gap-2 sm:px-3 sm:py-1.5"
                   :href="
                     s.type === 'email' && s.url && !s.url.startsWith('mailto:')
                       ? 'mailto:' + s.url
@@ -96,7 +96,7 @@
           :class="
             activeTab === 'links'
               ? 'bg-blue-500/10 shadow-lg border-blue-500/30   text-[color:var(--color-brand)] '
-              : 'border-white/65 bg-none text-[color:var(--color-ink-soft)] hover:bg-white'
+              : 'border-[var(--color-border)] bg-none text-[color:var(--color-ink-soft)] hover:bg-[var(--glass-strong)]'
           "
           @click="activeTab = 'links'"
         >
@@ -109,7 +109,7 @@
           :class="
             activeTab === 'resume'
               ? 'bg-blue-500/10 shadow-lg   border-blue-500/30    text-[color:var(--color-brand)] '
-              : 'border-white/65 bg-none text-[color:var(--color-ink-soft)] hover:bg-white'
+              : 'border-[var(--color-border)] bg-none text-[color:var(--color-ink-soft)] hover:bg-[var(--glass-strong)]'
           "
           @click="activeTab = 'resume'"
         >
@@ -122,7 +122,7 @@
           :class="
             activeTab === 'gallery'
               ? 'bg-blue-500/10 shadow-lg  border-blue-500/30    text-[color:var(--color-brand)]'
-              : 'border-white/65 bg-none text-[color:var(--color-ink-soft)] hover:bg-white'
+              : 'border-[var(--color-border)] bg-none text-[color:var(--color-ink-soft)] hover:bg-[var(--glass-strong)]'
           "
           @click="activeTab = 'gallery'"
         >
@@ -140,14 +140,14 @@
           <a
             v-for="link in enabledLinks"
             :key="link.id"
-            class="group relative flex min-w-0 items-center justify-between gap-2 rounded-2xl border border-white/65 bg-white/55 px-3 py-3 shadow-sm backdrop-blur-md transition hover:bg-white/70 hover:shadow-[0_18px_52px_rgba(11,18,32,0.14)] sm:gap-3 sm:px-4"
+            class="group relative flex min-w-0 items-center justify-between gap-2 rounded-2xl border border-[var(--color-border)] bg-[var(--glass)] px-3 py-3 shadow-sm backdrop-blur-md transition hover:bg-[var(--glass-strong)] hover:shadow-[0_18px_52px_rgba(11,18,32,0.14)] sm:gap-3 sm:px-4"
             :href="link.url"
             target="_blank"
             rel="noreferrer"
           >
             <div class="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
               <div
-                class="relative grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-xl border border-white/70 bg-white/60 shadow-sm backdrop-blur-md"
+                class="relative grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--glass)] shadow-sm backdrop-blur-md"
               >
                 <img
                   v-if="link.imageUrl"
@@ -228,7 +228,7 @@
             <div
               v-for="job in model.resume.employment"
               :key="job.id"
-              class="rounded-xl border border-white/65 bg-white/55 p-3 shadow-sm backdrop-blur-md sm:rounded-2xl sm:p-4"
+              class="rounded-xl border border-[var(--color-border)] bg-[var(--glass)] p-3 shadow-sm backdrop-blur-md sm:rounded-2xl sm:p-4"
             >
               <div class="flex items-start justify-between gap-2 sm:gap-3">
                 <div class="min-w-0 flex-1">
@@ -272,7 +272,7 @@
             <div
               v-for="edu in model.resume.education"
               :key="edu.id"
-              class="rounded-xl border border-white/65 bg-white/55 p-3 shadow-sm backdrop-blur-md sm:rounded-2xl sm:p-4"
+              class="rounded-xl border border-[var(--color-border)] bg-[var(--glass)] p-3 shadow-sm backdrop-blur-md sm:rounded-2xl sm:p-4"
             >
               <div class="flex items-start justify-between gap-2 sm:gap-3">
                 <div class="min-w-0 flex-1">
@@ -309,7 +309,7 @@
             <span
               v-for="(skill, i) in model.resume.skills"
               :key="i"
-              class="inline-flex items-center rounded-full border border-white/65 bg-white/55 px-2.5 py-1 text-[11px] font-semibold text-[color:var(--color-ink)] shadow-sm backdrop-blur-md sm:px-3 sm:py-1.5 sm:text-xs"
+              class="inline-flex items-center rounded-full border border-[var(--color-border)] bg-[var(--glass)] px-2.5 py-1 text-[11px] font-semibold text-[color:var(--color-ink)] shadow-sm backdrop-blur-md sm:px-3 sm:py-1.5 sm:text-xs"
             >
               {{ skill }}
             </span>
@@ -327,7 +327,7 @@
             <div
               v-for="ach in model.resume.achievements"
               :key="ach.id"
-              class="rounded-xl border border-white/65 bg-white/55 p-3 shadow-sm backdrop-blur-md sm:rounded-2xl sm:p-4"
+              class="rounded-xl border border-[var(--color-border)] bg-[var(--glass)] p-3 shadow-sm backdrop-blur-md sm:rounded-2xl sm:p-4"
             >
               <div class="flex items-start justify-between gap-2 sm:gap-3">
                 <div class="min-w-0 flex-1">
@@ -389,7 +389,7 @@
             <button
               v-if="item.type === 'image'"
               type="button"
-              class="group relative block h-full w-full overflow-hidden border border-white/65 bg-white/55 shadow-sm backdrop-blur-md transition hover:shadow-[0_18px_52px_rgba(11,18,32,0.14)]"
+              class="group relative block h-full w-full overflow-hidden border border-[var(--color-border)] bg-[var(--glass)] shadow-sm backdrop-blur-md transition hover:shadow-[0_18px_52px_rgba(11,18,32,0.14)]"
               @click="openLightbox(item)"
             >
               <img
@@ -412,7 +412,7 @@
             <button
               v-else-if="item.type === 'video'"
               type="button"
-              class="group relative block h-full w-full overflow-hidden border border-white/65 bg-white/55 shadow-sm backdrop-blur-md transition hover:shadow-[0_18px_52px_rgba(11,18,32,0.14)]"
+              class="group relative block h-full w-full overflow-hidden border border-[var(--color-border)] bg-[var(--glass)] shadow-sm backdrop-blur-md transition hover:shadow-[0_18px_52px_rgba(11,18,32,0.14)]"
               @click="openVideoPlayer(item)"
             >
               <img
@@ -531,7 +531,7 @@
           href="https://github.com/platform-kit-team/linkable"
           target="_blank"
           rel="noreferrer"
-          class="inline-flex items-center gap-2 rounded-full border border-white/65 bg-white/50 px-3 py-1.5 shadow-sm backdrop-blur-md transition hover:bg-white/65"
+          class="inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--glass-2)] px-3 py-1.5 shadow-sm backdrop-blur-md transition hover:bg-[var(--glass)]"
         >
           <span
             class="h-1.5 w-1.5 rounded-full bg-[color:var(--color-brand)] shadow-[0_0_0_4px_rgba(37,99,235,0.12)]"
@@ -604,7 +604,7 @@
     <Transition name="cms-slide-left">
     <div
       v-if="canUseCms"
-      class="fixed bottom-4 left-3 z-50 flex max-w-[calc(100vw-5rem)] items-center gap-2 rounded-full border border-white/65 bg-white/70 px-4 py-2.5 text-[11px] text-[color:var(--color-ink-soft)] shadow-sm backdrop-blur-md sm:bottom-6 sm:left-6 sm:gap-3 sm:px-5 sm:py-3 sm:text-xs"
+      class="fixed bottom-4 left-3 z-50 flex max-w-[calc(100vw-5rem)] items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--glass-strong)] px-4 py-2.5 text-[11px] text-[color:var(--color-ink-soft)] shadow-sm backdrop-blur-md sm:bottom-6 sm:left-6 sm:gap-3 sm:px-5 sm:py-3 sm:text-xs"
       :class="{ 'cursor-pointer sm:cursor-default': unsynced }"
       @click="unsynced ? gitDialogOpen = true : undefined"
     >

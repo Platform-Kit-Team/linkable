@@ -166,6 +166,19 @@
           <Transition name="cms-collapse">
             <div v-if="siteSection.theme" class="cms__accordion-body">
               <div class="cms__form">
+                <div class="cms__field">
+                  <label class="cms__label">Preset</label>
+                  <Select
+                    :modelValue="draft.theme.preset"
+                    @update:modelValue="applyPreset($event)"
+                    :options="presetOptions"
+                    optionLabel="label"
+                    optionValue="value"
+                    class="w-full"
+                  />
+                  <div class="cms__help">Choose a preset to populate all values, or pick Custom to edit freely.</div>
+                </div>
+
                 <div class="cms__color-section-label">Colours</div>
                 <div class="cms__color-grid">
                   <div class="cms__color-field">
@@ -419,7 +432,7 @@
           <div class="cms__card">
             <div class="cms__form">
               <!-- Enable / disable resume -->
-              <div class="flex items-center justify-between gap-3 rounded-xl border border-white/60 bg-white/45 p-3">
+              <div class="flex items-center justify-between gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--glass-2)] p-3">
                 <div>
                   <div class="text-xs font-extrabold text-[color:var(--color-ink)]">Enable resume</div>
                   <div class="mt-0.5 text-xs font-semibold text-[color:var(--color-ink-soft)]">
@@ -516,7 +529,7 @@
                   <span
                     v-for="(skill, i) in draft.resume.skills"
                     :key="i"
-                    class="inline-flex items-center gap-1.5 rounded-full border border-white/65 bg-white/55 px-3 py-1 text-xs font-semibold text-[color:var(--color-ink)] shadow-sm"
+                    class="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-border)] bg-[var(--glass)] px-3 py-1 text-xs font-semibold text-[color:var(--color-ink)] shadow-sm"
                   >
                     {{ skill }}
                     <button type="button" class="hover:text-red-500 transition" @click="removeSkill(i)">
@@ -604,7 +617,7 @@
           <div class="cms__card">
             <div class="cms__form">
               <!-- Enable / disable gallery -->
-              <div class="flex items-center justify-between gap-3 rounded-xl border border-white/60 bg-white/45 p-3">
+              <div class="flex items-center justify-between gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--glass-2)] p-3">
                 <div>
                   <div class="text-xs font-extrabold text-[color:var(--color-ink)]">Enable gallery</div>
                   <div class="mt-0.5 text-xs font-semibold text-[color:var(--color-ink-soft)]">
@@ -675,7 +688,7 @@
 
           <div class="cms__card">
             <div class="cms__form">
-              <div class="rounded-2xl border border-white/70 bg-white/60 p-4 shadow-sm">
+              <div class="rounded-2xl border border-[var(--color-border)] bg-[var(--glass)] p-4 shadow-sm">
                 <div class="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <div class="text-sm font-extrabold text-[color:var(--color-ink)]">Repository connection</div>
@@ -756,7 +769,7 @@
               </div>
 
               <div
-                class="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-dashed border-white/70 bg-white/40 p-4 text-[13px] font-semibold text-[color:var(--color-ink-soft)]"
+                class="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-dashed border-[var(--color-border)] bg-[var(--glass-2)] p-4 text-[13px] font-semibold text-[color:var(--color-ink-soft)]"
               >
                 <div>
                   <div class="font-extrabold text-[color:var(--color-ink)]">Tips</div>
@@ -863,6 +876,7 @@ import draggable from "vuedraggable";
 import Button from "primevue/button";
 import Dialog from "primevue/dialog";
 import InputText from "primevue/inputtext";
+import Select from "primevue/select";
 import Tag from "primevue/tag";
 import Textarea from "primevue/textarea";
 import ToggleSwitch from "primevue/toggleswitch";
@@ -881,10 +895,13 @@ import {
   type EmploymentEntry,
   type AchievementEntry,
   type GalleryItem,
+  type ThemePreset,
   defaultModel,
   defaultResume,
   defaultGallery,
   defaultTheme,
+  darkTheme,
+  THEME_PRESETS,
   newLink,
   newSocial,
   newEducation,
@@ -911,6 +928,7 @@ export default defineComponent({
     Dialog,
     Button,
     InputText,
+    Select,
     Textarea,
     Tag,
     draggable,
@@ -1103,6 +1121,40 @@ export default defineComponent({
       draft.value.theme = defaultTheme();
       toast.add({ severity: "info", summary: "Theme reset", detail: "Colours restored to defaults.", life: 1600 });
     };
+
+    const presetOptions = [
+      { label: "Light", value: "light" },
+      { label: "Dark", value: "dark" },
+      { label: "Custom", value: "custom" },
+    ];
+
+    let applyingPreset = false;
+    const applyPreset = (preset: ThemePreset) => {
+      const factory = THEME_PRESETS[preset];
+      applyingPreset = true;
+      if (factory) {
+        const presetTheme = factory();
+        draft.value.theme = { ...presetTheme, preset };
+      } else {
+        draft.value.theme.preset = preset;
+      }
+      setTimeout(() => { applyingPreset = false; }, 0);
+    };
+
+    // Auto-switch to "custom" when user manually edits a theme value
+    const themeColorKeys = [
+      "colorBrand", "colorBrandStrong", "colorAccent", "colorInk", "colorInkSoft",
+      "bg", "glass", "glass2", "glassStrong", "colorBorder", "colorBorder2",
+      "radiusXl", "radiusLg",
+    ] as const;
+    watch(
+      () => themeColorKeys.map((k) => draft.value.theme[k]).join("|"),
+      () => {
+        if (!applyingPreset && draft.value.theme.preset !== "custom") {
+          draft.value.theme.preset = "custom";
+        }
+      },
+    );
 
     /** Convert any CSS color string (hex, rgb, rgba) to #rrggbb for <input type="color"> */
     const toHex = (color: string): string => {
@@ -1421,6 +1473,8 @@ export default defineComponent({
       save,
       resetTheme,
       toHex,
+      presetOptions,
+      applyPreset,
       linkEditorOpen,
       activeLink,
       activeLinkProxy,
@@ -1495,8 +1549,8 @@ cms__tabBar {
 .cms__tabBar {
   padding: 12px;
   border-radius: 22px;
-  border: 1px solid rgba(11, 18, 32, 0.08);
-  background: rgba(255, 255, 255, 0.62);
+  border: 1px solid var(--color-border-2);
+  background: var(--glass);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
 }
@@ -1523,8 +1577,8 @@ cms__tabBar {
   padding: 0 12px;
   border-radius: 18px;
   border: 1px solid transparent;
-  background: rgba(255, 255, 255, 0.62);
-  color: rgba(11, 18, 32, 0.88);
+  background: var(--glass);
+  color: var(--color-ink);
   font-weight: 900;
   letter-spacing: -0.01em;
   cursor: pointer;
@@ -1532,8 +1586,8 @@ cms__tabBar {
 }
 
 .cms__tab:hover {
-  background: rgba(255, 255, 255, 0.78);
-  border-color: rgba(11, 18, 32, 0.1);
+  background: var(--glass-strong);
+  border-color: var(--color-border-2);
   transform: translateY(-1px);
 }
 
@@ -1556,9 +1610,9 @@ cms__tabBar {
   display: grid;
   place-items: center;
   border-radius: 12px;
-  border: 1px solid rgba(11, 18, 32, 0.08);
-  background: rgba(255, 255, 255, 0.76);
-  color: rgba(11, 18, 32, 0.55);
+  border: 1px solid var(--color-border-2);
+  background: var(--glass-strong);
+  color: var(--color-ink-soft);
 }
 
 cms__tab-label {
@@ -1618,11 +1672,11 @@ cms__tab-pill {
   gap: 8px;
   padding: 6px 10px;
   border-radius: 999px;
-  border: 1px solid rgba(11, 18, 32, 0.1);
-  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid var(--color-border-2);
+  background: var(--glass);
   font-size: 12px;
   font-weight: 800;
-  color: rgba(11, 18, 32, 0.7);
+  color: var(--color-ink-soft);
   margin-right: 0.25rem;
 }
 
@@ -1642,8 +1696,8 @@ cms__tab-pill {
 .cms__content {
   flex: 1;
   border-radius: 22px;
-  border: 1px solid rgba(11, 18, 32, 0.08);
-  background: rgba(255, 255, 255, 0.62);
+  border: 1px solid var(--color-border-2);
+  background: var(--glass);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   padding: 14px;
@@ -1666,7 +1720,7 @@ cms__tab-pill {
   font-size: 16px;
   font-weight: 950;
   letter-spacing: -0.02em;
-  color: rgba(11, 18, 32, 0.96);
+  color: var(--color-ink);
 }
 
 cms__sub {
@@ -1679,14 +1733,14 @@ cms__sub {
 .cms__sub {
   margin-top: 2px;
   font-size: 12px;
-  color: rgba(11, 18, 32, 0.62);
+  color: var(--color-ink-soft);
   font-weight: 700;
 }
 
 .cms__card {
   border-radius: 22px;
-  border: 1px solid rgba(11, 18, 32, 0.08);
-  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid var(--color-border-2);
+  background: var(--glass-2);
   overflow: hidden;
   padding: 12px;
 }
@@ -1720,7 +1774,7 @@ cms__label {
 .cms__label {
   font-size: 12px;
   font-weight: 950;
-  color: rgba(11, 18, 32, 0.7);
+  color: var(--color-ink-soft);
 }
 
 cms__help {
@@ -1731,7 +1785,7 @@ cms__help {
 
 .cms__help {
   font-size: 12px;
-  color: rgba(11, 18, 32, 0.6);
+  color: var(--color-ink-soft);
   font-weight: 650;
 }
 

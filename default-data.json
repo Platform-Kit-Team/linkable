@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 7,
+  "schemaVersion": 8,
   "profile": {
     "displayName": "Linkable",
     "tagline": "Design-forward links. Clean, fast, yours.",
@@ -64,6 +64,7 @@
     "items": []
   },
   "theme": {
+    "preset": "light",
     "colorBrand": "#3b82f6",
     "colorBrandStrong": "#2563eb",
     "colorAccent": "#ff5a7a",

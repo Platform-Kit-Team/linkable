@@ -7,7 +7,7 @@
       <button
         v-if="modelValue"
         type="button"
-        class="rounded-full border border-white/70 bg-white/80 px-3 py-1 text-xs font-semibold text-[color:var(--color-ink)] shadow-sm transition hover:bg-white"
+        class="rounded-full border border-[var(--color-border)] bg-[var(--glass-strong)] px-3 py-1 text-xs font-semibold text-[color:var(--color-ink)] shadow-sm transition hover:bg-[var(--glass-strong)]"
         @click.stop="clearImage"
         :disabled="uploading"
       >
@@ -16,7 +16,7 @@
     </div>
 
     <div
-      class="group relative overflow-hidden rounded-2xl border-2 border-dashed border-white/70 bg-white/55 transition"
+      class="group relative overflow-hidden rounded-2xl border-2 border-dashed border-[var(--color-border)] bg-[var(--glass)] transition"
       :class="dropZoneState"
       @click="browse"
       @dragenter.prevent="onDragEnter"
@@ -34,7 +34,7 @@
 
       <div
         v-if="uploading"
-        class="absolute inset-0 z-10 grid place-items-center bg-white/80 text-sm font-semibold text-[color:var(--color-ink)]"
+        class="absolute inset-0 z-10 grid place-items-center bg-[var(--glass-strong)] text-sm font-semibold text-[color:var(--color-ink)]"
       >
         Uploading…
       </div>
@@ -44,7 +44,7 @@
         class="pointer-events-none flex flex-col items-center justify-center gap-3 px-6 py-8 text-center sm:px-7 sm:py-9"
       >
         <div
-          class="flex h-14 w-14 items-center justify-center rounded-full border border-white/70 bg-white/80 text-[color:var(--color-ink-soft)] shadow-sm"
+          class="flex h-14 w-14 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--glass-strong)] text-[color:var(--color-ink-soft)] shadow-sm"
         >
           <i class="pi pi-image text-lg"></i>
         </div>
@@ -176,12 +176,12 @@ const defaultHelper = computed(() => {
 const dropZoneState = computed(() => {
   const classes = ["px-4 py-3 sm:px-5 sm:py-6"];
   if (canUpload.value && !uploading.value) {
-    classes.push("cursor-pointer hover:border-[rgba(59,130,246,0.55)] hover:bg-white/70");
+    classes.push("cursor-pointer hover:border-[rgba(59,130,246,0.55)] hover:bg-[var(--glass-strong)]");
   } else {
     classes.push("cursor-not-allowed opacity-80");
   }
   if (dragging.value) {
-    classes.push("border-[rgba(59,130,246,0.75)] bg-white/80 shadow-[0_12px_40px_rgba(59,130,246,0.18)]");
+    classes.push("border-[rgba(59,130,246,0.75)] bg-[var(--glass-strong)] shadow-[0_12px_40px_rgba(59,130,246,0.18)]");
   }
   if (uploading.value) {
     classes.push("pointer-events-none opacity-60");
