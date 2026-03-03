@@ -701,7 +701,7 @@
       v-model:open="cmsOpen"
       :model="model"
       :initial-tab="activeTab"
-      :initial-blog-slug="currentBlogPost?.slug ?? ''"
+      :initial-blog-slug="activeTab === 'blog' && currentBlogPost ? currentBlogPost.slug : ''"
       :preview-mode="previewMode"
       @update:model="updateModel"
       @toggle-preview="togglePreviewMode"
