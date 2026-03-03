@@ -32,6 +32,10 @@ export type BioProfile = {
   linksLabel: string;
   resumeLabel: string;
   galleryLabel: string;
+  blogLabel: string;
+  searchLinks: boolean;
+  searchGallery: boolean;
+  searchBlog: boolean;
 };
 
 export type EducationEntry = {
@@ -80,6 +84,7 @@ export type GalleryItem = {
   coverUrl: string;
   title: string;
   description: string;
+  tags: string[];
   enabled: boolean;
 };
 
@@ -107,6 +112,15 @@ export type BioTheme = {
   radiusLg: string;
 };
 
+export type BioBlog = {
+  enabled: boolean;
+};
+
+export type BioScripts = {
+  headScript: string;
+  bodyEndScript: string;
+};
+
 export type BioModel = {
   schemaVersion: number;
   profile: BioProfile;
@@ -114,7 +128,9 @@ export type BioModel = {
   socials: SocialLink[];
   resume: BioResume;
   gallery: BioGallery;
+  blog: BioBlog;
   theme: BioTheme;
+  scripts: BioScripts;
 };
 
 export const newId = () =>
@@ -181,12 +197,17 @@ export const newGalleryItem = (): GalleryItem => ({
   coverUrl: "",
   title: "",
   description: "",
+  tags: [],
   enabled: true,
 });
 
 export const defaultGallery = (): BioGallery => ({
   enabled: false,
   items: [],
+});
+
+export const defaultBlog = (): BioBlog => ({
+  enabled: false,
 });
 
 export const defaultTheme = (): BioTheme => ({
@@ -228,6 +249,11 @@ export const THEME_PRESETS: Record<string, () => BioTheme> = {
   dark: darkTheme,
 };
 
+export const defaultScripts = (): BioScripts => ({
+  headScript: "",
+  bodyEndScript: "",
+});
+
 export const defaultModel = (): BioModel => ({
   schemaVersion: 1,
   profile: {
@@ -238,6 +264,10 @@ export const defaultModel = (): BioModel => ({
     linksLabel: "",
     resumeLabel: "",
     galleryLabel: "",
+    blogLabel: "",
+    searchLinks: false,
+    searchGallery: false,
+    searchBlog: false,
   },
   links: [
     {
@@ -283,7 +313,9 @@ export const defaultModel = (): BioModel => ({
   ],
   resume: defaultResume(),
   gallery: defaultGallery(),
+  blog: defaultBlog(),
   theme: defaultTheme(),
+  scripts: defaultScripts(),
 });
 
 const asString = (v: unknown) => (typeof v === "string" ? v : "");
@@ -292,6 +324,11 @@ const asBool = (v: unknown) => (typeof v === "boolean" ? v : false);
 const sanitizeUrl = (v: unknown) => {
   const raw = asString(v).trim();
   if (!raw) return "";
+
+  // Allow fragment-only links like #gallery, #blog, etc.
+  if (raw.startsWith("#")) {
+    return raw;
+  }
 
   if (raw.startsWith("/")) {
     try {
@@ -339,6 +376,10 @@ export const sanitizeModel = (input: unknown): BioModel => {
     linksLabel: asString(obj.profile?.linksLabel).slice(0, 30),
     resumeLabel: asString(obj.profile?.resumeLabel).slice(0, 30),
     galleryLabel: asString(obj.profile?.galleryLabel).slice(0, 30),
+    blogLabel: asString(obj.profile?.blogLabel).slice(0, 30),
+    searchLinks: typeof obj.profile?.searchLinks === 'boolean' ? obj.profile.searchLinks : false,
+    searchGallery: typeof obj.profile?.searchGallery === 'boolean' ? obj.profile.searchGallery : false,
+    searchBlog: typeof obj.profile?.searchBlog === 'boolean' ? obj.profile.searchBlog : false,
   };
 
   const linksRaw = Array.isArray(obj.links) ? obj.links : [];
@@ -423,6 +464,10 @@ export const sanitizeModel = (input: unknown): BioModel => {
         coverUrl: sanitizeUrl(g?.coverUrl),
         title: asString(g?.title).slice(0, 120),
         description: asString(g?.description).slice(0, 500),
+        tags: (Array.isArray(g?.tags) ? g.tags : [])
+          .map((t: unknown) => asString(t).slice(0, 40))
+          .filter(Boolean)
+          .slice(0, 20),
         enabled: typeof g?.enabled === "boolean" ? g.enabled : true,
       }))
       .filter((g: GalleryItem) => !!g.id)
@@ -450,7 +495,18 @@ export const sanitizeModel = (input: unknown): BioModel => {
     radiusLg: asString(themeRaw.radiusLg).slice(0, 20) || defaults.radiusLg,
   };
 
-  return { schemaVersion: CURRENT_SCHEMA_VERSION, profile, links, socials, resume, gallery, theme };
+  const blogRaw = obj.blog && typeof obj.blog === "object" ? obj.blog : {};
+  const blog: BioBlog = {
+    enabled: typeof blogRaw.enabled === "boolean" ? blogRaw.enabled : false,
+  };
+
+  const scriptsRaw = obj.scripts && typeof obj.scripts === "object" ? obj.scripts : {};
+  const scripts: BioScripts = {
+    headScript: asString(scriptsRaw.headScript).slice(0, 10000),
+    bodyEndScript: asString(scriptsRaw.bodyEndScript).slice(0, 10000),
+  };
+
+  return { schemaVersion: CURRENT_SCHEMA_VERSION, profile, links, socials, resume, gallery, blog, theme, scripts };
 };
 
 export const stableStringify = (model: BioModel) => JSON.stringify(model, null, 2);

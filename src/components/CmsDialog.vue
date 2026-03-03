@@ -76,13 +76,15 @@
             <button
               type="button"
               class="cms__tab"
-              :class="{ 'is-active': tab === 'github' }"
-              @click="tab = 'github'"
+              :class="{ 'is-active': tab === 'blog' }"
+              @click="tab = 'blog'"
             >
-              <span class="cms__tab-icon"><i class="pi pi-github" /></span>
-              <span class="cms__tab-label">GitHub</span>
-              <span class="cms__tab-pill cms__tab-pill--ghost" aria-hidden="true">{{ githubReady ? 0 : 0 }}</span>
+              <span class="cms__tab-icon"><i class="pi pi-pencil" /></span>
+              <span class="cms__tab-label">Blog</span>
+              <span class="cms__tab-pill" :class="{ 'cms__tab-pill--ghost': !draft.blog.enabled }">{{ blogPostCount }}</span>
             </button>
+
+
           </div>
         </div>
       </div>
@@ -135,10 +137,6 @@
                   </ImageUploadField>
                 </div>
                 <div class="cms__field">
-                  <label class="cms__label">Banner URL (optional)</label>
-                  <InputText v-model="draft.profile.bannerUrl" class="w-full" placeholder="https://..." />
-                </div>
-                <div class="cms__field">
                   <ImageUploadField
                     v-model="draft.profile.avatarUrl"
                     label="Avatar image"
@@ -149,10 +147,6 @@
                       <div class="cms__help">Crisp, square images work best.</div>
                     </template>
                   </ImageUploadField>
-                </div>
-                <div class="cms__field">
-                  <label class="cms__label">Avatar URL (optional)</label>
-                  <InputText v-model="draft.profile.avatarUrl" class="w-full" placeholder="https://..." />
                 </div>
               </div>
             </div>
@@ -287,6 +281,199 @@
                 >
                   <i class="pi pi-refresh" /> Reset to defaults
                 </button>
+              </div>
+            </div>
+          </Transition>
+
+          <!-- GitHub Sync -->
+          <button type="button" class="cms__accordion-trigger" @click="siteSection.github = !siteSection.github">
+            <span class="cms__accordion-label"><i class="pi pi-github" /> GitHub Sync</span>
+            <i class="pi" :class="siteSection.github ? 'pi-chevron-up' : 'pi-chevron-down'" />
+          </button>
+          <Transition name="cms-collapse">
+            <div v-if="siteSection.github" class="cms__accordion-body">
+              <div class="cms__form">
+                <div class="rounded-2xl border border-[var(--color-border)] bg-[var(--glass)] p-4 shadow-sm">
+                  <div class="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <div class="text-sm font-extrabold text-[color:var(--color-ink)]">Repository connection</div>
+                      <div class="text-xs font-semibold text-[color:var(--color-ink-soft)]">
+                        Changes made in production will commit to this repository.
+                      </div>
+                    </div>
+                    <Tag
+                      :value="githubReady ? 'Connected' : 'Not configured'"
+                      :severity="githubReady ? 'success' : 'warning'"
+                      class="!rounded-full"
+                    />
+                  </div>
+
+                  <div class="mt-4 grid gap-3 md:grid-cols-2">
+                    <div class="grid gap-2">
+                      <label class="text-xs font-bold text-[color:var(--color-ink-soft)]">Owner</label>
+                      <InputText v-model="githubForm.owner" placeholder="e.g. your-github-username" :disabled="!!envOwner" />
+                      <span v-if="envOwner" class="text-[11px] font-semibold text-[color:var(--color-ink-soft)]">Set via environment variable</span>
+                    </div>
+
+                    <div class="grid gap-2">
+                      <label class="text-xs font-bold text-[color:var(--color-ink-soft)]">Repository</label>
+                      <InputText v-model="githubForm.repo" placeholder="e.g. linkable" :disabled="!!envRepo" />
+                      <span v-if="envRepo" class="text-[11px] font-semibold text-[color:var(--color-ink-soft)]">Set via environment variable</span>
+                    </div>
+
+                    <div class="grid gap-2">
+                      <label class="text-xs font-bold text-[color:var(--color-ink-soft)]">Branch</label>
+                      <InputText v-model="githubForm.branch" placeholder="main" :disabled="!!envBranch" />
+                      <span v-if="envBranch" class="text-[11px] font-semibold text-[color:var(--color-ink-soft)]">Set via environment variable</span>
+                    </div>
+
+                    <div class="grid gap-2">
+                      <label class="text-xs font-bold text-[color:var(--color-ink-soft)]">Uploads directory</label>
+                      <InputText v-model="githubForm.uploadsDir" placeholder="public/uploads" />
+                      <span class="text-[11px] font-semibold text-[color:var(--color-ink-soft)]">
+                        Image uploads will be stored in this path.
+                      </span>
+                    </div>
+
+                    <div class="grid gap-2">
+                      <label class="text-xs font-bold text-[color:var(--color-ink-soft)]">Data file path</label>
+                      <InputText v-model="githubForm.dataPath" placeholder="cms-data.json" />
+                    </div>
+
+                    <div class="grid gap-2">
+                      <label class="text-xs font-bold text-[color:var(--color-ink-soft)]">Static data path</label>
+                      <InputText v-model="githubForm.staticDataPath" placeholder="public/data.json" />
+                      <span class="text-[11px] font-semibold text-[color:var(--color-ink-soft)]">
+                        Optional second file to keep your exported JSON in sync.
+                      </span>
+                    </div>
+
+                    <div class="grid gap-2">
+                      <label class="text-xs font-bold text-[color:var(--color-ink-soft)]">Blog directory</label>
+                      <InputText v-model="githubForm.blogDir" placeholder="blog" />
+                      <span class="text-[11px] font-semibold text-[color:var(--color-ink-soft)]">
+                        Blog markdown files are stored in this repo path.
+                      </span>
+                    </div>
+
+                    <div class="grid gap-2">
+                      <label class="text-xs font-bold text-[color:var(--color-ink-soft)]">Committer name</label>
+                      <InputText v-model="githubForm.committerName" placeholder="Linkable CMS" />
+                    </div>
+
+                    <div class="grid gap-2">
+                      <label class="text-xs font-bold text-[color:var(--color-ink-soft)]">Committer email</label>
+                      <InputText v-model="githubForm.committerEmail" placeholder="cms@linkable.local" />
+                    </div>
+
+                    <div class="md:col-span-2 grid gap-2">
+                      <label class="text-xs font-bold text-[color:var(--color-ink-soft)]">Personal access token</label>
+                      <InputText
+                        v-model="githubForm.token"
+                        type="password"
+                        placeholder="ghp_..."
+                        autocomplete="off"
+                      />
+                      <span class="text-[11px] font-semibold text-[color:var(--color-ink-soft)]">
+                        Store a token with <code>repo</code> scope. It's saved locally in your browser.
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  class="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-dashed border-[var(--color-border)] bg-[var(--glass-2)] p-4 text-[13px] font-semibold text-[color:var(--color-ink-soft)]"
+                >
+                  <div>
+                    <div class="font-extrabold text-[color:var(--color-ink)]">Tips</div>
+                    <ul class="mt-1 space-y-1 text-xs font-semibold text-[color:var(--color-ink-soft)]">
+                      <li>Use fine-grained PATs limited to this repository when possible.</li>
+                      <li>Commits run from your browser; no secrets leave your device.</li>
+                      <li>Keep static deployments fresh by running <code>npm run export</code> after syncing.</li>
+                    </ul>
+                  </div>
+
+                  <Button
+                    text
+                    severity="danger"
+                    class="!rounded-full"
+                    @click="clearGithubToken"
+                    :disabled="!githubForm.token"
+                  >
+                    <i class="pi pi-times" />
+                    <span class="ml-2">Clear token</span>
+                  </Button>
+                </div>
+
+                <div class="mt-4 flex gap-2 justify-end">
+                  <Button
+                    rounded
+                    severity="secondary"
+                    :loading="githubTesting"
+                    @click="handleGithubTest"
+                    class="!rounded-full"
+                  >
+                    <i class="pi pi-shield" />
+                    <span class="ml-2">Test connection</span>
+                  </Button>
+                  <Button
+                    rounded
+                    severity="secondary"
+                    :loading="githubSaving"
+                    @click="handleGithubSave"
+                  >
+                    <i class="pi pi-check" />
+                    <span class="ml-2">Save</span>
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </Transition>
+
+          <!-- Search -->
+          <button type="button" class="cms__accordion-trigger" @click="siteSection.search = !siteSection.search">
+            <span class="cms__accordion-label"><i class="pi pi-search" /> Search</span>
+            <i class="pi" :class="siteSection.search ? 'pi-chevron-up' : 'pi-chevron-down'" />
+          </button>
+          <Transition name="cms-collapse">
+            <div v-if="siteSection.search" class="cms__accordion-body">
+              <div class="cms__form">
+                <div class="cms__help" style="margin-bottom: 8px">Enable search bars for visitors to filter content in each section.</div>
+                <div class="cms__field" style="display: flex; align-items: center; gap: 12px">
+                  <ToggleSwitch v-model="draft.profile.searchLinks" />
+                  <label class="cms__label" style="margin: 0">Links search</label>
+                </div>
+                <div class="cms__field" style="display: flex; align-items: center; gap: 12px">
+                  <ToggleSwitch v-model="draft.profile.searchGallery" />
+                  <label class="cms__label" style="margin: 0">Gallery search</label>
+                </div>
+                <div class="cms__field" style="display: flex; align-items: center; gap: 12px">
+                  <ToggleSwitch v-model="draft.profile.searchBlog" />
+                  <label class="cms__label" style="margin: 0">Blog search</label>
+                </div>
+              </div>
+            </div>
+          </Transition>
+
+          <!-- Scripts -->
+          <button type="button" class="cms__accordion-trigger" @click="siteSection.scripts = !siteSection.scripts">
+            <span class="cms__accordion-label"><i class="pi pi-code" /> Scripts</span>
+            <i class="pi" :class="siteSection.scripts ? 'pi-chevron-up' : 'pi-chevron-down'" />
+          </button>
+          <Transition name="cms-collapse">
+            <div v-if="siteSection.scripts" class="cms__accordion-body">
+              <div class="cms__form">
+                <div class="cms__help" style="margin-bottom: 8px">Inject custom JavaScript for analytics, tracking pixels, or other third-party scripts.</div>
+                <div class="cms__field">
+                  <label class="cms__label">Head scripts</label>
+                  <div class="cms__help">Inserted inside <code>&lt;head&gt;</code> — ideal for analytics, meta-pixel, etc.</div>
+                  <Textarea v-model="draft.scripts.headScript" rows="5" placeholder='<script src="https://..."></script>' style="font-family: monospace; font-size: 13px" />
+                </div>
+                <div class="cms__field">
+                  <label class="cms__label">Body-end scripts</label>
+                  <div class="cms__help">Inserted just before <code>&lt;/body&gt;</code> — for chat widgets, defer scripts, etc.</div>
+                  <Textarea v-model="draft.scripts.bodyEndScript" rows="5" placeholder='<script src="https://..."></script>' style="font-family: monospace; font-size: 13px" />
+                </div>
               </div>
             </div>
           </Transition>
@@ -680,142 +867,76 @@
           </div>
         </section>
 
-        <section v-else-if="tab === 'github'" class="cms__panel">
-          <div class="cms__panel-head">
-            <div class="cms__title">GitHub Sync</div>
-            <div class="cms__sub">Connect your repository for automatic syncing.</div>
+        <section v-else-if="tab === 'blog'" class="cms__panel">
+          <div class="cms__panel-head cms__panel-head--row">
+            <div>
+              <div class="cms__title">Blog</div>
+              <div class="cms__sub">Create and manage blog posts (stored as Markdown files).</div>
+            </div>
+
+            <Button rounded class="cms__primary cms__primary--addon" @click="openBlogEditorNew">
+              <i class="pi pi-plus" />
+              <span class="cms__btn-label">New post</span>
+              <span class="cms__btn-label--compact">New</span>
+            </Button>
+          </div>
+
+          <div class="cms__card" style="margin-bottom: 10px">
+            <div class="cms__form">
+              <div class="cms__field">
+                <label class="cms__label">Tab label</label>
+                <InputText v-model="draft.profile.blogLabel" class="w-full" placeholder="Blog" />
+                <div class="cms__help">Customise the tab name shown on the public page.</div>
+              </div>
+            </div>
           </div>
 
           <div class="cms__card">
             <div class="cms__form">
-              <div class="rounded-2xl border border-[var(--color-border)] bg-[var(--glass)] p-4 shadow-sm">
-                <div class="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <div class="text-sm font-extrabold text-[color:var(--color-ink)]">Repository connection</div>
-                    <div class="text-xs font-semibold text-[color:var(--color-ink-soft)]">
-                      Changes made in production will commit to this repository.
-                    </div>
-                  </div>
-                  <Tag
-                    :value="githubReady ? 'Connected' : 'Not configured'"
-                    :severity="githubReady ? 'success' : 'warning'"
-                    class="!rounded-full"
-                  />
-                </div>
-
-                <div class="mt-4 grid gap-3 md:grid-cols-2">
-                  <div class="grid gap-2">
-                    <label class="text-xs font-bold text-[color:var(--color-ink-soft)]">Owner</label>
-                    <InputText v-model="githubForm.owner" placeholder="e.g. your-github-username" :disabled="!!envOwner" />
-                    <span v-if="envOwner" class="text-[11px] font-semibold text-[color:var(--color-ink-soft)]">Set via environment variable</span>
-                  </div>
-
-                  <div class="grid gap-2">
-                    <label class="text-xs font-bold text-[color:var(--color-ink-soft)]">Repository</label>
-                    <InputText v-model="githubForm.repo" placeholder="e.g. linkable" :disabled="!!envRepo" />
-                    <span v-if="envRepo" class="text-[11px] font-semibold text-[color:var(--color-ink-soft)]">Set via environment variable</span>
-                  </div>
-
-                  <div class="grid gap-2">
-                    <label class="text-xs font-bold text-[color:var(--color-ink-soft)]">Branch</label>
-                    <InputText v-model="githubForm.branch" placeholder="main" :disabled="!!envBranch" />
-                    <span v-if="envBranch" class="text-[11px] font-semibold text-[color:var(--color-ink-soft)]">Set via environment variable</span>
-                  </div>
-
-                  <div class="grid gap-2">
-                    <label class="text-xs font-bold text-[color:var(--color-ink-soft)]">Uploads directory</label>
-                    <InputText v-model="githubForm.uploadsDir" placeholder="public/uploads" />
-                    <span class="text-[11px] font-semibold text-[color:var(--color-ink-soft)]">
-                      Image uploads will be stored in this path.
-                    </span>
-                  </div>
-
-                  <div class="grid gap-2">
-                    <label class="text-xs font-bold text-[color:var(--color-ink-soft)]">Data file path</label>
-                    <InputText v-model="githubForm.dataPath" placeholder="cms-data.json" />
-                  </div>
-
-                  <div class="grid gap-2">
-                    <label class="text-xs font-bold text-[color:var(--color-ink-soft)]">Static data path</label>
-                    <InputText v-model="githubForm.staticDataPath" placeholder="public/data.json" />
-                    <span class="text-[11px] font-semibold text-[color:var(--color-ink-soft)]">
-                      Optional second file to keep your exported JSON in sync.
-                    </span>
-                  </div>
-
-                  <div class="grid gap-2">
-                    <label class="text-xs font-bold text-[color:var(--color-ink-soft)]">Committer name</label>
-                    <InputText v-model="githubForm.committerName" placeholder="Linkable CMS" />
-                  </div>
-
-                  <div class="grid gap-2">
-                    <label class="text-xs font-bold text-[color:var(--color-ink-soft)]">Committer email</label>
-                    <InputText v-model="githubForm.committerEmail" placeholder="cms@linkable.local" />
-                  </div>
-
-                  <div class="md:col-span-2 grid gap-2">
-                    <label class="text-xs font-bold text-[color:var(--color-ink-soft)]">Personal access token</label>
-                    <InputText
-                      v-model="githubForm.token"
-                      type="password"
-                      placeholder="ghp_..."
-                      autocomplete="off"
-                    />
-                    <span class="text-[11px] font-semibold text-[color:var(--color-ink-soft)]">
-                      Store a token with <code>repo</code> scope. It's saved locally in your browser.
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div
-                class="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-dashed border-[var(--color-border)] bg-[var(--glass-2)] p-4 text-[13px] font-semibold text-[color:var(--color-ink-soft)]"
-              >
+              <div class="flex items-center justify-between gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--glass-2)] p-3">
                 <div>
-                  <div class="font-extrabold text-[color:var(--color-ink)]">Tips</div>
-                  <ul class="mt-1 space-y-1 text-xs font-semibold text-[color:var(--color-ink-soft)]">
-                    <li>Use fine-grained PATs limited to this repository when possible.</li>
-                    <li>Commits run from your browser; no secrets leave your device.</li>
-                    <li>Keep static deployments fresh by running <code>npm run export</code> after syncing.</li>
-                  </ul>
+                  <div class="text-xs font-extrabold text-[color:var(--color-ink)]">Enable blog</div>
+                  <div class="mt-0.5 text-xs font-semibold text-[color:var(--color-ink-soft)]">
+                    When disabled, the blog tab will not appear on the public page.
+                  </div>
                 </div>
-
-                <Button
-                  text
-                  severity="danger"
-                  class="!rounded-full"
-                  @click="clearGithubToken"
-                  :disabled="!githubForm.token"
-                >
-                  <i class="pi pi-times" />
-                  <span class="ml-2">Clear token</span>
-                </Button>
+                <ToggleSwitch v-model="draft.blog.enabled" />
               </div>
             </div>
 
-            <div class="mt-4 flex gap-2 justify-end">
-              <Button
-                rounded
-                severity="secondary"
-                :loading="githubTesting"
-                @click="handleGithubTest"
-                class="!rounded-full"
+            <div v-if="blogPosts.length === 0" class="cms__empty mt-3">
+              <div class="cms__empty-title">No blog posts yet</div>
+              <div class="cms__empty-sub">Click "New post" to create your first article.</div>
+            </div>
+
+            <div v-else class="cms__blogList cms__list mt-3">
+              <button
+                v-for="post in blogPosts"
+                :key="post.slug"
+                type="button"
+                class="cms__row"
+                @click="openBlogEditorExisting(post.slug)"
               >
-                <i class="pi pi-shield" />
-                <span class="ml-2">Test connection</span>
-              </Button>
-              <Button
-                rounded
-                severity="secondary"
-                :loading="githubSaving"
-                @click="handleGithubSave"
-              >
-                <i class="pi pi-check" />
-                <span class="ml-2">Save</span>
-              </Button>
+                <span class="cms__row-thumb">
+                  <i class="pi pi-file-edit text-[color:var(--color-ink-soft)]" />
+                </span>
+
+                <span class="cms__row-text">
+                  <span class="cms__row-title">{{ post.title }}</span>
+                  <span class="cms__row-sub">{{ post.date }}{{ post.tags.length ? ' · ' + post.tags.join(', ') : '' }}</span>
+                </span>
+
+                <span class="cms__row-meta">
+                  <Tag v-if="!post.published" severity="warning" value="Draft" class="!rounded-full" />
+                  <i v-else class="pi pi-check-circle cms__ok" />
+                  <i class="pi pi-angle-right text-[color:var(--color-ink-soft)]" />
+                </span>
+              </button>
             </div>
           </div>
         </section>
+
+
       </div>
     </div>
 
@@ -863,14 +984,23 @@
       v-if="activeGalleryItem"
       v-model:open="galleryEditorOpen"
       :item="activeGalleryItem"
+      :allTags="allGalleryTags"
       @update:item="updateGalleryItem"
       @delete="deleteActiveGalleryItem"
+    />
+    <BlogEditorDrawer
+      v-model:open="blogEditorOpen"
+      :post="blogEditorPost"
+      :originalSlug="blogEditorOriginalSlug"
+      :allTags="allBlogTags"
+      @saved="refreshBlogPosts"
+      @deleted="refreshBlogPosts"
     />
   </Dialog>
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, reactive, ref, watch } from "vue";
+import { computed, defineComponent, onMounted, reactive, ref, watch } from "vue";
 import draggable from "vuedraggable";
 
 import Button from "primevue/button";
@@ -887,6 +1017,7 @@ import LinkEditorDrawer from "./LinkEditorDrawer.vue";
 import SocialEditorDrawer from "./SocialEditorDrawer.vue";
 import ResumeEditorDrawer from "./ResumeEditorDrawer.vue";
 import GalleryEditorDrawer from "./GalleryEditorDrawer.vue";
+import BlogEditorDrawer from "./BlogEditorDrawer.vue";
 import {
   type BioLink,
   type BioModel,
@@ -911,6 +1042,12 @@ import {
   sanitizeModel,
   stableStringify,
 } from "../lib/model";
+import {
+  fetchBlogPosts,
+  fetchBlogPost,
+  type BlogPostMeta,
+  type BlogPost,
+} from "../lib/blog";
 import {
   loadGithubSettings,
   saveGithubSettings,
@@ -937,11 +1074,14 @@ export default defineComponent({
     ImageUploadField,
     ResumeEditorDrawer,
     GalleryEditorDrawer,
+    BlogEditorDrawer,
     ToggleSwitch,
   },
   props: {
     open: { type: Boolean, required: true },
     model: { type: Object as () => BioModel, required: true },
+    initialTab: { type: String as () => "profile" | "links" | "socials" | "resume" | "gallery" | "blog", default: "links" },
+    initialBlogSlug: { type: String, default: "" },
   },
   emits: ["update:open", "update:model", "open-github"],
   setup(props, { emit }) {
@@ -950,16 +1090,29 @@ export default defineComponent({
     const visible = ref(props.open);
     watch(
       () => props.open,
-      (v) => (visible.value = v),
+      (v) => {
+        visible.value = v;
+        if (v) {
+          tab.value = props.initialTab;
+          // If a blog slug is provided, auto-open the blog editor for that post
+          if (props.initialBlogSlug) {
+            tab.value = 'blog';
+            openBlogEditorExisting(props.initialBlogSlug);
+          }
+        }
+      },
     );
     watch(visible, (v) => emit("update:open", v));
 
-    const tab = ref<"profile" | "links" | "socials" | "resume" | "gallery" | "github">("links");
+    const tab = ref<"profile" | "links" | "socials" | "resume" | "gallery" | "blog">(props.initialTab);
 
     const siteSection = reactive({
       identity: false,
       images: false,
       theme: false,
+      github: false,
+      search: false,
+      scripts: false,
     });
 
     const draft = ref<BioModel>(sanitizeModel(props.model));
@@ -1463,6 +1616,65 @@ export default defineComponent({
       });
     };
 
+    // ── Blog ─────────────────────────────────────────────────────────
+    const blogPosts = ref<BlogPostMeta[]>([]);
+    const blogPostCount = computed(() => blogPosts.value.length);
+    const blogEditorOpen = ref(false);
+    const blogEditorPost = ref<BlogPost | null>(null);
+    const blogEditorOriginalSlug = ref("");
+
+    const refreshBlogPosts = async () => {
+      try {
+        blogPosts.value = await fetchBlogPosts();
+      } catch {
+        blogPosts.value = [];
+      }
+    };
+
+    // Load blog posts when tab becomes 'blog'
+    watch(tab, (t) => {
+      if (t === "blog") refreshBlogPosts();
+    });
+
+    // Also load on mount
+    onMounted(() => {
+      refreshBlogPosts();
+    });
+
+    const openBlogEditorNew = () => {
+      blogEditorPost.value = null;
+      blogEditorOriginalSlug.value = "";
+      blogEditorOpen.value = true;
+    };
+
+    const openBlogEditorExisting = async (slug: string) => {
+      try {
+        const post = await fetchBlogPost(slug);
+        blogEditorPost.value = post;
+        blogEditorOriginalSlug.value = slug;
+        blogEditorOpen.value = true;
+      } catch {
+        toast.add({ severity: "error", summary: "Error", detail: "Could not load blog post.", life: 2600 });
+      }
+    };
+
+    // ── Tag collections for editor drawers ───────────────────────
+    const allGalleryTags = computed(() => {
+      const tagSet = new Set<string>();
+      for (const item of draft.value.gallery.items) {
+        if (item.tags) item.tags.forEach((t: string) => tagSet.add(t));
+      }
+      return [...tagSet].sort();
+    });
+
+    const allBlogTags = computed(() => {
+      const tagSet = new Set<string>();
+      for (const p of blogPosts.value) {
+        if (p.tags) p.tags.forEach((t: string) => tagSet.add(t));
+      }
+      return [...tagSet].sort();
+    });
+
     return {
       visible,
       tab,
@@ -1523,6 +1735,16 @@ export default defineComponent({
       createAndEditGalleryItem,
       updateGalleryItem,
       deleteActiveGalleryItem,
+      blogPosts,
+      blogPostCount,
+      blogEditorOpen,
+      blogEditorPost,
+      blogEditorOriginalSlug,
+      openBlogEditorNew,
+      openBlogEditorExisting,
+      refreshBlogPosts,
+      allGalleryTags,
+      allBlogTags,
     };
   },
 });
@@ -1880,6 +2102,10 @@ cms__socialList .cms__row {
 }
 
 .cms__socialList .cms__row {
+  grid-template-columns: 44px 1fr auto;
+}
+
+.cms__blogList .cms__row {
   grid-template-columns: 44px 1fr auto;
 }
 

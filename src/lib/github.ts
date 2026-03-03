@@ -9,6 +9,7 @@ export type GithubSettings = {
   dataPath: string;
   staticDataPath: string;
   uploadsDir: string;
+  blogDir: string;
   committerName: string;
   committerEmail: string;
 };
@@ -20,6 +21,7 @@ const DEFAULT_SETTINGS: GithubSettings = {
   dataPath: "data.json",
   staticDataPath: "",
   uploadsDir: "uploads",
+  blogDir: "blog",
   committerName: "Linkable CMS",
   committerEmail: "cms@linkable.local",
 };
@@ -36,6 +38,7 @@ const normalizeSettings = (input?: Partial<GithubSettings>): GithubSettings => (
   dataPath: input?.dataPath?.trim() || "data.json",
   staticDataPath: input?.staticDataPath?.trim() ?? "",
   uploadsDir: input?.uploadsDir?.trim() || "uploads",
+  blogDir: input?.blogDir?.trim() || "blog",
   committerName: input?.committerName?.trim() || "Linkable CMS",
   committerEmail: input?.committerEmail?.trim() || "cms@linkable.local",
 });
@@ -438,6 +441,71 @@ export const pushCmsDataToGithub = async (json: string, commitMessage?: string):
   if (staticPath && staticPath !== settings.dataPath) {
     await commitBase64Content(settings, token, staticPath, base64Content, `${message} (static)`);
   }
+};
+
+// ---------------------------------------------------------------------------
+// Blog post sync (production)
+
+const deleteGithubContent = async (
+  settings: GithubSettings,
+  token: string,
+  repoPath: string,
+  message: string,
+): Promise<void> => {
+  const existing = await fetchContentMeta(settings, token, repoPath);
+  if (!existing?.sha) return; // file doesn't exist — nothing to delete
+
+  const encodedPath = encodeRepoPath(repoPath);
+  const url = `${API_BASE}/repos/${settings.owner}/${settings.repo}/contents/${encodedPath}`;
+
+  const body: Record<string, unknown> = {
+    message,
+    sha: existing.sha,
+    branch: settings.branch || "main",
+  };
+
+  if (settings.committerName && settings.committerEmail) {
+    body.committer = { name: settings.committerName, email: settings.committerEmail };
+  }
+
+  const response = await fetch(url, {
+    method: "DELETE",
+    headers: { ...requestHeaders(token), "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    let reason = `${response.status} ${response.statusText}`;
+    try {
+      const payload = (await response.json()) as { message?: string };
+      if (payload?.message) reason = payload.message;
+    } catch { /* ignore */ }
+    throw new Error(`GitHub delete failed: ${reason}`);
+  }
+};
+
+export const pushBlogPostToGithub = async (
+  slug: string,
+  markdown: string,
+  commitMessage?: string,
+): Promise<void> => {
+  const { settings, token } = ensureGithubCredentials();
+  const blogDir = settings.blogDir || DEFAULT_SETTINGS.blogDir;
+  const repoPath = `${blogDir}/${slug}.md`;
+  const message = commitMessage?.trim() || `Update blog post: ${slug}`;
+  const base64Content = textToBase64(markdown);
+  await commitBase64Content(settings, token, repoPath, base64Content, message);
+};
+
+export const deleteBlogPostFromGithub = async (
+  slug: string,
+  commitMessage?: string,
+): Promise<void> => {
+  const { settings, token } = ensureGithubCredentials();
+  const blogDir = settings.blogDir || DEFAULT_SETTINGS.blogDir;
+  const repoPath = `${blogDir}/${slug}.md`;
+  const message = commitMessage?.trim() || `Delete blog post: ${slug}`;
+  await deleteGithubContent(settings, token, repoPath, message);
 };
 
 export const testGithubConnection = async (settings: GithubSettings, token: string): Promise<void> => {

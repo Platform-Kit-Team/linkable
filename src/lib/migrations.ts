@@ -29,7 +29,7 @@
 
 // ── current version ──────────────────────────────────────────────────
 
-export const CURRENT_SCHEMA_VERSION = 8;
+export const CURRENT_SCHEMA_VERSION = 12;
 
 // ── migration registry ──────────────────────────────────────────────
 
@@ -167,6 +167,63 @@ const migrations: Migration[] = [
         data.theme.preset ??= "light";
       }
       data.schemaVersion = 8;
+      return data;
+    },
+  },
+
+  {
+    toVersion: 9,
+    migrate: (data) => {
+      // v8 → v9: add blog section and blogLabel to profile
+      if (!data.blog || typeof data.blog !== "object") {
+        data.blog = { enabled: false };
+      }
+      if (data.profile && typeof data.profile === "object") {
+        data.profile.blogLabel ??= "";
+      }
+      data.schemaVersion = 9;
+      return data;
+    },
+  },
+
+  {
+    toVersion: 10,
+    migrate: (data) => {
+      // v9 → v10: add search toggles (links, gallery, blog) to profile
+      if (data.profile && typeof data.profile === "object") {
+        data.profile.searchLinks ??= false;
+        data.profile.searchGallery ??= false;
+        data.profile.searchBlog ??= false;
+      }
+      data.schemaVersion = 10;
+      return data;
+    },
+  },
+
+  {
+    toVersion: 11,
+    migrate: (data) => {
+      // v10 → v11: add tags array to gallery items
+      if (data.gallery && typeof data.gallery === "object" && Array.isArray(data.gallery.items)) {
+        for (const item of data.gallery.items) {
+          if (!Array.isArray(item.tags)) {
+            item.tags = [];
+          }
+        }
+      }
+      data.schemaVersion = 11;
+      return data;
+    },
+  },
+
+  {
+    toVersion: 12,
+    migrate: (data) => {
+      // v11 → v12: add scripts object for custom JS injection (head / body-end)
+      if (!data.scripts || typeof data.scripts !== "object") {
+        data.scripts = { headScript: "", bodyEndScript: "" };
+      }
+      data.schemaVersion = 12;
       return data;
     },
   },

@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 8,
+  "schemaVersion": 12,
   "profile": {
     "displayName": "Linkable",
     "tagline": "Design-forward links. Clean, fast, yours.",
@@ -7,7 +7,11 @@
     "bannerUrl": "",
     "linksLabel": "",
     "resumeLabel": "",
-    "galleryLabel": ""
+    "galleryLabel": "",
+    "blogLabel": "",
+    "searchLinks": false,
+    "searchGallery": false,
+    "searchBlog": false
   },
   "links": [
     {
@@ -62,6 +66,13 @@
   "gallery": {
     "enabled": false,
     "items": []
+  },
+  "blog": {
+    "enabled": false
+  },
+  "scripts": {
+    "headScript": "",
+    "bodyEndScript": ""
   },
   "theme": {
     "preset": "light",

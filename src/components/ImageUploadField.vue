@@ -4,19 +4,61 @@
       <label class="text-xs font-extrabold text-[color:var(--color-ink-soft)]">
         {{ label }}
       </label>
-      <button
-        v-if="modelValue"
-        type="button"
-        class="rounded-full border border-[var(--color-border)] bg-[var(--glass-strong)] px-3 py-1 text-xs font-semibold text-[color:var(--color-ink)] shadow-sm transition hover:bg-[var(--glass-strong)]"
-        @click.stop="clearImage"
-        :disabled="uploading"
-      >
-        Remove
-      </button>
+      <div class="flex items-center gap-2">
+        <button
+          type="button"
+          class="rounded-full border border-[var(--color-border)] bg-[var(--glass-strong)] px-2.5 py-0.5 text-[11px] font-semibold text-[color:var(--color-ink-soft)] transition hover:text-[color:var(--color-ink)]"
+          @click.stop="showUrlInput = !showUrlInput"
+        >
+          <i class="pi pi-link mr-1 text-[10px]" />{{ showUrlInput ? 'Hide URL' : 'Paste URL' }}
+        </button>
+        <button
+          v-if="modelValue"
+          type="button"
+          class="rounded-full border border-[var(--color-border)] bg-[var(--glass-strong)] px-2.5 py-0.5 text-[11px] font-semibold text-red-500/80 transition hover:text-red-600"
+          @click.stop="clearImage"
+          :disabled="uploading"
+        >
+          Remove
+        </button>
+      </div>
+    </div>
+
+    <!-- Collapsible URL input -->
+    <div v-if="showUrlInput" class="flex gap-2">
+      <InputText
+        :modelValue="modelValue"
+        @update:modelValue="$emit('update:modelValue', $event)"
+        class="w-full !text-xs"
+        placeholder="https://..."
+      />
+    </div>
+
+    <!-- Thumbnail preview OR drop zone -->
+    <div v-if="modelValue" class="relative w-full overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--glass)] shadow-sm">
+      <div class="flex items-center gap-3 p-2">
+        <img :src="modelValue" alt="" class="block h-16 w-auto max-w-[120px] rounded-lg object-contain" />
+        <button
+          type="button"
+          class="ml-auto rounded-full border border-[var(--color-border)] bg-[var(--glass-strong)] px-3 py-1 text-[11px] font-semibold text-[color:var(--color-ink-soft)] transition hover:text-[color:var(--color-ink)]"
+          @click="browse"
+          :disabled="uploading || !canUpload"
+        >
+          <i class="pi pi-sync mr-1 text-[10px]" />Replace
+        </button>
+      </div>
+      <input
+        ref="fileInput"
+        type="file"
+        accept="image/*"
+        class="hidden"
+        @change="onFileChange"
+      />
     </div>
 
     <div
-      class="group relative overflow-hidden rounded-2xl border-2 border-dashed border-[var(--color-border)] bg-[var(--glass)] transition"
+      v-else
+      class="group relative w-full overflow-hidden rounded-2xl border-2 border-dashed border-gray-300 bg-[var(--glass)] transition"
       :class="dropZoneState"
       @click="browse"
       @dragenter.prevent="onDragEnter"
@@ -34,41 +76,29 @@
 
       <div
         v-if="uploading"
-        class="absolute inset-0 z-10 grid place-items-center bg-[var(--glass-strong)] text-sm font-semibold text-[color:var(--color-ink)]"
+        class="absolute inset-0 z-10 grid place-items-center bg-[var(--glass-strong)] text-xs font-semibold text-[color:var(--color-ink)]"
       >
         Uploading…
       </div>
 
       <div
-        v-if="!modelValue"
-        class="pointer-events-none flex flex-col items-center justify-center gap-3 px-6 py-8 text-center sm:px-7 sm:py-9"
+        class="pointer-events-none flex flex-col items-center justify-center gap-2 px-4 py-5 text-center"
       >
         <div
-          class="flex h-14 w-14 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--glass-strong)] text-[color:var(--color-ink-soft)] shadow-sm"
+          class="flex h-10 w-10 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--glass-strong)] text-[color:var(--color-ink-soft)] shadow-sm"
         >
-          <i class="pi pi-image text-lg"></i>
+          <i class="pi pi-image text-sm"></i>
         </div>
-        <div class="text-sm font-semibold text-[color:var(--color-ink)]">
+        <div class="text-xs font-semibold text-[color:var(--color-ink)]">
           {{ uploadHeadline }}
         </div>
-        <div class="text-xs font-medium leading-relaxed text-[color:var(--color-ink-soft)]">
+        <div class="text-[11px] font-medium leading-relaxed text-[color:var(--color-ink-soft)]">
           {{ helperCopy }}
-        </div>
-      </div>
-
-      <div v-else class="relative">
-        <img :src="modelValue" alt="" class="h-48 w-full object-cover" />
-        <div
-          class="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-between gap-3 bg-gradient-to-t from-[rgba(11,18,32,0.72)] to-transparent px-4 pb-3 pt-10"
-        >
-          <div class="text-left text-xs font-semibold uppercase tracking-wide text-white/80">
-            Drop a new image to replace
-          </div>
         </div>
       </div>
     </div>
 
-    <div class="text-xs font-semibold text-[color:var(--color-ink-soft)]">
+    <div class="text-[11px] font-semibold text-[color:var(--color-ink-soft)]">
       <slot name="helper">
         {{ defaultHelper }}
       </slot>
@@ -79,6 +109,7 @@
 <script lang="ts" setup>
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { useToast } from "primevue/usetoast";
+import InputText from "primevue/inputtext";
 
 import {
   canUseGithubSync,
@@ -115,6 +146,7 @@ const toast = useToast();
 const fileInput = ref<HTMLInputElement | null>(null);
 const dragging = ref(false);
 const uploading = ref(false);
+const showUrlInput = ref(false);
 
 const isDev = import.meta.env.DEV;
 const githubReady = ref(false);

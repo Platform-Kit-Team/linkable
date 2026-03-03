@@ -2,17 +2,27 @@
   <Drawer
     v-model:visible="visible"
     position="right"
-    :style="{ width: 'min(580px, 96vw)' }"
+    :style="{ width: expanded ? '100vw' : 'min(580px, 96vw)' }"
     :showCloseIcon="true"
   >
     <template #header>
-      <div>
-        <div class="text-sm font-extrabold tracking-tight text-[color:var(--color-ink)]">
-          Edit Gallery Item
+      <div class="flex w-full items-center justify-between">
+        <div>
+          <div class="text-sm font-extrabold tracking-tight text-[color:var(--color-ink)]">
+            Edit Gallery Item
+          </div>
+          <div class="mt-0.5 text-xs font-semibold text-[color:var(--color-ink-soft)]">
+            Update details, then close to continue.
+          </div>
         </div>
-        <div class="mt-0.5 text-xs font-semibold text-[color:var(--color-ink-soft)]">
-          Update details, then close to continue.
-        </div>
+        <button
+          type="button"
+          class="cms-expand-toggle hidden md:flex"
+          :title="expanded ? 'Collapse panel' : 'Expand panel'"
+          @click="expanded = !expanded"
+        >
+          <i class="pi" :class="expanded ? 'pi-angle-right' : 'pi-angle-left'" />
+        </button>
       </div>
     </template>
 
@@ -20,6 +30,46 @@
       <div class="rounded-2xl border border-[var(--color-border)] bg-[var(--glass)] p-3 shadow-sm">
         <div class="grid gap-3">
           <!-- Type selector -->
+          <!-- ═══════════ COMMON FIELDS ═══════════ -->
+          <!-- Title -->
+          <div class="grid gap-1.5">
+            <label class="text-xs font-extrabold text-[color:var(--color-ink-soft)]">Title</label>
+            <InputText v-model="draftItem.title" class="w-full" placeholder="Give it a name…" />
+          </div>
+
+          <!-- Description -->
+          <div class="grid gap-1.5">
+            <label class="text-xs font-extrabold text-[color:var(--color-ink-soft)]">Description</label>
+            <Textarea v-model="draftItem.description" autoResize rows="3" class="w-full" placeholder="Optional caption / description…" />
+          </div>
+
+          <!-- Tags -->
+          <div class="grid gap-1.5">
+            <label class="text-xs font-extrabold text-[color:var(--color-ink-soft)]">Tags</label>
+            <MultiSelect
+              v-model="draftItem.tags"
+              :options="allGalleryTags"
+              display="chip"
+              filter
+              :maxSelectedLabels="10"
+              class="w-full"
+              placeholder="Select or type tags…"
+              @filter="onTagFilter"
+            >
+              <template #footer>
+                <div v-if="tagFilterValue && !allGalleryTags.includes(tagFilterValue)" class="px-3 py-2">
+                  <button
+                    type="button"
+                    class="w-full rounded-lg border border-dashed border-gray-300 px-3 py-1.5 text-xs font-semibold text-[color:var(--color-brand)] transition hover:bg-blue-50"
+                    @click="addNewTag(tagFilterValue)"
+                  >
+                    <i class="pi pi-plus mr-1 text-[10px]" />Create “{{ tagFilterValue }}”
+                  </button>
+                </div>
+              </template>
+            </MultiSelect>
+          </div>
+
           <div class="grid gap-1.5">
             <label class="text-xs font-extrabold text-[color:var(--color-ink-soft)]">Type</label>
             <div class="flex gap-2">
@@ -54,13 +104,6 @@
               description="PNG, JPG, WEBP — the image to display in the gallery."
               :targetFilename="`${draftItem.id}.jpg`"
             />
-            <div class="grid gap-1.5">
-              <label class="text-xs font-extrabold text-[color:var(--color-ink-soft)]">Image URL (optional)</label>
-              <InputText v-model="draftItem.src" class="w-full" placeholder="https://..." />
-              <div class="text-[11px] font-semibold text-[color:var(--color-ink-soft)]">
-                Paste a URL instead of uploading if you prefer.
-              </div>
-            </div>
           </template>
 
           <!-- ═══════════ VIDEO FIELDS ═══════════ -->
@@ -78,7 +121,7 @@
             <div class="grid gap-1.5">
               <label class="text-xs font-extrabold text-[color:var(--color-ink-soft)]">Upload MP4 (optional)</label>
               <div
-                class="group relative cursor-pointer overflow-hidden rounded-2xl border-2 border-dashed border-[var(--color-border)] bg-[var(--glass)] transition hover:border-[rgba(59,130,246,0.55)] hover:bg-[var(--glass-strong)]"
+                class="group relative cursor-pointer overflow-hidden rounded-2xl border-2 border-dashed border-gray-300 bg-[var(--glass)] transition hover:border-[rgba(59,130,246,0.55)] hover:bg-[var(--glass-strong)]"
                 :class="{ 'pointer-events-none opacity-60': videoUploading }"
                 @click="browseVideo"
                 @dragenter.prevent
@@ -121,24 +164,7 @@
               description="A poster thumbnail shown before the video plays."
               :targetFilename="`${draftItem.id}-cover.jpg`"
             />
-            <div class="grid gap-1.5">
-              <label class="text-xs font-extrabold text-[color:var(--color-ink-soft)]">Cover URL (optional)</label>
-              <InputText v-model="draftItem.coverUrl" class="w-full" placeholder="https://..." />
-            </div>
           </template>
-
-          <!-- ═══════════ COMMON FIELDS ═══════════ -->
-          <!-- Title -->
-          <div class="grid gap-1.5">
-            <label class="text-xs font-extrabold text-[color:var(--color-ink-soft)]">Title</label>
-            <InputText v-model="draftItem.title" class="w-full" placeholder="Give it a name…" />
-          </div>
-
-          <!-- Description -->
-          <div class="grid gap-1.5">
-            <label class="text-xs font-extrabold text-[color:var(--color-ink-soft)]">Description</label>
-            <Textarea v-model="draftItem.description" autoResize rows="3" class="w-full" placeholder="Optional caption / description…" />
-          </div>
 
           <!-- Enabled toggle -->
           <div class="flex items-center justify-between gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--glass-2)] p-3">
@@ -170,11 +196,12 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, reactive, ref, watch, nextTick } from "vue";
+import { computed, defineComponent, reactive, ref, watch, nextTick } from "vue";
 
 import Button from "primevue/button";
 import Drawer from "primevue/drawer";
 import InputText from "primevue/inputtext";
+import MultiSelect from "primevue/multiselect";
 import Textarea from "primevue/textarea";
 import ToggleSwitch from "primevue/toggleswitch";
 import { useToast } from "primevue/usetoast";
@@ -184,16 +211,18 @@ import type { GalleryItem, GalleryItemType } from "../lib/model";
 
 export default defineComponent({
   name: "GalleryEditorDrawer",
-  components: { Drawer, Button, InputText, Textarea, ToggleSwitch, ImageUploadField },
+  components: { Drawer, Button, InputText, MultiSelect, Textarea, ToggleSwitch, ImageUploadField },
   props: {
     open: { type: Boolean, required: true },
     item: { type: Object as () => GalleryItem | null, default: null },
+    allTags: { type: Array as () => string[], default: () => [] },
   },
   emits: ["update:open", "update:item", "delete"],
   setup(props, { emit }) {
     const toast = useToast();
 
     const visible = ref(props.open);
+    const expanded = ref(false);
     watch(
       () => props.open,
       (v) => (visible.value = v),
@@ -292,8 +321,37 @@ export default defineComponent({
       }
     };
 
+    // ── Tags ──────────────────────────────────────────────────────
+    const tagFilterValue = ref("");
+
+    const allGalleryTags = computed(() => {
+      const set = new Set<string>(props.allTags);
+      // Also include any tags on the current draft
+      if (draftItem.value?.tags) {
+        for (const t of draftItem.value.tags) set.add(t);
+      }
+      return [...set].sort();
+    });
+
+    const onTagFilter = (event: any) => {
+      tagFilterValue.value = (event.value ?? "").trim();
+    };
+
+    const addNewTag = (tag: string) => {
+      if (!draftItem.value || !tag) return;
+      const normalized = tag.trim();
+      if (!normalized) return;
+      const tags = [...(draftItem.value.tags || [])];
+      if (!tags.includes(normalized)) {
+        tags.push(normalized);
+        draftItem.value = { ...draftItem.value, tags };
+      }
+      tagFilterValue.value = "";
+    };
+
     return {
       visible,
+      expanded,
       draftItem,
       setType,
       videoFileInput,
@@ -301,7 +359,43 @@ export default defineComponent({
       browseVideo,
       onDropVideo,
       onVideoFileChange,
+      allGalleryTags,
+      tagFilterValue,
+      onTagFilter,
+      addNewTag,
     };
   },
 });
 </script>
+
+<style scoped>
+:deep(.p-drawer) {
+  background: #ffffff !important;
+  transition: width 200ms ease;
+}
+:deep(.p-drawer-header) {
+  background: #ffffff !important;
+  border-bottom: 1px solid rgba(11, 18, 32, 0.08);
+}
+:deep(.p-drawer-content) {
+  background: #ffffff !important;
+}
+
+.cms-expand-toggle {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid rgba(11, 18, 32, 0.1);
+  background: rgba(255, 255, 255, 0.7);
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: rgba(11, 18, 32, 0.5);
+  transition: background 140ms ease, color 140ms ease;
+  flex-shrink: 0;
+}
+.cms-expand-toggle:hover {
+  background: rgba(11, 18, 32, 0.06);
+  color: rgba(11, 18, 32, 0.8);
+}
+</style>

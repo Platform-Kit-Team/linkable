@@ -7,11 +7,11 @@ A design-forward, open-source link-in-bio page with a built-in CMS. Built with V
 ## Features
 
 - **Glassmorphism design** — frosted-glass cards, soft shadows, smooth transitions
-- **Built-in CMS** — edit your profile, links, and socials 
+- **Built-in CMS** — edit your profile, links, and socials
 - **Banner image** — full-width hero image displayed inside the profile card
 - **Social links** — Instagram, GitHub, Email, etc
 - **Image uploads** — drag-and-drop image uploads for avatar, banner, and link thumbnails
-- **GitHub sync** — push/pull content to a private GitHub repo 
+- **GitHub sync** — push/pull content to a private GitHub repo
 - **CLI / npx support** — serve your site with one command, no cloning required
 - **Responsive** — works on mobile and desktop
 - **Static export** — builds to a static `dist/` folder, deployable anywhere
@@ -80,11 +80,11 @@ my-linkable-site/
 - Go to [vercel.com/new](https://vercel.com/new) and import your content repo
 - Configure the project settings:
 
-| Setting | Value |
-|---------|-------|
-| **Build Command** | `npx github:platform-kit-team/linkable build .` |
-| **Output Directory** | `dist` |
-| **Install Command** | _(leave blank)_ |
+| Setting              | Value                                           |
+| -------------------- | ----------------------------------------------- |
+| **Build Command**    | `npx github:platform-kit-team/linkable build .` |
+| **Output Directory** | `dist`                                          |
+| **Install Command**  | _(leave blank)_                                 |
 
 **3. Deploy**
 
@@ -133,7 +133,9 @@ Options:
         ├── migrations.ts   Schema versioning & migration pipeline
         ├── model.ts        Data types, sanitization, defaults
         └── persistence.ts  Fetch/save CMS data
-````
+```
+
+`
 
 ***
 
@@ -154,6 +156,7 @@ Options:
 | `cms-data.json`     | No         | Your personal CMS data      |
 | `public/data.json`  | No         | Production build content    |
 | `public/uploads/`   | No         | Uploaded images             |
+| `public/rss.xml`    | No         | Generated RSS feed          |
 
 On first run, `default-data.json` is automatically copied to `cms-data.json` and `public/data.json` if they don't exist.
 
@@ -230,6 +233,24 @@ When changing the data model (`BioModel`, `BioProfile`, `BioLink`, `SocialLink`)
 ***
 
 ## Deployment
+
+### RSS Feed
+
+An RSS feed is automatically generated at `/rss.xml` containing all published blog posts with full HTML content. It is:
+
+- **Built at build time** — generated into `public/rss.xml` alongside the blog JSON files
+- **Served in dev** — available at `http://localhost:8080/rss.xml` from the dev server
+- **Auto-discoverable** — an `<link rel="alternate">` tag in the HTML head lets RSS readers find it
+
+The feed uses your display name and tagline from the CMS as the channel title and description. Set the `VITE_SITE_URL` environment variable to your production domain so feed URLs point to the correct host:
+
+```env
+VITE_SITE_URL=https://yoursite.com
+```
+
+If not set, URLs default to `http://localhost:8080`.
+
+***
 
 ### Static hosting (Vercel, Netlify, etc.)
 

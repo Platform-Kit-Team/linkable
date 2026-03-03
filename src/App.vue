@@ -129,6 +129,19 @@
           <i class="pi pi-images" />
           {{ model.profile.galleryLabel || 'Gallery' }}
         </button>
+        <button
+          v-if="blogHasContent"
+          class="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition mx-1"
+          :class="
+            activeTab === 'blog'
+              ? 'bg-blue-500/10 shadow-lg  border-blue-500/30    text-[color:var(--color-brand)]'
+              : 'border-[var(--color-border)] bg-none text-[color:var(--color-ink-soft)] hover:bg-[var(--glass-strong)]'
+          "
+          @click="activeTab = 'blog'; currentBlogPost = null"
+        >
+          <i class="pi pi-pencil" />
+          {{ model.profile.blogLabel || 'Blog' }}
+        </button>
       </div>
 
       <!-- Links section -->
@@ -136,14 +149,27 @@
         v-if="showLinksSection"
         class="glass overflow-hidden rounded-[var(--radius-xl)] p-3 sm:p-4"
       >
-        <div v-if="enabledLinks.length" class="grid gap-2">
+        <!-- Search bar for links -->
+        <div v-if="model.profile.searchLinks && enabledLinks.length > 0" class="mb-3">
+          <div class="flex items-center gap-2.5 rounded-xl border border-transparent bg-[var(--glass)] px-3 py-2 shadow-[0_2px_6px_rgba(11,18,32,0.10),0_6px_16px_rgba(11,18,32,0.06)] backdrop-blur-md transition-colors focus-within:border-[var(--color-brand)] focus-within:ring-1 focus-within:ring-[var(--color-brand)]">
+            <i class="pi pi-search shrink-0 text-[13px] text-[color:var(--color-ink-soft)]" />
+            <input
+              v-model="searchLinksQuery"
+              type="text"
+              placeholder="Search links…"
+              class="min-w-0 flex-1 bg-transparent text-sm text-[color:var(--color-ink)] placeholder:text-[color:var(--color-ink-soft)] outline-none"
+            />
+          </div>
+        </div>
+
+        <div v-if="filteredLinks.length" class="grid gap-2">
           <a
-            v-for="link in enabledLinks"
+            v-for="link in filteredLinks"
             :key="link.id"
             class="group relative flex min-w-0 items-center justify-between gap-2 rounded-2xl border border-[var(--color-border)] bg-[var(--glass)] px-3 py-3 shadow-sm backdrop-blur-md transition hover:bg-[var(--glass-strong)] hover:shadow-[0_18px_52px_rgba(11,18,32,0.14)] sm:gap-3 sm:px-4"
             :href="link.url"
-            target="_blank"
-            rel="noreferrer"
+            :target="link.url.startsWith('#') ? '_self' : '_blank'"
+            :rel="link.url.startsWith('#') ? undefined : 'noreferrer'"
           >
             <div class="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
               <div
@@ -370,6 +396,33 @@
         v-if="showGallerySection"
         class="glass overflow-hidden rounded-[var(--radius-xl)] p-3 sm:p-6"
       >
+        <!-- Search bar for gallery -->
+        <div v-if="model.profile.searchGallery || availableGalleryTags.length > 0" class="mb-3">
+          <div class="flex items-center gap-2.5 rounded-xl border border-transparent bg-[var(--glass)] px-3 py-2 shadow-[0_2px_6px_rgba(11,18,32,0.10),0_6px_16px_rgba(11,18,32,0.06)] backdrop-blur-md transition-colors focus-within:border-[var(--color-brand)] focus-within:ring-1 focus-within:ring-[var(--color-brand)]">
+            <i v-if="model.profile.searchGallery" class="pi pi-search shrink-0 text-[13px] text-[color:var(--color-ink-soft)]" />
+            <input
+              v-if="model.profile.searchGallery"
+              v-model="searchGalleryQuery"
+              type="text"
+              placeholder="Search gallery…"
+              class="min-w-0 flex-1 bg-transparent text-sm text-[color:var(--color-ink)] placeholder:text-[color:var(--color-ink-soft)] outline-none"
+            />
+            <span v-if="!model.profile.searchGallery" class="min-w-0 flex-1" />
+            <button
+              v-if="availableGalleryTags.length > 0"
+              type="button"
+              class="relative shrink-0 rounded-lg p-1 text-[color:var(--color-ink-soft)] transition hover:text-[color:var(--color-brand)]"
+              @click.stop="galleryTagFilterOpen = true"
+            >
+              <i class="pi pi-filter text-[13px]" />
+              <span
+                v-if="selectedGalleryTags.length > 0"
+                class="absolute -right-1 -top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[var(--color-brand)] px-1 text-[9px] font-bold text-white"
+              >{{ selectedGalleryTags.length }}</span>
+            </button>
+          </div>
+        </div>
+
         <h2
           class="mb-3 text-[11px] font-extrabold uppercase tracking-widest text-[color:var(--color-ink-soft)] sm:mb-4 sm:text-xs"
         >
@@ -447,6 +500,105 @@
             </button>
           </template>
         </MasonryGrid>
+      </section>
+
+      <!-- Blog section -->
+      <section
+        v-if="showBlogSection"
+        class="glass overflow-hidden rounded-[var(--radius-xl)] p-3 sm:p-6"
+      >
+        <!-- Blog post detail view -->
+        <template v-if="currentBlogPost">
+          <BlogPostView :post="currentBlogPost" @back="currentBlogPost = null" />
+        </template>
+
+        <!-- Blog listing -->
+        <template v-else>
+          <!-- Search bar for blog -->
+          <div v-if="(model.profile.searchBlog || availableBlogTags.length > 0) && publishedBlogPosts.length > 0" class="mb-3">
+            <div class="flex items-center gap-2.5 rounded-xl border border-transparent bg-[var(--glass)] px-3 py-2 shadow-[0_2px_6px_rgba(11,18,32,0.10),0_6px_16px_rgba(11,18,32,0.06)] backdrop-blur-md transition-colors focus-within:border-[var(--color-brand)] focus-within:ring-1 focus-within:ring-[var(--color-brand)]">
+              <i v-if="model.profile.searchBlog" class="pi pi-search shrink-0 text-[13px] text-[color:var(--color-ink-soft)]" />
+              <input
+                v-if="model.profile.searchBlog"
+                v-model="searchBlogQuery"
+                type="text"
+                placeholder="Search posts…"
+                class="min-w-0 flex-1 bg-transparent text-sm text-[color:var(--color-ink)] placeholder:text-[color:var(--color-ink-soft)] outline-none"
+              />
+              <span v-if="!model.profile.searchBlog" class="min-w-0 flex-1" />
+              <button
+                v-if="availableBlogTags.length > 0"
+                type="button"
+                class="relative shrink-0 rounded-lg p-1 text-[color:var(--color-ink-soft)] transition hover:text-[color:var(--color-brand)]"
+                @click.stop="blogTagFilterOpen = true"
+              >
+                <i class="pi pi-filter text-[13px]" />
+                <span
+                  v-if="selectedBlogTags.length > 0"
+                  class="absolute -right-1 -top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[var(--color-brand)] px-1 text-[9px] font-bold text-white"
+                >{{ selectedBlogTags.length }}</span>
+              </button>
+            </div>
+          </div>
+
+          <h2
+            class="mb-3 text-[11px] font-extrabold uppercase tracking-widest text-[color:var(--color-ink-soft)] sm:mb-4 sm:text-xs"
+          >
+            {{ model.profile.blogLabel || 'Blog' }}
+          </h2>
+
+          <div v-if="filteredBlogPosts.length === 0" class="py-6 text-center text-sm text-[color:var(--color-ink-soft)]">
+            {{ searchBlogQuery.trim() ? 'No matching posts.' : 'No posts yet.' }}
+          </div>
+
+          <div v-else class="grid gap-3">
+            <button
+              v-for="post in filteredBlogPosts"
+              :key="post.slug"
+              type="button"
+              class="group flex items-start gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--glass)] p-3 text-left shadow-sm backdrop-blur-md transition hover:bg-[var(--glass-strong)] hover:shadow-[0_18px_52px_rgba(11,18,32,0.14)] sm:gap-4 sm:p-4"
+              @click="loadBlogPost(post.slug)"
+            >
+              <img
+                v-if="post.coverImage"
+                :src="resolveUploadUrl(post.coverImage)"
+                alt=""
+                class="h-16 w-16 shrink-0 rounded-xl border border-[var(--color-border)] object-cover sm:h-20 sm:w-20"
+                loading="lazy"
+              />
+              <div
+                v-else
+                class="grid h-16 w-16 shrink-0 place-items-center rounded-xl border border-[var(--color-border)] bg-[var(--glass-2)]"
+              >
+                <i class="pi pi-file-edit text-[color:var(--color-ink-soft)]" />
+              </div>
+
+              <div class="min-w-0 flex-1">
+                <div class="text-[13px] font-semibold text-[color:var(--color-ink)] sm:text-sm">
+                  {{ post.title }}
+                </div>
+                <div
+                  v-if="post.excerpt"
+                  class="mt-0.5 line-clamp-2 text-[11px] text-[color:var(--color-ink-soft)] sm:text-xs"
+                >
+                  {{ post.excerpt }}
+                </div>
+                <div class="mt-1 flex flex-wrap items-center gap-1.5 text-[10px] text-[color:var(--color-ink-soft)]">
+                  <span>{{ formatDate(post.date) }}</span>
+                  <span
+                    v-for="tag in post.tags"
+                    :key="tag"
+                    class="rounded-full border border-[var(--color-border)] bg-[var(--glass-2)] px-1.5 py-0.5"
+                  >
+                    {{ tag }}
+                  </span>
+                </div>
+              </div>
+
+              <i class="pi pi-arrow-right mt-1 shrink-0 text-[color:var(--color-ink-soft)] transition group-hover:translate-x-0.5" />
+            </button>
+          </div>
+        </template>
       </section>
 
       <!-- Lightbox overlay for images -->
@@ -548,6 +700,8 @@
       v-if="canUseCms"
       v-model:open="cmsOpen"
       :model="model"
+      :initial-tab="activeTab"
+      :initial-blog-slug="currentBlogPost?.slug ?? ''"
       :preview-mode="previewMode"
       @update:model="updateModel"
       @toggle-preview="togglePreviewMode"
@@ -589,6 +743,72 @@
     />
 
     <Toast />
+
+    <!-- Tag filter dialog (gallery) -->
+    <Dialog
+      v-model:visible="galleryTagFilterOpen"
+      modal
+      header="Filter by tags"
+      :style="{ width: 'min(400px, 90vw)' }"
+    >
+      <div class="flex flex-wrap gap-2">
+        <button
+          v-for="tag in availableGalleryTags"
+          :key="tag"
+          type="button"
+          class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition"
+          :class="selectedGalleryTags.includes(tag)
+            ? 'border-[var(--color-brand)]/30 bg-[var(--color-brand)]/10 text-[color:var(--color-brand)]'
+            : 'border-[var(--color-border)] bg-[var(--glass)] text-[color:var(--color-ink-soft)] hover:bg-[var(--glass-strong)]'"
+          @click="toggleGalleryTag(tag)"
+        >
+          <i class="pi text-[10px]" :class="selectedGalleryTags.includes(tag) ? 'pi-check-circle' : 'pi-circle'" />
+          {{ tag }}
+        </button>
+      </div>
+      <div v-if="selectedGalleryTags.length > 0" class="mt-4 flex justify-end">
+        <button
+          type="button"
+          class="text-xs font-semibold text-[color:var(--color-brand)] hover:underline"
+          @click="selectedGalleryTags = []"
+        >
+          Clear all
+        </button>
+      </div>
+    </Dialog>
+
+    <!-- Tag filter dialog (blog) -->
+    <Dialog
+      v-model:visible="blogTagFilterOpen"
+      modal
+      header="Filter by tags"
+      :style="{ width: 'min(400px, 90vw)' }"
+    >
+      <div class="flex flex-wrap gap-2">
+        <button
+          v-for="tag in availableBlogTags"
+          :key="tag"
+          type="button"
+          class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition"
+          :class="selectedBlogTags.includes(tag)
+            ? 'border-[var(--color-brand)]/30 bg-[var(--color-brand)]/10 text-[color:var(--color-brand)]'
+            : 'border-[var(--color-border)] bg-[var(--glass)] text-[color:var(--color-ink-soft)] hover:bg-[var(--glass-strong)]'"
+          @click="toggleBlogTag(tag)"
+        >
+          <i class="pi text-[10px]" :class="selectedBlogTags.includes(tag) ? 'pi-check-circle' : 'pi-circle'" />
+          {{ tag }}
+        </button>
+      </div>
+      <div v-if="selectedBlogTags.length > 0" class="mt-4 flex justify-end">
+        <button
+          type="button"
+          class="text-xs font-semibold text-[color:var(--color-brand)] hover:underline"
+          @click="selectedBlogTags = []"
+        >
+          Clear all
+        </button>
+      </div>
+    </Dialog>
 
     <!-- Floating CMS button -->
     <Transition name="cms-slide-right">
@@ -676,6 +896,7 @@ import GitCommitDialog from "./components/GitCommitDialog.vue";
 import GithubSettingsDialog from "./components/GithubSettingsDialog.vue";
 import VideoPlayer from "./components/VideoPlayer.vue";
 import MasonryGrid from "./components/MasonryGrid.vue";
+import BlogPostView from "./components/BlogPostView.vue";
 import type { MasonryItem } from "./components/MasonryGrid.vue";
 import {
   defaultModel,
@@ -689,6 +910,12 @@ import {
   getStagedData,
   clearStagedData,
 } from "./lib/persistence";
+import {
+  fetchBlogPosts,
+  fetchBlogPost,
+  type BlogPostMeta,
+  type BlogPost,
+} from "./lib/blog";
 import {
   GITHUB_SYNC_EVENT,
   canUseGithubSync,
@@ -712,6 +939,7 @@ export default defineComponent({
     GitCommitDialog,
     VideoPlayer,
     MasonryGrid,
+    BlogPostView,
   },
   setup() {
     const isDev = import.meta.env.DEV;
@@ -749,6 +977,8 @@ export default defineComponent({
           activeTab.value = "resume";
         } else if (hash === "#gallery" && galleryHasContent.value) {
           activeTab.value = "gallery";
+        } else if (hash === "#blog" && blogHasContent.value) {
+          activeTab.value = "blog";
         } else if (hash === "#cms") {
           cmsBtnVisible.value = true;
           localStorage.setItem("cms-button-visible", "true");
@@ -801,6 +1031,9 @@ export default defineComponent({
 
       modelLoaded.value = true;
 
+      // Load blog posts
+      await loadBlogPosts();
+
       // Apply hash-based tab after model is available
       applyHashTab();
 
@@ -818,6 +1051,9 @@ export default defineComponent({
           window.removeEventListener("keydown", keydownListener);
         }
       }
+      // Clean up injected script containers
+      _headContainer.remove();
+      _bodyContainer.remove();
     });
 
     // Apply theme CSS variables reactively
@@ -838,6 +1074,50 @@ export default defineComponent({
       if (t.colorBorder2) root.setProperty("--color-border-2", t.colorBorder2);
       if (t.radiusXl) root.setProperty("--radius-xl", t.radiusXl);
       if (t.radiusLg) root.setProperty("--radius-lg", t.radiusLg);
+    });
+
+    // Inject custom user scripts into <head> and before </body>
+    const _headContainer = document.createElement("div");
+    _headContainer.id = "__linkable-head-scripts";
+    const _bodyContainer = document.createElement("div");
+    _bodyContainer.id = "__linkable-body-scripts";
+
+    const injectScripts = (container: HTMLElement, html: string, parent: HTMLElement) => {
+      // Remove old container if present
+      const existing = parent.querySelector(`#${container.id}`);
+      if (existing) existing.remove();
+
+      if (!html.trim()) return;
+
+      container.innerHTML = html;
+      // innerHTML won't execute <script> tags, so we clone them as live scripts
+      const scripts = container.querySelectorAll("script");
+      const live = document.createDocumentFragment();
+      const nonScripts = document.createDocumentFragment();
+      // Keep non-script children (e.g. <noscript>, <meta>, <link>)
+      Array.from(container.childNodes).forEach((node) => {
+        if ((node as Element).tagName !== "SCRIPT") {
+          nonScripts.appendChild(node.cloneNode(true));
+        }
+      });
+      scripts.forEach((s) => {
+        const el = document.createElement("script");
+        // Copy attributes (src, async, defer, type, etc.)
+        Array.from(s.attributes).forEach((a) => el.setAttribute(a.name, a.value));
+        if (s.textContent) el.textContent = s.textContent;
+        live.appendChild(el);
+      });
+      container.innerHTML = "";
+      container.appendChild(nonScripts);
+      container.appendChild(live);
+      parent.appendChild(container);
+    };
+
+    watchEffect(() => {
+      const s = model.value.scripts;
+      if (!s) return;
+      injectScripts(_headContainer, s.headScript, document.head);
+      injectScripts(_bodyContainer, s.bodyEndScript, document.body);
     });
 
     const canUseCms = computed(() => cmsBtnVisible.value);
@@ -891,6 +1171,13 @@ export default defineComponent({
           model.value.links.forEach((l: any) => {
             if (l.imageUrl) usedPaths.push(l.imageUrl);
           });
+          // include gallery image sources and cover thumbnails
+          if (model.value.gallery?.items) {
+            model.value.gallery.items.forEach((g: any) => {
+              if (g.src) usedPaths.push(g.src);
+              if (g.coverUrl) usedPaths.push(g.coverUrl);
+            });
+          }
           await commitPendingUploads(
             settings,
             token,
@@ -936,7 +1223,27 @@ export default defineComponent({
       model.value.socials.filter((s) => s.enabled && s.url),
     );
 
-    const activeTab = ref<"links" | "resume" | "gallery">("links");
+    // ── Search state ─────────────────────────────────────────────────
+    const searchLinksQuery = ref("");
+    const searchGalleryQuery = ref("");
+    const searchBlogQuery = ref("");
+    const selectedGalleryTags = ref<string[]>([]);
+    const selectedBlogTags = ref<string[]>([]);
+    const galleryTagFilterOpen = ref(false);
+    const blogTagFilterOpen = ref(false);
+
+    const filteredLinks = computed(() => {
+      const q = searchLinksQuery.value.trim().toLowerCase();
+      if (!q) return enabledLinks.value;
+      return enabledLinks.value.filter(
+        (l) =>
+          l.title.toLowerCase().includes(q) ||
+          l.subtitle.toLowerCase().includes(q) ||
+          l.url.toLowerCase().includes(q),
+      );
+    });
+
+    const activeTab = ref<"links" | "resume" | "gallery" | "blog">("links");
 
     const resumeHasContent = computed(() => {
       const r = model.value.resume;
@@ -956,18 +1263,124 @@ export default defineComponent({
       return g.items.filter((item) => item.enabled && item.src);
     });
 
+    const availableGalleryTags = computed(() => {
+      const g = model.value.gallery;
+      if (!g || !g.enabled) return [];
+      const tagSet = new Set<string>();
+      for (const item of g.items) {
+        if (item.enabled && item.tags) item.tags.forEach((t) => tagSet.add(t));
+      }
+      return [...tagSet].sort();
+    });
+
+    const toggleGalleryTag = (tag: string) => {
+      const idx = selectedGalleryTags.value.indexOf(tag);
+      if (idx >= 0) selectedGalleryTags.value.splice(idx, 1);
+      else selectedGalleryTags.value.push(tag);
+    };
+
     /** Gallery items shaped for MasonryGrid layout */
-    const masonryItems = computed<MasonryItem[]>(() =>
-      enabledGalleryItems.value.map((item) => ({
+    const masonryItems = computed<MasonryItem[]>(() => {
+      const q = searchGalleryQuery.value.trim().toLowerCase();
+      const tags = selectedGalleryTags.value;
+      let source = enabledGalleryItems.value;
+      if (q) {
+        source = source.filter(
+          (item) =>
+            item.title.toLowerCase().includes(q) ||
+            item.description.toLowerCase().includes(q),
+        );
+      }
+      if (tags.length > 0) {
+        source = source.filter(
+          (item) => item.tags && tags.every((t) => item.tags.includes(t)),
+        );
+      }
+      return source.map((item) => ({
         ...item,
-        // height hint: images get a taller card, videos get 16:9-ish
         height: item.type === 'video' ? 300 : 400,
-      })),
-    );
+      }));
+    });
 
     const galleryHasContent = computed(
       () => enabledGalleryItems.value.length > 0,
     );
+
+    // ── Blog ─────────────────────────────────────────────────────────
+    const blogPosts = ref<BlogPostMeta[]>([]);
+    const currentBlogPost = ref<BlogPost | null>(null);
+
+    const blogHasContent = computed(() => {
+      const b = model.value.blog;
+      if (!b || !b.enabled) return false;
+      return blogPosts.value.filter((p) => p.published).length > 0;
+    });
+
+    const publishedBlogPosts = computed(() =>
+      blogPosts.value.filter((p) => p.published),
+    );
+
+    const availableBlogTags = computed(() => {
+      const tagSet = new Set<string>();
+      for (const p of publishedBlogPosts.value) {
+        if (p.tags) p.tags.forEach((t) => tagSet.add(t));
+      }
+      return [...tagSet].sort();
+    });
+
+    const toggleBlogTag = (tag: string) => {
+      const idx = selectedBlogTags.value.indexOf(tag);
+      if (idx >= 0) selectedBlogTags.value.splice(idx, 1);
+      else selectedBlogTags.value.push(tag);
+    };
+
+    const filteredBlogPosts = computed(() => {
+      const q = searchBlogQuery.value.trim().toLowerCase();
+      const tags = selectedBlogTags.value;
+      let source = publishedBlogPosts.value;
+      if (q) {
+        source = source.filter(
+          (p) =>
+            p.title.toLowerCase().includes(q) ||
+            (p.excerpt?.toLowerCase().includes(q)) ||
+            p.tags?.some((t) => t.toLowerCase().includes(q)),
+        );
+      }
+      if (tags.length > 0) {
+        source = source.filter(
+          (p) => p.tags && tags.every((t) => p.tags!.includes(t)),
+        );
+      }
+      return source;
+    });
+
+    const loadBlogPosts = async () => {
+      try {
+        blogPosts.value = await fetchBlogPosts();
+      } catch {
+        blogPosts.value = [];
+      }
+    };
+
+    const loadBlogPost = async (slug: string) => {
+      try {
+        currentBlogPost.value = await fetchBlogPost(slug);
+      } catch {
+        toast.add({ severity: "error", summary: "Error", detail: "Could not load post.", life: 2600 });
+      }
+    };
+
+    const formatDate = (dateStr: string) => {
+      try {
+        return new Date(dateStr).toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        });
+      } catch {
+        return dateStr;
+      }
+    };
 
     // Show tabs when 2+ content sections have content
     const contentSections = computed(() => {
@@ -975,6 +1388,7 @@ export default defineComponent({
       if (enabledLinks.value.length > 0) count++;
       if (resumeHasContent.value) count++;
       if (galleryHasContent.value) count++;
+      if (blogHasContent.value) count++;
       return count;
     });
 
@@ -984,7 +1398,7 @@ export default defineComponent({
       if (showTabs.value) return activeTab.value === "links";
       return (
         enabledLinks.value.length > 0 ||
-        (!resumeHasContent.value && !galleryHasContent.value)
+        (!resumeHasContent.value && !galleryHasContent.value && !blogHasContent.value)
       );
     });
 
@@ -997,6 +1411,12 @@ export default defineComponent({
     const showGallerySection = computed(() => {
       if (!galleryHasContent.value) return false;
       if (showTabs.value) return activeTab.value === "gallery";
+      return true;
+    });
+
+    const showBlogSection = computed(() => {
+      if (!blogHasContent.value) return false;
+      if (showTabs.value) return activeTab.value === "blog";
       return true;
     });
 
@@ -1330,6 +1750,26 @@ export default defineComponent({
       openGithubSettings,
       unsynced,
       resolveUploadUrl,
+      blogHasContent,
+      blogPosts,
+      publishedBlogPosts,
+      filteredBlogPosts,
+      currentBlogPost,
+      loadBlogPost,
+      showBlogSection,
+      formatDate,
+      searchLinksQuery,
+      searchGalleryQuery,
+      searchBlogQuery,
+      selectedGalleryTags,
+      selectedBlogTags,
+      availableGalleryTags,
+      availableBlogTags,
+      toggleGalleryTag,
+      toggleBlogTag,
+      galleryTagFilterOpen,
+      blogTagFilterOpen,
+      filteredLinks,
     };
   },
 });

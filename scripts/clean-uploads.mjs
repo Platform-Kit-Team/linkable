@@ -2,7 +2,8 @@
 
 /**
  * Deletes any files in public/uploads/ that are NOT referenced by the
- * CMS content JSON (cms-data.json or public/data.json).
+ * CMS content JSON (cms-data.json or public/data.json) or by blog post
+ * markdown files in content/blog/.
  *
  * Usage:  node scripts/clean-uploads.mjs [--dry-run]
  */
@@ -19,6 +20,7 @@ const rootDir = path.resolve(__dirname, "..");
 const uploadsDir = path.join(rootDir, "public/uploads");
 const cmsDataPath = path.join(rootDir, "cms-data.json");
 const publicDataPath = path.join(rootDir, "public/data.json");
+const blogDir = path.join(rootDir, "content/blog");
 
 const dryRun = process.argv.includes("--dry-run");
 
@@ -33,6 +35,25 @@ const extractStrings = (value) => {
     for (const v of Object.values(value)) strings.push(...extractStrings(v));
   }
   return strings;
+};
+
+/** Extract /uploads/ references from a markdown blog post (frontmatter + body). */
+const extractUploadsFromMarkdown = (content) => {
+  const refs = [];
+  // frontmatter values like  coverImage: /uploads/foo.jpg
+  const fmRegex = /:\s*(\/uploads\/[^\s"']+)/g;
+  let m;
+  while ((m = fmRegex.exec(content))) refs.push(m[1]);
+
+  // inline markdown images  ![alt](/uploads/foo.jpg)
+  const imgRegex = /!\[[^\]]*\]\((\/uploads\/[^)]+)\)/g;
+  while ((m = imgRegex.exec(content))) refs.push(m[1]);
+
+  // html <img src="/uploads/foo.jpg">
+  const htmlRegex = /src=["'](\/uploads\/[^"']+)["']/g;
+  while ((m = htmlRegex.exec(content))) refs.push(m[1]);
+
+  return refs;
 };
 
 const run = async () => {
@@ -54,6 +75,22 @@ const run = async () => {
       .filter((s) => s.startsWith("/uploads/"))
       .map((s) => s.replace(/^\/uploads\//, "")),
   );
+
+  // ── 2b. Scan blog markdown files for upload references ─────────
+  if (existsSync(blogDir)) {
+    const blogEntries = await readdir(blogDir);
+    const mdFiles = blogEntries.filter((f) => f.endsWith(".md"));
+    for (const file of mdFiles) {
+      const content = await readFile(path.join(blogDir, file), "utf8");
+      const blogRefs = extractUploadsFromMarkdown(content);
+      for (const ref of blogRefs) {
+        referencedFiles.add(ref.replace(/^\/uploads\//, ""));
+      }
+    }
+    if (mdFiles.length > 0) {
+      console.log(`Scanned ${mdFiles.length} blog post(s) for image references.`);
+    }
+  }
 
   // ── 3. List actual files on disk ───────────────────────────────
   if (!existsSync(uploadsDir)) {

@@ -8,11 +8,18 @@ import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
 
 import { sanitizeModel, stableStringify } from "./src/lib/model";
+import {
+  parseFrontmatter,
+  metaFromRaw,
+  slugFromFilename,
+  renderMarkdown,
+} from "./src/lib/blog";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const dataFilePath = path.resolve(__dirname, "cms-data.json");
 const defaultDataFilePath = path.resolve(__dirname, "default-data.json");
 const publicDataFilePath = path.resolve(__dirname, "public/data.json");
+const blogContentDir = path.resolve(__dirname, "content/blog");
 
 const readDefaultModel = () => {
   if (!fs.existsSync(defaultDataFilePath)) {
@@ -315,11 +322,217 @@ const cmsMiddlewarePlugin = () => ({
         return;
       }
 
+      // ── Blog post endpoints ────────────────────────────────────────
+      if (url === "/__blog-posts" && req.method === "GET") {
+        // List all blog posts metadata
+        if (!fs.existsSync(blogContentDir)) {
+          fs.mkdirSync(blogContentDir, { recursive: true });
+        }
+        const files = fs.readdirSync(blogContentDir).filter((f: string) => f.endsWith(".md"));
+        const posts = files.map((file: string) => {
+          const raw = fs.readFileSync(path.join(blogContentDir, file), "utf8");
+          const { meta } = parseFrontmatter(raw);
+          const slug = slugFromFilename(file);
+          return metaFromRaw(meta, slug);
+        });
+        // Sort newest first
+        posts.sort((a: any, b: any) => (b.date > a.date ? 1 : b.date < a.date ? -1 : 0));
+        res.setHeader("Content-Type", "application/json");
+        res.end(JSON.stringify(posts));
+        return;
+      }
+
+      if (url === "/__blog-post") {
+        const fullUrl = new URL(req.url ?? "", "http://localhost");
+        const slug = fullUrl.searchParams.get("slug") ?? "";
+
+        if (req.method === "GET") {
+          if (!slug) {
+            res.statusCode = 400;
+            res.end("Missing slug parameter");
+            return;
+          }
+          const filePath = path.join(blogContentDir, `${slug}.md`);
+          if (!fs.existsSync(filePath)) {
+            res.statusCode = 404;
+            res.end("Not found");
+            return;
+          }
+          const raw = fs.readFileSync(filePath, "utf8");
+          const { meta, body } = parseFrontmatter(raw);
+          const postMeta = metaFromRaw(meta, slug);
+          const html = renderMarkdown(body);
+          res.setHeader("Content-Type", "application/json");
+          res.end(JSON.stringify({ ...postMeta, content: body, html }));
+          return;
+        }
+
+        if (req.method === "POST") {
+          const body = await collectRequestBody(req);
+          const { slug: postSlug, markdown } = JSON.parse(body);
+          if (!postSlug || !markdown) {
+            res.statusCode = 400;
+            res.end("Missing slug or markdown");
+            return;
+          }
+          if (!fs.existsSync(blogContentDir)) {
+            fs.mkdirSync(blogContentDir, { recursive: true });
+          }
+          const safeName = postSlug.replace(/[^a-zA-Z0-9_-]/g, "-").slice(0, 120);
+          const filePath = path.join(blogContentDir, `${safeName}.md`);
+          fs.writeFileSync(filePath, markdown);
+          res.statusCode = 204;
+          res.end();
+          return;
+        }
+
+        if (req.method === "DELETE") {
+          if (!slug) {
+            res.statusCode = 400;
+            res.end("Missing slug parameter");
+            return;
+          }
+          const filePath = path.join(blogContentDir, `${slug}.md`);
+          if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+          }
+          res.statusCode = 204;
+          res.end();
+          return;
+        }
+
+        res.statusCode = 405;
+        res.end("Method Not Allowed");
+        return;
+      }
+
+      // ── RSS feed (dev) ───────────────────────────────────────────
+      if (url === "/rss.xml" && req.method === "GET") {
+        if (!fs.existsSync(blogContentDir)) {
+          fs.setHeader?.("Content-Type", "application/rss+xml");
+          res.statusCode = 200;
+          res.setHeader("Content-Type", "application/rss+xml");
+          res.end(buildRssFeed([], readDefaultModel()));
+          return;
+        }
+        const files = fs.readdirSync(blogContentDir).filter((f: string) => f.endsWith(".md"));
+        const posts: any[] = [];
+        for (const file of files) {
+          const raw = fs.readFileSync(path.join(blogContentDir, file), "utf8");
+          const { meta, body } = parseFrontmatter(raw);
+          const slug = slugFromFilename(file);
+          const postMeta = metaFromRaw(meta, slug);
+          if (!postMeta.published) continue;
+          const html = renderMarkdown(body);
+          posts.push({ ...postMeta, html });
+        }
+        posts.sort((a: any, b: any) => (b.date > a.date ? 1 : b.date < a.date ? -1 : 0));
+        const siteModel = fs.existsSync(dataFilePath)
+          ? JSON.parse(fs.readFileSync(dataFilePath, "utf8"))
+          : readDefaultModel();
+        res.statusCode = 200;
+        res.setHeader("Content-Type", "application/rss+xml");
+        res.end(buildRssFeed(posts, siteModel));
+        return;
+      }
+
       // not a CMS request — continue to other middleware
       next();
     });
   },
 });
+
+/** Escape XML special characters */
+const escapeXml = (s: string): string =>
+  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;");
+
+/** Build an RSS XML string from published blog posts and site metadata. */
+const buildRssFeed = (posts: { slug: string; title: string; date: string; excerpt: string; html: string }[], siteModel: any): string => {
+  const siteTitle = escapeXml(siteModel?.profile?.displayName || "Blog");
+  const siteDesc = escapeXml(siteModel?.profile?.tagline || "");
+  // Use VITE_SITE_URL env var, or fall back to localhost
+  const siteUrl = (process.env.VITE_SITE_URL || "http://localhost:8080").replace(/\/$/, "");
+
+  const items = posts.map((p) => {
+    const pubDate = new Date(p.date).toUTCString();
+    const link = `${siteUrl}/#blog/${encodeURIComponent(p.slug)}`;
+    return `    <item>
+      <title>${escapeXml(p.title)}</title>
+      <link>${escapeXml(link)}</link>
+      <guid isPermaLink="false">${escapeXml(p.slug)}</guid>
+      <pubDate>${pubDate}</pubDate>
+      <description>${escapeXml(p.excerpt || "")}</description>
+      <content:encoded><![CDATA[${p.html}]]></content:encoded>
+    </item>`;
+  });
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>${siteTitle}</title>
+    <link>${escapeXml(siteUrl)}</link>
+    <description>${siteDesc}</description>
+    <language>en</language>
+    <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
+    <atom:link href="${escapeXml(siteUrl)}/rss.xml" rel="self" type="application/rss+xml" />
+${items.join("\n")}
+  </channel>
+</rss>`;
+};
+
+/** Build plugin: generate static blog JSON files into public/blog/ at build time. */
+const blogBuildPlugin = () => ({
+  name: "blog-build",
+  buildStart() {
+    if (!fs.existsSync(blogContentDir)) return;
+    const files = fs.readdirSync(blogContentDir).filter((f: string) => f.endsWith(".md"));
+    if (files.length === 0) return;
+
+    const publicBlogDir = path.resolve(__dirname, "public/blog");
+    if (!fs.existsSync(publicBlogDir)) {
+      fs.mkdirSync(publicBlogDir, { recursive: true });
+    }
+
+    const index: any[] = [];
+
+    for (const file of files) {
+      const raw = fs.readFileSync(path.join(blogContentDir, file), "utf8");
+      const { meta, body } = parseFrontmatter(raw);
+      const slug = slugFromFilename(file);
+      const postMeta = metaFromRaw(meta, slug);
+      const html = renderMarkdown(body);
+
+      const post = { ...postMeta, content: body, html };
+      fs.writeFileSync(path.join(publicBlogDir, `${slug}.json`), JSON.stringify(post, null, 2));
+
+      if (postMeta.published) {
+        index.push(postMeta);
+      }
+    }
+
+    index.sort((a, b) => (b.date > a.date ? 1 : b.date < a.date ? -1 : 0));
+    fs.writeFileSync(path.join(publicBlogDir, "index.json"), JSON.stringify(index, null, 2));
+
+    // Generate RSS feed
+    const siteModel = fs.existsSync(dataFilePath)
+      ? JSON.parse(fs.readFileSync(dataFilePath, "utf8"))
+      : readDefaultModel();
+    const rssPosts = index.map((meta: any) => {
+      const postFile = path.join(publicBlogDir, `${meta.slug}.json`);
+      if (fs.existsSync(postFile)) {
+        const full = JSON.parse(fs.readFileSync(postFile, "utf8"));
+        return { ...meta, html: full.html || "" };
+      }
+      return { ...meta, html: "" };
+    });
+    const rssXml = buildRssFeed(rssPosts, siteModel);
+    fs.writeFileSync(path.resolve(__dirname, "public/rss.xml"), rssXml);
+    console.log(`[blog-build] Generated RSS feed (${index.length} item(s))`);
+
+    console.log(`[blog-build] Generated ${files.length} blog post(s) into public/blog/`);
+  },
+});
+
     export default defineConfig(() => {
       ensureSeedData();
 
@@ -330,6 +543,7 @@ const cmsMiddlewarePlugin = () => ({
         },
         plugins: [
           cmsMiddlewarePlugin(),
+          blogBuildPlugin(),
           vue({
             template: {
               compilerOptions: {

@@ -2,23 +2,43 @@
   <Drawer
     v-model:visible="visible"
     position="right"
-    :style="{ width: 'min(520px, 96vw)' }"
+    :style="{ width: expanded ? '100vw' : 'min(520px, 96vw)' }"
     :showCloseIcon="true"
   >
     <template #header>
-      <div>
-        <div class="text-sm font-extrabold tracking-tight text-[color:var(--color-ink)]">
-          {{ headerTitle }}
+      <div class="flex w-full items-center justify-between">
+        <div>
+          <div class="text-sm font-extrabold tracking-tight text-[color:var(--color-ink)]">
+            {{ headerTitle }}
+          </div>
+          <div class="mt-0.5 text-xs font-semibold text-[color:var(--color-ink-soft)]">
+            Icons are automatic by type; you can also store a Lucide icon name override.
+          </div>
         </div>
-        <div class="mt-0.5 text-xs font-semibold text-[color:var(--color-ink-soft)]">
-          Icons are automatic by type; you can also store a Lucide icon name override.
-        </div>
+        <button
+          type="button"
+          class="cms-expand-toggle hidden md:flex"
+          :title="expanded ? 'Collapse panel' : 'Expand panel'"
+          @click="expanded = !expanded"
+        >
+          <i class="pi" :class="expanded ? 'pi-angle-right' : 'pi-angle-left'" />
+        </button>
       </div>
     </template>
 
     <div class="space-y-4 p-2">
       <div class="rounded-2xl border border-[var(--color-border)] bg-[var(--glass)] p-3 shadow-sm">
         <div class="grid gap-3">
+          <div class="grid gap-1.5">
+            <label class="text-xs font-extrabold text-[color:var(--color-ink-soft)]">Label</label>
+            <InputText v-model="draft.label" class="w-full" placeholder="e.g. @yourname" />
+          </div>
+
+          <div class="grid gap-1.5">
+            <label class="text-xs font-extrabold text-[color:var(--color-ink-soft)]">URL</label>
+            <InputText v-model="draft.url" class="w-full" placeholder="https://..." />
+          </div>
+
           <div class="grid gap-1.5">
             <label class="text-xs font-extrabold text-[color:var(--color-ink-soft)]">Type</label>
             <Dropdown
@@ -28,16 +48,6 @@
               optionValue="value"
               class="w-full"
             />
-          </div>
-
-          <div class="grid gap-1.5">
-            <label class="text-xs font-extrabold text-[color:var(--color-ink-soft)]">Label</label>
-            <InputText v-model="draft.label" class="w-full" placeholder="e.g. @yourname" />
-          </div>
-
-          <div class="grid gap-1.5">
-            <label class="text-xs font-extrabold text-[color:var(--color-ink-soft)]">URL</label>
-            <InputText v-model="draft.url" class="w-full" placeholder="https://..." />
           </div>
 
           <div class="grid gap-1.5">
@@ -116,6 +126,7 @@ export default defineComponent({
   emits: ["update:open", "update:modelValue", "delete"],
   setup(props, { emit }) {
     const visible = ref(props.open);
+    const expanded = ref(false);
     watch(
       () => props.open,
       (v) => (visible.value = v)
@@ -169,7 +180,7 @@ export default defineComponent({
       visible.value = false;
     };
 
-    return { visible, draft, socialTypeOptions, lucideIcon, headerTitle, reset, save };
+    return { visible, expanded, draft, socialTypeOptions, lucideIcon, headerTitle, reset, save };
   },
 });
 </script>
@@ -184,6 +195,7 @@ export default defineComponent({
 /* PrimeVue Drawer surface (solid, readable) */
 :deep(.p-drawer) {
   background: #ffffff !important;
+  transition: width 200ms ease;
 }
 :deep(.p-drawer-header) {
   background: #ffffff !important;
@@ -191,5 +203,23 @@ export default defineComponent({
 }
 :deep(.p-drawer-content) {
   background: #ffffff !important;
+}
+
+.cms-expand-toggle {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid rgba(11, 18, 32, 0.1);
+  background: rgba(255, 255, 255, 0.7);
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: rgba(11, 18, 32, 0.5);
+  transition: background 140ms ease, color 140ms ease;
+  flex-shrink: 0;
+}
+.cms-expand-toggle:hover {
+  background: rgba(11, 18, 32, 0.06);
+  color: rgba(11, 18, 32, 0.8);
 }
 </style>

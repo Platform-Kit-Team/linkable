@@ -65,6 +65,14 @@
           </div>
 
           <div class="grid gap-2">
+            <label class="text-xs font-bold text-[color:var(--color-ink-soft)]">Blog directory</label>
+            <InputText v-model="form.blogDir" placeholder="blog" />
+            <span class="text-[11px] font-semibold text-[color:var(--color-ink-soft)]">
+              Blog markdown files are stored in this repo path.
+            </span>
+          </div>
+
+          <div class="grid gap-2">
             <label class="text-xs font-bold text-[color:var(--color-ink-soft)]">Committer name</label>
             <InputText v-model="form.committerName" placeholder="Linkable CMS" />
           </div>

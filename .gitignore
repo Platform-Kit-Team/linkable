@@ -30,3 +30,6 @@ dist-ssr
 cms-data.json
 public/data.json
 public/uploads/
+public/blog/
+public/rss.xml
+content/blog/*.md

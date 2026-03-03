@@ -142,6 +142,7 @@ const run = async () => {
   const branch = process.env.GITHUB_BRANCH?.trim() || "main";
   const dataPath = process.env.GITHUB_DATA_PATH?.trim() || "data.json";
   const uploadsDir = process.env.GITHUB_UPLOADS_DIR?.trim() || "uploads";
+  const blogDir = process.env.GITHUB_BLOG_DIR?.trim() || "blog";
 
   if (!owner || !repo) {
     console.error("❌  GITHUB_OWNER and GITHUB_REPO must be set in .env");
@@ -276,6 +277,65 @@ const run = async () => {
         deleted++;
       }
       console.log(`  🗑 ${deleted} orphaned remote file(s) removed.`);
+    }
+  }
+
+  // ── 3. Push blog content (markdown files) ──────────────────────────
+
+  const localBlogDir = path.join(rootDir, "content", "blog");
+  if (!existsSync(localBlogDir)) {
+    console.log(`  ⏭ No content/blog directory — skipping blog posts.`);
+  } else {
+    const mdFiles = readdirSync(localBlogDir).filter((f) => {
+      const full = path.join(localBlogDir, f);
+      return statSync(full).isFile() && f.endsWith(".md");
+    });
+
+    if (mdFiles.length === 0) {
+      console.log(`  ⏭ No blog post files to push.`);
+    } else {
+      let count = 0;
+      for (const file of mdFiles) {
+        const filePath = path.join(localBlogDir, file);
+        const fileContent = readFileSync(filePath);
+        const fileBase64 = fileContent.toString("base64");
+        const repoPath = `${blogDir}/${file}`;
+
+        await putFile({
+          owner,
+          repo,
+          branch,
+          token,
+          repoPath,
+          content: fileBase64,
+          message: `${commitMsg} (blog: ${file})`,
+        });
+        count++;
+      }
+      console.log(`  ✔ ${count} blog post(s) → ${blogDir}/`);
+    }
+
+    // Delete remote blog posts that no longer exist locally
+    const localBlogSet = new Set(mdFiles);
+    const remoteBlogFiles = await listRemoteDir({ owner, repo, branch, token, dirPath: blogDir });
+    const blogOrphans = remoteBlogFiles.filter((rf) => !localBlogSet.has(rf.name));
+
+    if (blogOrphans.length > 0) {
+      let deleted = 0;
+      for (const orphan of blogOrphans) {
+        const repoPath = `${blogDir}/${orphan.name}`;
+        await deleteFile({
+          owner,
+          repo,
+          branch,
+          token,
+          repoPath,
+          sha: orphan.sha,
+          message: `${commitMsg} (remove unused blog: ${orphan.name})`,
+        });
+        deleted++;
+      }
+      console.log(`  🗑 ${deleted} orphaned blog file(s) removed.`);
     }
   }
 

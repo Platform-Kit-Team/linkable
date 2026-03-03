@@ -2,17 +2,27 @@
   <Drawer
     v-model:visible="visible"
     position="right"
-    :style="{ width: 'min(580px, 96vw)' }"
+    :style="{ width: expanded ? '100vw' : 'min(580px, 96vw)' }"
     :showCloseIcon="true"
   >
     <template #header>
-      <div>
-        <div class="text-sm font-extrabold tracking-tight text-[color:var(--color-ink)]">
-          {{ editMode === 'education' ? 'Edit Education' : editMode === 'employment' ? 'Edit Employment' : 'Edit Achievement' }}
+      <div class="flex w-full items-center justify-between">
+        <div>
+          <div class="text-sm font-extrabold tracking-tight text-[color:var(--color-ink)]">
+            {{ editMode === 'education' ? 'Edit Education' : editMode === 'employment' ? 'Edit Employment' : 'Edit Achievement' }}
+          </div>
+          <div class="mt-0.5 text-xs font-semibold text-[color:var(--color-ink-soft)]">
+            Update details, then close to continue.
+          </div>
         </div>
-        <div class="mt-0.5 text-xs font-semibold text-[color:var(--color-ink-soft)]">
-          Update details, then close to continue.
-        </div>
+        <button
+          type="button"
+          class="cms-expand-toggle hidden md:flex"
+          :title="expanded ? 'Collapse panel' : 'Expand panel'"
+          @click="expanded = !expanded"
+        >
+          <i class="pi" :class="expanded ? 'pi-angle-right' : 'pi-angle-left'" />
+        </button>
       </div>
     </template>
 
@@ -134,6 +144,7 @@ export default defineComponent({
   emits: ["update:open", "update:education", "update:employment", "update:achievement", "delete"],
   setup(props, { emit }) {
     const visible = ref(props.open);
+    const expanded = ref(false);
     watch(() => props.open, (v) => (visible.value = v));
     watch(visible, (v) => emit("update:open", v));
 
@@ -177,7 +188,7 @@ export default defineComponent({
       if (v && !eq(v, props.achievement)) emit("update:achievement", { ...v });
     }, { deep: true });
 
-    return { visible, draftEducation, draftEmployment, draftAchievement };
+    return { visible, expanded, draftEducation, draftEmployment, draftAchievement };
   },
 });
 </script>
@@ -185,6 +196,7 @@ export default defineComponent({
 <style scoped>
 :deep(.p-drawer) {
   background: #ffffff !important;
+  transition: width 200ms ease;
 }
 :deep(.p-drawer-header) {
   background: #ffffff !important;
@@ -192,5 +204,23 @@ export default defineComponent({
 }
 :deep(.p-drawer-content) {
   background: #ffffff !important;
+}
+
+.cms-expand-toggle {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid rgba(11, 18, 32, 0.1);
+  background: rgba(255, 255, 255, 0.7);
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: rgba(11, 18, 32, 0.5);
+  transition: background 140ms ease, color 140ms ease;
+  flex-shrink: 0;
+}
+.cms-expand-toggle:hover {
+  background: rgba(11, 18, 32, 0.06);
+  color: rgba(11, 18, 32, 0.8);
 }
 </style>

@@ -2,17 +2,27 @@
   <Drawer
     v-model:visible="visible"
     position="right"
-    :style="{ width: 'min(520px, 96vw)' }"
+    :style="{ width: expanded ? '100vw' : 'min(520px, 96vw)' }"
     :showCloseIcon="true"
   >
     <template #header>
-      <div>
-        <div class="text-sm font-extrabold tracking-tight text-[color:var(--color-ink)]">
-          {{ title || "Edit link" }}
+      <div class="flex w-full items-center justify-between">
+        <div>
+          <div class="text-sm font-extrabold tracking-tight text-[color:var(--color-ink)]">
+            {{ title || "Edit link" }}
+          </div>
+          <div class="mt-0.5 text-xs font-semibold text-[color:var(--color-ink-soft)]">
+            Update the link details, then close to continue.
+          </div>
         </div>
-        <div class="mt-0.5 text-xs font-semibold text-[color:var(--color-ink-soft)]">
-          Update the link details, then close to continue.
-        </div>
+        <button
+          type="button"
+          class="cms-expand-toggle hidden md:flex"
+          :title="expanded ? 'Collapse panel' : 'Expand panel'"
+          @click="expanded = !expanded"
+        >
+          <i class="pi" :class="expanded ? 'pi-angle-right' : 'pi-angle-left'" />
+        </button>
       </div>
     </template>
 
@@ -42,28 +52,7 @@
               label="Thumbnail image (optional)"
               description="Drag in a square image to give this button extra presence."
               :targetFilename="`${draft.id}.jpg`"
-            >
-              <template #helper>
-                <div class="text-xs font-semibold text-[color:var(--color-ink-soft)]">
-                  Uploaded files live in
-                  <span
-                    class="rounded-full bg-[var(--glass)] px-2 py-0.5 font-bold text-[color:var(--color-ink)]"
-                    >public/uploads</span
-                  >
-                  while you iterate locally.
-                </div>
-              </template>
-            </ImageUploadField>
-          </div>
-
-          <div class="grid gap-1.5">
-            <label class="text-xs font-extrabold text-[color:var(--color-ink-soft)]"
-              >Thumbnail image URL (optional)</label
-            >
-            <InputText v-model="draft.imageUrl" class="w-full" placeholder="https://..." />
-            <div class="text-xs font-semibold text-[color:var(--color-ink-soft)]">
-              Paste a fully qualified URL if your asset is already hosted elsewhere.
-            </div>
+            />
           </div>
 
           <div class="flex items-center justify-between gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--glass-2)] p-3">
@@ -128,6 +117,7 @@ export default defineComponent({
   emits: ["update:open", "update:modelValue", "delete"],
   setup(props, { emit }) {
     const visible = ref(props.open);
+    const expanded = ref(false);
     watch(
       () => props.open,
       (v) => (visible.value = v)
@@ -152,7 +142,7 @@ export default defineComponent({
       visible.value = false;
     };
 
-    return { visible, draft, title, reset, save };
+    return { visible, expanded, draft, title, reset, save };
   },
 });
 </script>
@@ -167,6 +157,7 @@ export default defineComponent({
 /* PrimeVue Drawer surface (solid, readable) */
 :deep(.p-drawer) {
   background: #ffffff !important;
+  transition: width 200ms ease;
 }
 :deep(.p-drawer-header) {
   background: #ffffff !important;
@@ -174,5 +165,23 @@ export default defineComponent({
 }
 :deep(.p-drawer-content) {
   background: #ffffff !important;
+}
+
+.cms-expand-toggle {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid rgba(11, 18, 32, 0.1);
+  background: rgba(255, 255, 255, 0.7);
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: rgba(11, 18, 32, 0.5);
+  transition: background 140ms ease, color 140ms ease;
+  flex-shrink: 0;
+}
+.cms-expand-toggle:hover {
+  background: rgba(11, 18, 32, 0.06);
+  color: rgba(11, 18, 32, 0.8);
 }
 </style>

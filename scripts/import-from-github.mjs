@@ -70,6 +70,7 @@ const run = async () => {
   const branch = process.env.GITHUB_BRANCH?.trim() || "main";
   const dataPath = process.env.GITHUB_DATA_PATH?.trim() || "data.json";
   const uploadsDir = process.env.GITHUB_UPLOADS_DIR?.trim() || "uploads";
+  const blogDir = process.env.GITHUB_BLOG_DIR?.trim() || "blog";
 
   if (!owner || !repo) {
     console.log(
@@ -137,6 +138,43 @@ const run = async () => {
     }
 
     console.log(`  ✔ ${count} uploaded file(s) → public/uploads/`);
+  }
+
+  // ── 3. Fetch blog posts (markdown files) ───────────────────────────
+
+  const blogUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${blogDir}?ref=${branch}`;
+  let blogFiles = [];
+  try {
+    const blogRes = await ghFetch(blogUrl, token);
+    blogFiles = await blogRes.json();
+    if (!Array.isArray(blogFiles)) blogFiles = [];
+  } catch (err) {
+    console.log(`  ⚠ No blog directory found at ${blogDir} — skipping.`);
+    blogFiles = [];
+  }
+
+  if (blogFiles.length === 0) {
+    console.log(`  ⏭ No blog posts to import.`);
+  } else {
+    const localBlogDir = path.join(rootDir, "content", "blog");
+    mkdirSync(localBlogDir, { recursive: true });
+
+    let count = 0;
+    for (const file of blogFiles) {
+      if (file.type !== "file" || !file.name.endsWith(".md")) continue;
+
+      const fileRes = await ghFetch(file.url, token);
+      const fileMeta = await fileRes.json();
+
+      if (!fileMeta.content) continue;
+
+      const content = Buffer.from(fileMeta.content, "base64").toString("utf8");
+      const dest = path.join(localBlogDir, file.name);
+      await writeFile(dest, content);
+      count++;
+    }
+
+    console.log(`  ✔ ${count} blog post(s) → content/blog/`);
   }
 
   console.log(`✅  Import complete.`);
