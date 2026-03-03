@@ -153,6 +153,47 @@ export default defineComponent({
 }
 
 /*
+ * Initial loading state: show a spinner inside the same translucent circle
+ * used for play/pause overlays. Visible before the video has started.
+ */
+
+/* Translucent circle (same style as paused overlay) */
+.vidstack-wrapper media-player:not([data-started])::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 64px;
+  height: 64px;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.55);
+  border-radius: 50%;
+  z-index: 100;
+  pointer-events: none;
+}
+
+/* Spinning ring inside the circle */
+.vidstack-wrapper media-player:not([data-started])::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 28px;
+  height: 28px;
+  margin: -14px 0 0 -14px;
+  border: 3px solid rgba(255, 255, 255, 0.25);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: vp-spin 0.7s linear infinite;
+  z-index: 101;
+  pointer-events: none;
+}
+
+@keyframes vp-spin {
+  to { transform: rotate(360deg); }
+}
+
+/*
  * Show a centered play icon overlay when the video is paused AFTER it
  * has started (i.e. user paused mid-playback). Uses a CSS triangle as
  * the play icon inside a translucent circle.
