@@ -12,7 +12,7 @@
             {{ headerTitle }}
           </div>
           <div class="mt-0.5 text-xs font-semibold text-[color:var(--color-ink-soft)]">
-            Icons are automatic by type; you can also store a Lucide icon name override.
+            Choose an icon, set a URL and label.
           </div>
         </div>
         <button
@@ -40,27 +40,31 @@
           </div>
 
           <div class="grid gap-1.5">
-            <label class="text-xs font-extrabold text-[color:var(--color-ink-soft)]">Type</label>
-            <Dropdown
-              v-model="draft.type"
-              :options="socialTypeOptions"
-              optionLabel="label"
-              optionValue="value"
+            <label class="text-xs font-extrabold text-[color:var(--color-ink-soft)]">Icon</label>
+            <AutoComplete
+              v-model="draft.icon"
+              :suggestions="filteredIcons"
+              @complete="searchIcons"
+              placeholder="Search icons… e.g. Instagram"
               class="w-full"
-            />
-          </div>
-
-          <div class="grid gap-1.5">
-            <label class="text-xs font-extrabold text-[color:var(--color-ink-soft)]"
-              >Lucide icon override (optional)</label
+              :inputClass="'w-full'"
+              forceSelection
             >
-            <InputText
-              v-model="lucideIcon"
-              class="w-full"
-              placeholder="e.g. Github, Instagram, Globe"
-            />
-            <div class="text-xs font-semibold text-[color:var(--color-ink-soft)]">
-              Stored in JSON; the public page currently uses automatic icons.
+              <template #option="{ option }">
+                <div class="flex items-center gap-2.5 py-0.5">
+                  <component :is="getIconComponent(option)" :size="18" class="shrink-0 text-[color:var(--color-ink-soft)]" />
+                  <span class="text-sm font-medium">{{ option }}</span>
+                </div>
+              </template>
+              <template #value="{ value }">
+                <div v-if="value" class="flex items-center gap-2">
+                  <component :is="getIconComponent(value)" :size="16" class="shrink-0 text-[color:var(--color-ink-soft)]" />
+                  <span>{{ value }}</span>
+                </div>
+              </template>
+            </AutoComplete>
+            <div class="text-[11px] font-semibold text-[color:var(--color-ink-soft)]">
+              Choose from <a href="https://lucide.dev/icons" target="_blank" rel="noreferrer" class="underline">Lucide icons</a>. Type to search.
             </div>
           </div>
 
@@ -109,15 +113,43 @@ import { computed, defineComponent, ref, watch } from "vue";
 
 import Button from "primevue/button";
 import Drawer from "primevue/drawer";
-import Dropdown from "primevue/dropdown";
+import AutoComplete from "primevue/autocomplete";
 import InputText from "primevue/inputtext";
 import ToggleSwitch from "primevue/toggleswitch";
+import { icons } from "lucide-vue-next";
 
 import type { SocialLink } from "../lib/model";
 
+/** Social-media icons shown first (before the user types anything). */
+const FEATURED_ICONS = [
+  "Instagram",
+  "Twitter",
+  "Youtube",
+  "Github",
+  "Facebook",
+  "Linkedin",
+  "Mail",
+  "Globe",
+  "Phone",
+  "Link",
+  "Twitch",
+  "Rss",
+  "Music",
+  "Camera",
+  "MessageCircle",
+  "Send",
+  "Podcast",
+  "Store",
+  "ShoppingBag",
+  "Heart",
+];
+
+/** All available icon names (PascalCase). */
+const ALL_ICON_NAMES: string[] = Object.keys(icons);
+
 export default defineComponent({
   name: "SocialEditorDrawer",
-  components: { Drawer, Button, Dropdown, InputText, ToggleSwitch },
+  components: { Drawer, Button, AutoComplete, InputText, ToggleSwitch },
   props: {
     open: { type: Boolean, required: true },
     modelValue: { type: Object as () => SocialLink, required: true },
@@ -140,25 +172,24 @@ export default defineComponent({
       { deep: true }
     );
 
-    const socialTypeOptions = [
-      { label: "Website", value: "website" },
-      { label: "Email", value: "email" },
-      { label: "GitHub", value: "github" },
-      { label: "Instagram", value: "instagram" },
-      { label: "X", value: "x" },
-      { label: "YouTube", value: "youtube" },
-      { label: "TikTok", value: "tiktok" },
-    ];
+    // ── Icon autocomplete ──
+    const filteredIcons = ref<string[]>(FEATURED_ICONS);
 
-    // Stored as an "extra" property in JSON.
-    const lucideIcon = ref<string>(((props.modelValue as any).lucideIcon as string) ?? "");
-    watch(
-      () => props.modelValue,
-      (v) => {
-        lucideIcon.value = ((v as any).lucideIcon as string) ?? "";
-      },
-      { deep: true }
-    );
+    const searchIcons = (event: { query: string }) => {
+      const q = (event.query || "").trim().toLowerCase();
+      if (!q) {
+        filteredIcons.value = FEATURED_ICONS;
+        return;
+      }
+      filteredIcons.value = ALL_ICON_NAMES
+        .filter((name) => name.toLowerCase().includes(q))
+        .slice(0, 40);
+    };
+
+    const getIconComponent = (name: string) => {
+      const table = icons as Record<string, any>;
+      return table[name] ?? table["Globe"];
+    };
 
     const headerTitle = computed(() => {
       const label = (draft.value.label || "").trim();
@@ -167,20 +198,14 @@ export default defineComponent({
 
     const reset = () => {
       draft.value = { ...props.modelValue };
-      lucideIcon.value = ((props.modelValue as any).lucideIcon as string) ?? "";
     };
 
     const save = () => {
-      const out: any = { ...draft.value };
-      const icon = lucideIcon.value.trim();
-      if (icon) out.lucideIcon = icon;
-      else delete out.lucideIcon;
-
-      emit("update:modelValue", out as SocialLink);
+      emit("update:modelValue", { ...draft.value } as SocialLink);
       visible.value = false;
     };
 
-    return { visible, expanded, draft, socialTypeOptions, lucideIcon, headerTitle, reset, save };
+    return { visible, expanded, draft, filteredIcons, searchIcons, getIconComponent, headerTitle, reset, save };
   },
 });
 </script>

@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 12,
+  "schemaVersion": 14,
   "profile": {
     "displayName": "Linkable",
     "tagline": "Design-forward links. Clean, fast, yours.",
@@ -20,7 +20,8 @@
       "subtitle": "Selected work & case studies",
       "url": "https://example.com",
       "imageUrl": "",
-      "enabled": true
+      "enabled": true,
+      "tags": []
     },
     {
       "id": "link-book-call",
@@ -28,7 +29,8 @@
       "subtitle": "15 minutes to see if we fit",
       "url": "https://example.com",
       "imageUrl": "",
-      "enabled": true
+      "enabled": true,
+      "tags": []
     },
     {
       "id": "link-shop-presets",
@@ -36,20 +38,21 @@
       "subtitle": "UI kits, templates, packs",
       "url": "https://example.com",
       "imageUrl": "",
-      "enabled": true
+      "enabled": true,
+      "tags": []
     }
   ],
   "socials": [
     {
       "id": "social-instagram",
-      "type": "instagram",
+      "icon": "Instagram",
       "label": "@linkable",
       "url": "https://instagram.com",
       "enabled": true
     },
     {
       "id": "social-github",
-      "type": "github",
+      "icon": "Github",
       "label": "github.com/linkable",
       "url": "https://github.com",
       "enabled": false

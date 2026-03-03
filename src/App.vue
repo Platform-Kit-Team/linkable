@@ -64,15 +64,11 @@
                   v-for="s in enabledSocials"
                   :key="s.id"
                   class="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-border)] bg-[var(--glass-2)] px-2.5 py-1 text-xs font-semibold text-[color:var(--color-ink)] shadow-sm backdrop-blur-md transition hover:bg-[var(--glass)] sm:gap-2 sm:px-3 sm:py-1.5"
-                  :href="
-                    s.type === 'email' && s.url && !s.url.startsWith('mailto:')
-                      ? 'mailto:' + s.url
-                      : s.url
-                  "
-                  :target="s.type === 'email' ? undefined : '_blank'"
+                  :href="socialHref(s)"
+                  :target="isEmailUrl(s.url) ? undefined : '_blank'"
                   rel="noreferrer"
                 >
-                  <i class="pi shrink-0" :class="socialIcon(s.type)" />
+                  <component :is="resolveSocialIcon(s.icon)" :size="14" class="shrink-0" />
                   <span class="truncate">{{ s.label }}</span>
                 </a>
               </div>
@@ -137,7 +133,7 @@
               ? 'bg-blue-500/10 shadow-lg  border-blue-500/30    text-[color:var(--color-brand)]'
               : 'border-[var(--color-border)] bg-none text-[color:var(--color-ink-soft)] hover:bg-[var(--glass-strong)]'
           "
-          @click="activeTab = 'blog'; currentBlogPost = null"
+          @click="activeTab = 'blog'; goBackFromBlogPost()"
         >
           <i class="pi pi-pencil" />
           {{ model.profile.blogLabel || 'Blog' }}
@@ -151,14 +147,28 @@
       >
         <!-- Search bar for links -->
         <div v-if="model.profile.searchLinks && enabledLinks.length > 0" class="mb-3">
-          <div class="flex items-center gap-2.5 rounded-xl border border-transparent bg-[var(--glass)] px-3 py-2 shadow-[0_2px_6px_rgba(11,18,32,0.10),0_6px_16px_rgba(11,18,32,0.06)] backdrop-blur-md transition-colors focus-within:border-[var(--color-brand)] focus-within:ring-1 focus-within:ring-[var(--color-brand)]">
-            <i class="pi pi-search shrink-0 text-[13px] text-[color:var(--color-ink-soft)]" />
+          <div :class="['flex items-center gap-2.5 rounded-xl border px-3 py-2 backdrop-blur-md transition-all duration-200', searchLinksQuery.trim() ? 'border-transparent bg-white shadow-[0_2px_6px_rgba(11,18,32,0.10),0_6px_16px_rgba(11,18,32,0.06)]' : 'border-transparent bg-black/[0.04] shadow-none hover:bg-white hover:shadow-[0_2px_6px_rgba(11,18,32,0.10),0_6px_16px_rgba(11,18,32,0.06)]', 'focus-within:border-[var(--color-brand)] focus-within:ring-1 focus-within:ring-[var(--color-brand)] focus-within:bg-white focus-within:shadow-[0_2px_6px_rgba(11,18,32,0.10),0_6px_16px_rgba(11,18,32,0.06)]']">
+            <i v-if="model.profile.searchLinks" class="pi pi-search shrink-0 text-[13px] text-[color:var(--color-ink-soft)]" />
             <input
+              v-if="model.profile.searchLinks"
               v-model="searchLinksQuery"
               type="text"
               placeholder="Search links…"
               class="min-w-0 flex-1 bg-transparent text-sm text-[color:var(--color-ink)] placeholder:text-[color:var(--color-ink-soft)] outline-none"
             />
+            <span v-if="!model.profile.searchLinks" class="min-w-0 flex-1" />
+            <button
+              v-if="availableLinkTags.length > 0"
+              type="button"
+              class="relative shrink-0 rounded-lg p-1 text-[color:var(--color-ink-soft)] transition hover:text-[color:var(--color-brand)]"
+              @click.stop="linkTagFilterOpen = true"
+            >
+              <i class="pi pi-filter text-[13px]" />
+              <span
+                v-if="selectedLinkTags.length > 0"
+                class="absolute -right-1 -top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[var(--color-brand)] px-1 text-[9px] font-bold text-white"
+              >{{ selectedLinkTags.length }}</span>
+            </button>
           </div>
         </div>
 
@@ -398,7 +408,7 @@
       >
         <!-- Search bar for gallery -->
         <div v-if="model.profile.searchGallery || availableGalleryTags.length > 0" class="mb-3">
-          <div class="flex items-center gap-2.5 rounded-xl border border-transparent bg-[var(--glass)] px-3 py-2 shadow-[0_2px_6px_rgba(11,18,32,0.10),0_6px_16px_rgba(11,18,32,0.06)] backdrop-blur-md transition-colors focus-within:border-[var(--color-brand)] focus-within:ring-1 focus-within:ring-[var(--color-brand)]">
+          <div :class="['flex items-center gap-2.5 rounded-xl border px-3 py-2 backdrop-blur-md transition-all duration-200', searchGalleryQuery.trim() ? 'border-transparent bg-white shadow-[0_2px_6px_rgba(11,18,32,0.10),0_6px_16px_rgba(11,18,32,0.06)]' : 'border-transparent bg-black/[0.04] shadow-none hover:bg-white hover:shadow-[0_2px_6px_rgba(11,18,32,0.10),0_6px_16px_rgba(11,18,32,0.06)]', 'focus-within:border-[var(--color-brand)] focus-within:ring-1 focus-within:ring-[var(--color-brand)] focus-within:bg-white focus-within:shadow-[0_2px_6px_rgba(11,18,32,0.10),0_6px_16px_rgba(11,18,32,0.06)]']">
             <i v-if="model.profile.searchGallery" class="pi pi-search shrink-0 text-[13px] text-[color:var(--color-ink-soft)]" />
             <input
               v-if="model.profile.searchGallery"
@@ -482,7 +492,7 @@
                 <i class="pi pi-video text-2xl text-white/60" />
               </div>
               <!-- Play overlay -->
-              <div class="absolute inset-0 flex items-center justify-center">
+              <div class="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-200 group-hover:opacity-100">
                 <div
                   class="flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white shadow-lg backdrop-blur-sm transition group-hover:scale-110 sm:h-12 sm:w-12"
                 >
@@ -509,14 +519,14 @@
       >
         <!-- Blog post detail view -->
         <template v-if="currentBlogPost">
-          <BlogPostView :post="currentBlogPost" @back="currentBlogPost = null" />
+          <BlogPostView :post="currentBlogPost" @back="goBackFromBlogPost" />
         </template>
 
         <!-- Blog listing -->
         <template v-else>
           <!-- Search bar for blog -->
           <div v-if="(model.profile.searchBlog || availableBlogTags.length > 0) && publishedBlogPosts.length > 0" class="mb-3">
-            <div class="flex items-center gap-2.5 rounded-xl border border-transparent bg-[var(--glass)] px-3 py-2 shadow-[0_2px_6px_rgba(11,18,32,0.10),0_6px_16px_rgba(11,18,32,0.06)] backdrop-blur-md transition-colors focus-within:border-[var(--color-brand)] focus-within:ring-1 focus-within:ring-[var(--color-brand)]">
+            <div :class="['flex items-center gap-2.5 rounded-xl border px-3 py-2 backdrop-blur-md transition-all duration-200', searchBlogQuery.trim() ? 'border-transparent bg-white shadow-[0_2px_6px_rgba(11,18,32,0.10),0_6px_16px_rgba(11,18,32,0.06)]' : 'border-transparent bg-black/[0.04] shadow-none hover:bg-white hover:shadow-[0_2px_6px_rgba(11,18,32,0.10),0_6px_16px_rgba(11,18,32,0.06)]', 'focus-within:border-[var(--color-brand)] focus-within:ring-1 focus-within:ring-[var(--color-brand)] focus-within:bg-white focus-within:shadow-[0_2px_6px_rgba(11,18,32,0.10),0_6px_16px_rgba(11,18,32,0.06)]']">
               <i v-if="model.profile.searchBlog" class="pi pi-search shrink-0 text-[13px] text-[color:var(--color-ink-soft)]" />
               <input
                 v-if="model.profile.searchBlog"
@@ -744,6 +754,39 @@
 
     <Toast />
 
+    <!-- Tag filter dialog (links) -->
+    <Dialog
+      v-model:visible="linkTagFilterOpen"
+      modal
+      header="Filter by tags"
+      :style="{ width: 'min(400px, 90vw)' }"
+    >
+      <div class="flex flex-wrap gap-2">
+        <button
+          v-for="tag in availableLinkTags"
+          :key="tag"
+          type="button"
+          class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition"
+          :class="selectedLinkTags.includes(tag)
+            ? 'border-[var(--color-brand)]/30 bg-[var(--color-brand)]/10 text-[color:var(--color-brand)]'
+            : 'border-[var(--color-border)] bg-[var(--glass)] text-[color:var(--color-ink-soft)] hover:bg-[var(--glass-strong)]'"
+          @click="toggleLinkTag(tag)"
+        >
+          <i class="pi text-[10px]" :class="selectedLinkTags.includes(tag) ? 'pi-check-circle' : 'pi-circle'" />
+          {{ tag }}
+        </button>
+      </div>
+      <div v-if="selectedLinkTags.length > 0" class="mt-4 flex justify-end">
+        <button
+          type="button"
+          class="text-xs font-semibold text-[color:var(--color-brand)] hover:underline"
+          @click="selectedLinkTags = []"
+        >
+          Clear all
+        </button>
+      </div>
+    </Dialog>
+
     <!-- Tag filter dialog (gallery) -->
     <Dialog
       v-model:visible="galleryTagFilterOpen"
@@ -885,6 +928,7 @@ import {
   watch,
   watchEffect,
 } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import Button from "primevue/button";
 import Dialog from "primevue/dialog";
 import Textarea from "primevue/textarea";
@@ -898,6 +942,7 @@ import VideoPlayer from "./components/VideoPlayer.vue";
 import MasonryGrid from "./components/MasonryGrid.vue";
 import BlogPostView from "./components/BlogPostView.vue";
 import type { MasonryItem } from "./components/MasonryGrid.vue";
+import { icons as lucideIcons } from "lucide-vue-next";
 import {
   defaultModel,
   type BioModel,
@@ -944,6 +989,8 @@ export default defineComponent({
   setup() {
     const isDev = import.meta.env.DEV;
     const toast = useToast();
+    const route = useRoute();
+    const router = useRouter();
 
     const model = ref<BioModel>(defaultModel());
     const modelLoaded = ref(false);
@@ -1037,6 +1084,13 @@ export default defineComponent({
       // Apply hash-based tab after model is available
       applyHashTab();
 
+      // Handle route-based blog post navigation (e.g. /content/:slug)
+      if (route.name === 'blog-post' && route.params.slug) {
+        const slug = route.params.slug as string;
+        activeTab.value = 'blog';
+        await loadBlogPost(slug, false);
+      }
+
       setTimeout(() => {
         suppressPersist.value = false;
       }, 0);
@@ -1054,6 +1108,16 @@ export default defineComponent({
       // Clean up injected script containers
       _headContainer.remove();
       _bodyContainer.remove();
+    });
+
+    // Watch route changes for browser back/forward
+    watch(() => route.name, (name) => {
+      if (name === 'blog-post' && route.params.slug) {
+        activeTab.value = 'blog';
+        loadBlogPost(route.params.slug as string, false);
+      } else if (name === 'home' && currentBlogPost.value) {
+        currentBlogPost.value = null;
+      }
     });
 
     // Apply theme CSS variables reactively
@@ -1227,21 +1291,47 @@ export default defineComponent({
     const searchLinksQuery = ref("");
     const searchGalleryQuery = ref("");
     const searchBlogQuery = ref("");
+    const selectedLinkTags = ref<string[]>([]);
     const selectedGalleryTags = ref<string[]>([]);
     const selectedBlogTags = ref<string[]>([]);
+    const linkTagFilterOpen = ref(false);
     const galleryTagFilterOpen = ref(false);
     const blogTagFilterOpen = ref(false);
 
     const filteredLinks = computed(() => {
       const q = searchLinksQuery.value.trim().toLowerCase();
-      if (!q) return enabledLinks.value;
-      return enabledLinks.value.filter(
-        (l) =>
-          l.title.toLowerCase().includes(q) ||
-          l.subtitle.toLowerCase().includes(q) ||
-          l.url.toLowerCase().includes(q),
-      );
+      const tags = selectedLinkTags.value;
+      let source = enabledLinks.value;
+      if (q) {
+        source = source.filter(
+          (l) =>
+            l.title.toLowerCase().includes(q) ||
+            l.subtitle.toLowerCase().includes(q) ||
+            l.url.toLowerCase().includes(q) ||
+            l.tags?.some((t) => t.toLowerCase().includes(q)),
+        );
+      }
+      if (tags.length > 0) {
+        source = source.filter(
+          (l) => l.tags && tags.every((t) => l.tags.includes(t)),
+        );
+      }
+      return source;
     });
+
+    const availableLinkTags = computed(() => {
+      const tagSet = new Set<string>();
+      for (const l of enabledLinks.value) {
+        if (l.tags) l.tags.forEach((t) => tagSet.add(t));
+      }
+      return [...tagSet].sort();
+    });
+
+    const toggleLinkTag = (tag: string) => {
+      const idx = selectedLinkTags.value.indexOf(tag);
+      if (idx >= 0) selectedLinkTags.value.splice(idx, 1);
+      else selectedLinkTags.value.push(tag);
+    };
 
     const activeTab = ref<"links" | "resume" | "gallery" | "blog">("links");
 
@@ -1362,11 +1452,21 @@ export default defineComponent({
       }
     };
 
-    const loadBlogPost = async (slug: string) => {
+    const loadBlogPost = async (slug: string, pushRoute = true) => {
       try {
         currentBlogPost.value = await fetchBlogPost(slug);
+        if (pushRoute && router) {
+          router.push({ name: 'blog-post', params: { slug } });
+        }
       } catch {
         toast.add({ severity: "error", summary: "Error", detail: "Could not load post.", life: 2600 });
+      }
+    };
+
+    const goBackFromBlogPost = () => {
+      currentBlogPost.value = null;
+      if (router) {
+        router.push('/');
       }
     };
 
@@ -1543,24 +1643,22 @@ export default defineComponent({
       }
     });
 
-    const socialIcon = (type: string) => {
-      switch (type) {
-        case "instagram":
-          return "pi-instagram";
-        case "x":
-          return "pi-twitter";
-        case "youtube":
-          return "pi-youtube";
-        case "tiktok":
-          return "pi-video";
-        case "github":
-          return "pi-github";
-        case "email":
-          return "pi-envelope";
-        case "website":
-        default:
-          return "pi-globe";
+    /** Detect email-like URLs: contains @ and . (e.g. "foo@bar.com") */
+    const isEmailUrl = (url: string) => {
+      if (!url) return false;
+      if (url.startsWith("mailto:")) return true;
+      return url.includes("@") && url.includes(".");
+    };
+
+    const socialHref = (s: { url: string }) => {
+      if (isEmailUrl(s.url) && !s.url.startsWith("mailto:")) {
+        return "mailto:" + s.url;
       }
+      return s.url;
+    };
+
+    const resolveSocialIcon = (name: string) => {
+      return (lucideIcons as Record<string, any>)[name] ?? (lucideIcons as Record<string, any>)["Globe"];
     };
 
     const exportJson = async () => {
@@ -1732,7 +1830,9 @@ export default defineComponent({
       onAvatarError,
       bannerSrc,
       onBannerError,
-      socialIcon,
+      isEmailUrl,
+      socialHref,
+      resolveSocialIcon,
       exportJson,
       importOpen,
       importText,
@@ -1756,17 +1856,22 @@ export default defineComponent({
       filteredBlogPosts,
       currentBlogPost,
       loadBlogPost,
+      goBackFromBlogPost,
       showBlogSection,
       formatDate,
       searchLinksQuery,
       searchGalleryQuery,
       searchBlogQuery,
+      selectedLinkTags,
       selectedGalleryTags,
       selectedBlogTags,
+      availableLinkTags,
       availableGalleryTags,
       availableBlogTags,
+      toggleLinkTag,
       toggleGalleryTag,
       toggleBlogTag,
+      linkTagFilterOpen,
       galleryTagFilterOpen,
       blogTagFilterOpen,
       filteredLinks,

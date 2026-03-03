@@ -55,6 +55,33 @@
             />
           </div>
 
+          <!-- Tags -->
+          <div class="grid gap-1.5">
+            <label class="text-xs font-extrabold text-[color:var(--color-ink-soft)]">Tags</label>
+            <MultiSelect
+              v-model="draft.tags"
+              :options="allLinkTags"
+              display="chip"
+              filter
+              :maxSelectedLabels="10"
+              class="w-full"
+              placeholder="Select or type tags…"
+              @filter="onTagFilter"
+            >
+              <template #footer>
+                <div v-if="tagFilterValue && !allLinkTags.includes(tagFilterValue)" class="px-3 py-2">
+                  <button
+                    type="button"
+                    class="w-full rounded-lg border border-dashed border-gray-300 px-3 py-1.5 text-xs font-semibold text-[color:var(--color-brand)] transition hover:bg-blue-50"
+                    @click="addNewTag(tagFilterValue)"
+                  >
+                    <i class="pi pi-plus mr-1 text-[10px]" />Create "{{ tagFilterValue }}"
+                  </button>
+                </div>
+              </template>
+            </MultiSelect>
+          </div>
+
           <div class="flex items-center justify-between gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--glass-2)] p-3">
             <div>
               <div class="text-xs font-extrabold text-[color:var(--color-ink)]">Enabled</div>
@@ -101,6 +128,7 @@ import { computed, defineComponent, ref, watch } from "vue";
 import Button from "primevue/button";
 import Drawer from "primevue/drawer";
 import InputText from "primevue/inputtext";
+import MultiSelect from "primevue/multiselect";
 import ToggleSwitch from "primevue/toggleswitch";
 
 import ImageUploadField from "./ImageUploadField.vue";
@@ -108,11 +136,12 @@ import type { BioLink } from "../lib/model";
 
 export default defineComponent({
   name: "LinkEditorDrawer",
-  components: { Drawer, Button, InputText, ToggleSwitch, ImageUploadField },
+  components: { Drawer, Button, InputText, MultiSelect, ToggleSwitch, ImageUploadField },
   props: {
     open: { type: Boolean, required: true },
     modelValue: { type: Object as () => BioLink, required: true },
     busy: { type: Boolean, default: false },
+    allTags: { type: Array as () => string[], default: () => [] },
   },
   emits: ["update:open", "update:modelValue", "delete"],
   setup(props, { emit }) {
@@ -133,6 +162,33 @@ export default defineComponent({
 
     const title = computed(() => (draft.value.title || "").trim());
 
+    // ── Tags ──────────────────────────────────────────────────────
+    const tagFilterValue = ref("");
+
+    const allLinkTags = computed(() => {
+      const set = new Set<string>(props.allTags);
+      if (draft.value?.tags) {
+        for (const t of draft.value.tags) set.add(t);
+      }
+      return [...set].sort();
+    });
+
+    const onTagFilter = (event: any) => {
+      tagFilterValue.value = (event.value ?? "").trim();
+    };
+
+    const addNewTag = (tag: string) => {
+      if (!tag) return;
+      const normalized = tag.trim();
+      if (!normalized) return;
+      const tags = [...(draft.value.tags || [])];
+      if (!tags.includes(normalized)) {
+        tags.push(normalized);
+        draft.value = { ...draft.value, tags };
+      }
+      tagFilterValue.value = "";
+    };
+
     const reset = () => {
       draft.value = { ...props.modelValue };
     };
@@ -142,7 +198,7 @@ export default defineComponent({
       visible.value = false;
     };
 
-    return { visible, expanded, draft, title, reset, save };
+    return { visible, expanded, draft, title, tagFilterValue, allLinkTags, onTagFilter, addNewTag, reset, save };
   },
 });
 </script>

@@ -580,11 +580,11 @@
                 @click="openSocialEditor(s.id)"
               >
                 <span class="cms__row-drag cms__row-drag--muted" aria-hidden="true">
-                  <i class="pi" :class="primeSocialIcon(s.type)" />
+                  <component :is="resolveLucideIcon(s.icon)" :size="16" />
                 </span>
 
                 <span class="cms__row-text">
-                  <span class="cms__row-title">{{ s.label || socialLabel(s.type) }}</span>
+                  <span class="cms__row-title">{{ s.label || s.icon || 'Social' }}</span>
                   <span class="cms__row-sub">{{ s.url || "(no url)" }}</span>
                 </span>
 
@@ -960,6 +960,7 @@
       v-if="activeLink"
       v-model:open="linkEditorOpen"
       v-model="activeLinkProxy"
+      :allTags="allLinkTags"
       @delete="deleteActiveLink"
     />
     <SocialEditorDrawer
@@ -1018,6 +1019,7 @@ import SocialEditorDrawer from "./SocialEditorDrawer.vue";
 import ResumeEditorDrawer from "./ResumeEditorDrawer.vue";
 import GalleryEditorDrawer from "./GalleryEditorDrawer.vue";
 import BlogEditorDrawer from "./BlogEditorDrawer.vue";
+import { icons as lucideIcons } from "lucide-vue-next";
 import {
   type BioLink,
   type BioModel,
@@ -1224,34 +1226,8 @@ export default defineComponent({
       if (!open) activeSocialId.value = "";
     });
 
-    const socialLabel = (type: string) => {
-      const m: Record<string, string> = {
-        website: "Website",
-        github: "GitHub",
-        instagram: "Instagram",
-        x: "X",
-        youtube: "YouTube",
-        tiktok: "TikTok",
-      };
-      return m[type] ?? "Social";
-    };
-
-    const primeSocialIcon = (type: string) => {
-      switch (type) {
-        case "instagram":
-          return "pi-instagram";
-        case "x":
-          return "pi-twitter";
-        case "youtube":
-          return "pi-youtube";
-        case "tiktok":
-          return "pi-video";
-        case "github":
-          return "pi-github";
-        case "website":
-        default:
-          return "pi-globe";
-      }
+    const resolveLucideIcon = (name: string) => {
+      return (lucideIcons as Record<string, any>)[name] ?? (lucideIcons as Record<string, any>)["Globe"];
     };
 
     const discard = () => {
@@ -1659,6 +1635,14 @@ export default defineComponent({
     };
 
     // ── Tag collections for editor drawers ───────────────────────
+    const allLinkTags = computed(() => {
+      const tagSet = new Set<string>();
+      for (const l of draft.value.links) {
+        if (l.tags) l.tags.forEach((t: string) => tagSet.add(t));
+      }
+      return [...tagSet].sort();
+    });
+
     const allGalleryTags = computed(() => {
       const tagSet = new Set<string>();
       for (const item of draft.value.gallery.items) {
@@ -1699,8 +1683,7 @@ export default defineComponent({
       openSocialEditor,
       createAndEditSocial,
       deleteActiveSocial,
-      socialLabel,
-      primeSocialIcon,
+      resolveLucideIcon,
       githubForm,
       githubSaving,
       githubTesting,
@@ -1743,6 +1726,7 @@ export default defineComponent({
       openBlogEditorNew,
       openBlogEditorExisting,
       refreshBlogPosts,
+      allLinkTags,
       allGalleryTags,
       allBlogTags,
     };

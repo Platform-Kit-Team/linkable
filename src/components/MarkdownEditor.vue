@@ -173,6 +173,9 @@ import { TextStyle, FontSize, Color } from "@tiptap/extension-text-style";
 import Highlight from "@tiptap/extension-highlight";
 import { common, createLowlight } from "lowlight";
 import { markdownToHtml, htmlToMarkdown } from "../lib/markdown-utils";
+import { ImageUpload } from "./tiptap-image-upload";
+import { uploadImage } from "../lib/upload";
+import { useToast } from "primevue/usetoast";
 
 const lowlight = createLowlight(common);
 
@@ -185,6 +188,7 @@ export default defineComponent({
   },
   emits: ["update:modelValue"],
   setup(props, { emit }) {
+    const toast = useToast();
     const sourceMode = ref(false);
     const moreOpen = ref(false);
     const markdownSource = ref(props.modelValue);
@@ -207,6 +211,26 @@ export default defineComponent({
         FontSize,
         Color,
         Highlight.configure({ multicolor: true }),
+        ImageUpload.configure({
+          onUpload: (url: string) => {
+            toast.add({
+              severity: "success",
+              summary: "Image uploaded",
+              detail: import.meta.env.DEV
+                ? "Saved locally."
+                : "Queued for commit.",
+              life: 2000,
+            });
+          },
+          onError: (err: Error) => {
+            toast.add({
+              severity: "error",
+              summary: "Upload failed",
+              detail: err.message || "Unable to upload image.",
+              life: 2800,
+            });
+          },
+        }),
       ],
       onUpdate: () => {
         if (skipUpdate) return;
@@ -261,10 +285,33 @@ export default defineComponent({
     };
 
     const addImage = () => {
-      const url = window.prompt("Image URL");
-      if (url) {
-        editor.chain().focus().setImage({ src: url }).run();
-      }
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = "image/*";
+      input.onchange = () => {
+        const file = input.files?.[0];
+        if (!file) return;
+        void (async () => {
+          try {
+            const url = await uploadImage(file);
+            editor.chain().focus().setImage({ src: url }).run();
+            toast.add({
+              severity: "success",
+              summary: "Image uploaded",
+              detail: import.meta.env.DEV ? "Saved locally." : "Queued for commit.",
+              life: 2000,
+            });
+          } catch (err) {
+            toast.add({
+              severity: "error",
+              summary: "Upload failed",
+              detail: err instanceof Error ? err.message : "Unable to upload image.",
+              life: 2800,
+            });
+          }
+        })();
+      };
+      input.click();
     };
 
     // ── Block type (heading / paragraph) ──

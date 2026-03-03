@@ -9,8 +9,10 @@ import "./styles.css";
 import "primeicons/primeicons.css";
 
 import App from "./App.vue";
+import router from "./router";
 
 createApp(App)
+  .use(router)
   .use(PrimeVue, {
     ripple: true,
     theme: {

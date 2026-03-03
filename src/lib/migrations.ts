@@ -29,7 +29,7 @@
 
 // ── current version ──────────────────────────────────────────────────
 
-export const CURRENT_SCHEMA_VERSION = 12;
+export const CURRENT_SCHEMA_VERSION = 14;
 
 // ── migration registry ──────────────────────────────────────────────
 
@@ -224,6 +224,49 @@ const migrations: Migration[] = [
         data.scripts = { headScript: "", bodyEndScript: "" };
       }
       data.schemaVersion = 12;
+      return data;
+    },
+  },
+
+  {
+    toVersion: 13,
+    migrate: (data) => {
+      // v12 → v13: replace social "type" field with "icon" (Lucide icon name).
+      // Map old type values to their Lucide equivalents.
+      const typeToIcon: Record<string, string> = {
+        instagram: "Instagram",
+        x: "Twitter",
+        youtube: "Youtube",
+        tiktok: "Clapperboard",
+        github: "Github",
+        email: "Mail",
+        website: "Globe",
+      };
+      if (Array.isArray(data.socials)) {
+        for (const s of data.socials) {
+          if (s.type && !s.icon) {
+            s.icon = typeToIcon[s.type] || "Globe";
+          }
+          delete s.type;
+        }
+      }
+      data.schemaVersion = 13;
+      return data;
+    },
+  },
+
+  {
+    toVersion: 14,
+    migrate: (data) => {
+      // v13 → v14: add tags array to links.
+      if (Array.isArray(data.links)) {
+        for (const l of data.links) {
+          if (!Array.isArray(l.tags)) {
+            l.tags = [];
+          }
+        }
+      }
+      data.schemaVersion = 14;
       return data;
     },
   },

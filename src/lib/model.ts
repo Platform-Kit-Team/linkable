@@ -1,12 +1,3 @@
-export type SocialType =
-  | "website"
-  | "instagram"
-  | "x"
-  | "youtube"
-  | "tiktok"
-  | "github"
-  | "email";
-
 export type BioLink = {
   id: string;
   title: string;
@@ -14,11 +5,12 @@ export type BioLink = {
   url: string;
   imageUrl: string; // optional
   enabled: boolean;
+  tags: string[];
 };
 
 export type SocialLink = {
   id: string;
-  type: SocialType;
+  icon: string;
   label: string;
   url: string;
   enabled: boolean;
@@ -145,11 +137,12 @@ export const newLink = (): BioLink => ({
   url: "https://",
   imageUrl: "",
   enabled: true,
+  tags: [],
 });
 
 export const newSocial = (): SocialLink => ({
   id: newId(),
-  type: "website",
+  icon: "Globe",
   label: "",
   url: "",
   enabled: false,
@@ -277,6 +270,7 @@ export const defaultModel = (): BioModel => ({
       url: "https://example.com",
       imageUrl: "",
       enabled: true,
+      tags: [],
     },
     {
       id: newId(),
@@ -285,6 +279,7 @@ export const defaultModel = (): BioModel => ({
       url: "https://example.com",
       imageUrl: "",
       enabled: true,
+      tags: [],
     },
     {
       id: newId(),
@@ -293,6 +288,7 @@ export const defaultModel = (): BioModel => ({
       url: "https://example.com",
       imageUrl: "",
       enabled: true,
+      tags: [],
     },
   ],
   socials: [
@@ -346,22 +342,9 @@ const sanitizeUrl = (v: unknown) => {
     if (u.protocol === "http:" || u.protocol === "https:" || u.protocol === "mailto:") return u.toString();
     return "";
   } catch {
-    return "";
+    return "";  
   }
 };
-
-const socialSet: SocialType[] = [
-  "website",
-  "instagram",
-  "x",
-  "youtube",
-  "tiktok",
-  "github",
-  "email",
-];
-
-const asSocialType = (v: unknown): SocialType =>
-  (socialSet.includes(v as SocialType) ? (v as SocialType) : "website");
 
 import { migrateToLatest, CURRENT_SCHEMA_VERSION } from "./migrations";
 
@@ -391,6 +374,7 @@ export const sanitizeModel = (input: unknown): BioModel => {
       url: sanitizeUrl(l?.url),
       imageUrl: sanitizeUrl(l?.imageUrl),
       enabled: typeof l?.enabled === "boolean" ? l.enabled : true,
+      tags: Array.isArray(l?.tags) ? l.tags.filter((t: any) => typeof t === 'string').slice(0, 20) : [],
     }))
     .filter((l: BioLink) => !!l.id)
     .slice(0, 60);
@@ -399,7 +383,7 @@ export const sanitizeModel = (input: unknown): BioModel => {
   const socials: SocialLink[] = socialsRaw
     .map((s: any) => ({
       id: asString(s?.id) || newId(),
-      type: asSocialType(s?.type),
+      icon: asString(s?.icon).slice(0, 60) || "Globe",
       label: asString(s?.label).slice(0, 60),
       url: sanitizeUrl(s?.url),
       enabled: asBool(s?.enabled),
