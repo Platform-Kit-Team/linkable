@@ -36,31 +36,10 @@
             <InputText v-model="localTitle" class="w-full" placeholder="Post title" />
           </div>
 
-          <!-- Slug -->
-          <div class="grid gap-1.5">
-            <label class="text-xs font-extrabold text-[color:var(--color-ink-soft)]">Slug</label>
-            <InputText v-model="localSlug" class="w-full" placeholder="my-post-slug" />
-            <div class="text-[10px] font-semibold text-[color:var(--color-ink-soft)]">
-              URL-friendly identifier. Auto-generated from title if left empty.
-            </div>
-          </div>
-
-          <!-- Date -->
-          <div class="grid gap-1.5">
-            <label class="text-xs font-extrabold text-[color:var(--color-ink-soft)]">Date</label>
-            <InputText v-model="localDate" class="w-full" placeholder="2026-03-02" />
-          </div>
-
           <!-- Excerpt -->
           <div class="grid gap-1.5">
             <label class="text-xs font-extrabold text-[color:var(--color-ink-soft)]">Excerpt</label>
             <Textarea v-model="localExcerpt" autoResize rows="2" class="w-full" placeholder="Brief summary…" />
-          </div>
-
-          <!-- Cover Image -->
-          <div class="grid gap-1.5">
-            <label class="text-xs font-extrabold text-[color:var(--color-ink-soft)]">Cover Image URL</label>
-            <InputText v-model="localCoverImage" class="w-full" placeholder="/uploads/cover.jpg or https://…" />
           </div>
 
           <!-- Tags -->
@@ -88,6 +67,27 @@
                 </div>
               </template>
             </MultiSelect>
+          </div>
+
+          <!-- Slug -->
+          <div class="grid gap-1.5">
+            <label class="text-xs font-extrabold text-[color:var(--color-ink-soft)]">Slug</label>
+            <InputText v-model="localSlug" class="w-full" placeholder="my-post-slug" />
+            <div class="text-[10px] font-semibold text-[color:var(--color-ink-soft)]">
+              URL-friendly identifier. Auto-generated from title if left empty.
+            </div>
+          </div>
+
+          <!-- Date -->
+          <div class="grid gap-1.5">
+            <label class="text-xs font-extrabold text-[color:var(--color-ink-soft)]">Date</label>
+            <InputText v-model="localDate" class="w-full" placeholder="2026-03-02" />
+          </div>
+
+          <!-- Cover Image -->
+          <div class="grid gap-1.5">
+            <label class="text-xs font-extrabold text-[color:var(--color-ink-soft)]">Cover Image URL</label>
+            <InputText v-model="localCoverImage" class="w-full" placeholder="/uploads/cover.jpg or https://…" />
           </div>
 
           <!-- Published -->
