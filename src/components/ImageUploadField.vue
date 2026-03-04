@@ -38,14 +38,6 @@
     <div v-if="modelValue" class="relative w-full overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--glass)] shadow-sm">
       <div class="flex items-center gap-3 p-2">
         <img :src="modelValue" alt="" class="block h-16 w-auto max-w-[120px] rounded-lg object-contain" />
-        <button
-          type="button"
-          class="ml-auto rounded-full border border-[var(--color-border)] bg-[var(--glass-strong)] px-3 py-1 text-[11px] font-semibold text-[color:var(--color-ink-soft)] transition hover:text-[color:var(--color-ink)]"
-          @click="browse"
-          :disabled="uploading || !canUpload"
-        >
-          <i class="pi pi-sync mr-1 text-[10px]" />Replace
-        </button>
       </div>
       <input
         ref="fileInput"

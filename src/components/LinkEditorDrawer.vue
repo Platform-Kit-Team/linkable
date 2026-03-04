@@ -41,20 +41,6 @@
             <InputText v-model="draft.subtitle" class="w-full" placeholder="Short helper text…" />
           </div>
 
-          <div class="grid gap-1.5">
-            <label class="text-xs font-extrabold text-[color:var(--color-ink-soft)]">URL</label>
-            <InputText v-model="draft.url" class="w-full" placeholder="https://..." />
-          </div>
-
-          <div class="grid gap-1.5">
-            <ImageUploadField
-              v-model="draft.imageUrl"
-              label="Thumbnail image (optional)"
-              description="Drag in a square image to give this button extra presence."
-              :targetFilename="`${draft.id}.jpg`"
-            />
-          </div>
-
           <!-- Tags -->
           <div class="grid gap-1.5">
             <label class="text-xs font-extrabold text-[color:var(--color-ink-soft)]">Tags</label>
@@ -80,6 +66,20 @@
                 </div>
               </template>
             </MultiSelect>
+          </div>
+
+          <div class="grid gap-1.5">
+            <label class="text-xs font-extrabold text-[color:var(--color-ink-soft)]">URL</label>
+            <InputText v-model="draft.url" class="w-full" placeholder="https://..." />
+          </div>
+
+          <div class="grid gap-1.5">
+            <ImageUploadField
+              v-model="draft.imageUrl"
+              label="Thumbnail image (optional)"
+              description="Drag in a square image to give this button extra presence."
+              :targetFilename="`${draft.id}.jpg`"
+            />
           </div>
 
           <div class="flex items-center justify-between gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--glass-2)] p-3">
