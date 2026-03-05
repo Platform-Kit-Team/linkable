@@ -37,7 +37,7 @@
     <!-- Thumbnail preview OR drop zone -->
     <div v-if="modelValue" class="relative w-full overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--glass)] shadow-sm">
       <div class="flex items-center gap-3 p-2">
-        <img :src="modelValue" alt="" class="block h-16 w-auto max-w-[120px] rounded-lg object-contain" />
+        <img :src="resolvedSrc" alt="" class="block h-16 w-auto max-w-[120px] rounded-lg object-contain" />
       </div>
       <input
         ref="fileInput"
@@ -108,6 +108,7 @@ import {
   loadGithubSettings,
   uploadImageToGithub,
   addPendingUpload,
+  resolveUploadUrl,
   GITHUB_SYNC_EVENT,
 } from "../lib/github";
 import { convertToJpeg } from "../lib/image-convert";
@@ -132,6 +133,8 @@ const props = withDefaults(
 const emit = defineEmits<{
   (e: "update:modelValue", value: string): void;
 }>();
+
+const resolvedSrc = computed(() => resolveUploadUrl(props.modelValue));
 
 const toast = useToast();
 

@@ -1194,7 +1194,7 @@ export default defineComponent({
     initialEmbedId: { type: String, default: "" },
     initialBlogSlug: { type: String, default: "" },
   },
-  emits: ["update:open", "update:model"],
+  emits: ["update:open", "update:model", "blog-posts-updated"],
   setup(props, { emit }) {
     const toast = useToast();
 
@@ -1775,6 +1775,7 @@ export default defineComponent({
       } catch {
         blogPosts.value = [];
       }
+      emit("blog-posts-updated");
     };
 
     // Load blog posts when tab becomes 'blog'

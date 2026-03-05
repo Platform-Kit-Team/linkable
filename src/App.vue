@@ -671,7 +671,7 @@
       </Teleport>
 
       <footer
-        class="mt-6 text-center text-xs text-[color:var(--color-ink-soft)]"
+        class="mt-6 flex items-center justify-center gap-3 text-center text-xs text-[color:var(--color-ink-soft)]"
       >
         <a
           href="https://github.com/platform-kit/linkable"
@@ -683,6 +683,17 @@
             class="h-1.5 w-1.5 rounded-full bg-[color:var(--color-brand)] shadow-[0_0_0_4px_rgba(37,99,235,0.12)]"
           ></span>
           <span>Made with Linkable</span>
+        </a>
+        <a
+          v-if="blogHasContent"
+          href="/rss.xml"
+          target="_blank"
+          rel="noreferrer"
+          class="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-border)] bg-[var(--glass-2)] px-3 py-1.5 shadow-sm backdrop-blur-md transition hover:bg-[var(--glass)]"
+          title="RSS Feed"
+        >
+          <component :is="resolveSocialIcon('Rss')" :size="14" />
+          <span>RSS</span>
         </a>
       </footer>
     </main>
@@ -697,6 +708,7 @@
       :preview-mode="previewMode"
       @update:model="updateModel"
       @toggle-preview="togglePreviewMode"
+      @blog-posts-updated="loadBlogPosts"
     />
 
     <!-- CMS password gate -->

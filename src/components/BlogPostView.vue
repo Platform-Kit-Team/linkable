@@ -39,7 +39,7 @@
     </div>
 
     <!-- Rendered markdown content -->
-    <div class="blog-prose" v-html="post.html" />
+    <div class="blog-prose" v-html="resolvedHtml" />
   </div>
 
   <div v-else class="py-12 text-center text-sm text-[color:var(--color-ink-soft)]">
@@ -73,7 +73,16 @@ export default defineComponent({
       }
     });
 
-    return { formattedDate, resolveUploadUrl };
+    const resolvedHtml = computed(() => {
+      const html = props.post?.html;
+      if (!html) return "";
+      return html.replace(
+        /(<img\s[^>]*?\bsrc=")([^"]+)(")/g,
+        (_match: string, before: string, src: string, after: string) => before + resolveUploadUrl(src) + after,
+      );
+    });
+
+    return { formattedDate, resolveUploadUrl, resolvedHtml };
   },
 });
 </script>
