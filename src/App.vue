@@ -224,7 +224,7 @@
             v-if="canUseCms"
             rounded
             class="mt-4 !border-0 !bg-[color:var(--color-brand)] !px-4 !py-2.5 shadow-[0_14px_38px_rgba(37,99,235,0.22)]"
-            @click="cmsOpen = true"
+            @click="openCms"
           >
             Add links
           </Button>
@@ -415,11 +415,7 @@
           @filter-click="galleryTagFilterOpen = true"
         />
 
-        <h2
-          class="mb-3 text-[11px] font-extrabold uppercase tracking-widest text-[color:var(--color-ink-soft)] sm:mb-4 sm:text-xs"
-        >
-          Gallery
-        </h2>
+     
         <MasonryGrid
           :items="masonryItems"
           :gap="12"
@@ -580,13 +576,9 @@
       <!-- Embed sections -->
       <section
         v-if="activeEmbedItem"
-        class="glass overflow-hidden rounded-[var(--radius-xl)] p-3 sm:p-6"
+        class="glass overflow-hidden rounded-[var(--radius-xl)] p-3 sm:p-6 "
       >
-        <h2
-          class="mb-3 text-[11px] font-extrabold uppercase tracking-widest text-[color:var(--color-ink-soft)] sm:mb-4 sm:text-xs"
-        >
-          {{ activeEmbedItem.label }}
-        </h2>
+      
         <div class="embed-container" v-html="activeEmbedHtml" />
       </section>
 
@@ -699,13 +691,52 @@
       v-if="canUseCms"
       v-model:open="cmsOpen"
       :model="model"
-      :initial-tab="activeTab"
+      :initial-tab="cmsInitialTab"
+      :initial-embed-id="activeTab.startsWith('embed-') ? activeTab.slice(6) : ''"
       :initial-blog-slug="activeTab === 'blog' && currentBlogPost ? currentBlogPost.slug : ''"
       :preview-mode="previewMode"
       @update:model="updateModel"
       @toggle-preview="togglePreviewMode"
-      @open-github="openGithubSettings"
     />
+
+    <!-- CMS password gate -->
+    <Dialog
+      v-model:visible="cmsPasswordOpen"
+      modal
+      header="Unlock CMS"
+      :style="{ width: 'min(400px, 92vw)' }"
+    >
+      <div class="space-y-4">
+        <div class="text-sm text-[color:var(--color-ink-soft)]">
+          Enter your password to access the CMS.
+        </div>
+        <InputText
+          v-model="cmsPassword"
+          type="password"
+          placeholder="Password"
+          autocomplete="off"
+          class="w-full"
+          @keyup.enter="submitCmsPassword"
+        />
+        <div v-if="cmsPasswordError" class="text-xs font-semibold text-red-500">
+          {{ cmsPasswordError }}
+        </div>
+      </div>
+      <template #footer>
+        <div class="flex justify-end gap-2">
+          <Button rounded severity="secondary" @click="cmsPasswordOpen = false">Cancel</Button>
+          <Button
+            rounded
+            class="!border-0 !bg-[color:var(--color-brand)] !px-4 !py-2.5"
+            :disabled="!cmsPassword"
+            @click="submitCmsPassword"
+          >
+            <i class="pi pi-lock-open" />
+            <span class="ml-2">Unlock</span>
+          </Button>
+        </div>
+      </template>
+    </Dialog>
 
     <Dialog
       v-if="isDev"
@@ -734,7 +765,6 @@
       </div>
     </Dialog>
 
-    <GithubSettingsDialog v-model:open="githubDialogOpen" />
     <GitCommitDialog
       v-if="unsynced"
       v-model:open="gitDialogOpen"
@@ -848,7 +878,7 @@
         v-if="canUseCms"
         rounded
         class="!fixed !bottom-4 !right-3 !z-50 !border-0 !bg-[color:var(--color-brand)] !px-4 !py-2.5 !text-sm !shadow-[0_14px_38px_rgba(37,99,235,0.28)] sm:!bottom-6 sm:!right-6 sm:!px-5 sm:!py-3 hover:!shadow-[0_18px_52px_rgba(37,99,235,0.32)]"
-        @click="cmsOpen = true"
+        @click="openCms"
       >
         <i class="pi pi-sliders-h" />
         <span class="ml-2">CMS</span>
@@ -920,13 +950,13 @@ import {
 import { useRoute, useRouter } from "vue-router";
 import Button from "primevue/button";
 import Dialog from "primevue/dialog";
+import InputText from "primevue/inputtext";
 import Textarea from "primevue/textarea";
 import Toast from "primevue/toast";
 import { useToast } from "primevue/usetoast";
 
 import CmsDialog from "./components/CmsDialog.vue";
 import GitCommitDialog from "./components/GitCommitDialog.vue";
-import GithubSettingsDialog from "./components/GithubSettingsDialog.vue";
 import VideoPlayer from "./components/VideoPlayer.vue";
 import MasonryGrid from "./components/MasonryGrid.vue";
 import BlogPostView from "./components/BlogPostView.vue";
@@ -958,7 +988,10 @@ import {
   loadGithubSettings,
   pushCmsDataToGithub,
   commitPendingUploads,
-  getGithubToken,
+  getPlaintextToken,
+  hasEmbeddedToken,
+  isTokenUnlocked,
+  unlockToken,
   resolveUploadUrl,
   type GithubSettings,
 } from "./lib/github";
@@ -968,10 +1001,10 @@ export default defineComponent({
   components: {
     Button,
     Dialog,
+    InputText,
     Textarea,
     Toast,
     CmsDialog,
-    GithubSettingsDialog,
     GitCommitDialog,
     VideoPlayer,
     MasonryGrid,
@@ -988,7 +1021,9 @@ export default defineComponent({
     const modelLoaded = ref(false);
     const suppressPersist = ref(true);
     const cmsOpen = ref(false);
-    const githubDialogOpen = ref(false);
+    const cmsPasswordOpen = ref(false);
+    const cmsPassword = ref("");
+    const cmsPasswordError = ref("");
     const gitDialogOpen = ref(false);
     const previewMode = ref(true);
     const cmsBtnVisible = ref(false);
@@ -1307,6 +1342,29 @@ export default defineComponent({
 
     const canUseCms = computed(() => cmsBtnVisible.value);
 
+    const openCms = async () => {
+      if (hasEmbeddedToken() && !isTokenUnlocked()) {
+        cmsPassword.value = "";
+        cmsPasswordError.value = "";
+        cmsPasswordOpen.value = true;
+        return;
+      }
+      cmsOpen.value = true;
+    };
+
+    const submitCmsPassword = async () => {
+      try {
+        await unlockToken(cmsPassword.value);
+        cmsPasswordOpen.value = false;
+        cmsPassword.value = "";
+        cmsPasswordError.value = "";
+        updateGithubStatus();
+        cmsOpen.value = true;
+      } catch {
+        cmsPasswordError.value = "Wrong password. Try again.";
+      }
+    };
+
     const toggleCmsButton = () => {
       cmsBtnVisible.value = !cmsBtnVisible.value;
       localStorage.setItem(
@@ -1337,7 +1395,7 @@ export default defineComponent({
 
           // first commit any queued uploads that are still referenced
           const settings = loadGithubSettings();
-          const token = getGithubToken();
+          const token = getPlaintextToken();
 
           console.warn("[Linkable commit]", {
             owner: settings.owner,
@@ -1455,6 +1513,13 @@ export default defineComponent({
     };
 
     const activeTab = ref<string>("links");
+
+    const cmsInitialTab = computed(() => {
+      const validCmsTabs = ["links", "embeds", "resume", "gallery", "blog"];
+      if (validCmsTabs.includes(activeTab.value)) return activeTab.value;
+      if (activeTab.value.startsWith("embed-")) return "embeds";
+      return "profile";
+    });
 
     const switchTab = (tab: string) => {
       activeTab.value = tab;
@@ -1831,7 +1896,7 @@ export default defineComponent({
     const importText = ref("");
 
     const updateModel = (next: BioModel) => {
-      model.value = sanitizeModel(next);
+      model.value = next;
     };
 
     const applyImport = () => {
@@ -1947,19 +2012,23 @@ export default defineComponent({
       previewMode.value = !previewMode.value;
     };
 
-    const openGithubSettings = () => {
-      githubDialogOpen.value = true;
-    };
+
 
     return {
       isDev,
       model,
       cmsOpen,
+      cmsPasswordOpen,
+      cmsPassword,
+      cmsPasswordError,
+      openCms,
+      submitCmsPassword,
       cmsBtnVisible,
       previewMode,
       enabledLinks,
       enabledSocials,
       activeTab,
+      cmsInitialTab,
       resumeHasContent,
       galleryHasContent,
       enabledGalleryItems,
@@ -1995,14 +2064,12 @@ export default defineComponent({
       updateModel,
       canUseCms,
       toggleCmsButton,
-      githubDialogOpen,
       gitDialogOpen,
       performCommit,
       syncStatusText,
       syncStatusShort,
       syncIndicatorClass,
       togglePreviewMode,
-      openGithubSettings,
       unsynced,
       resolveUploadUrl,
       blogHasContent,
@@ -2062,5 +2129,11 @@ export default defineComponent({
 .cms-slide-left-leave-to {
   opacity: 0;
   transform: translateY(16px) translateX(-12px);
+}
+
+.embed-container {
+  border-radius:15px;
+  overflow:hidden;
+  box-shadow:0px 15px 30px rgba(0,30,100,0.15);
 }
 </style>

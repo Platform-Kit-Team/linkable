@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import nodeCrypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -764,7 +765,34 @@ const manifestBuildPlugin = () => ({
   },
 });
 
-    export default defineConfig(() => {
+/**
+ * Encrypt a GitHub token at build time using Node's crypto module.
+ * Produces the same salt‖iv‖ciphertext+tag format that the browser-side
+ * decryptToken() in token-crypto.ts expects.
+ */
+const encryptTokenAtBuild = (token: string, password: string): string => {
+  const ITERATIONS = 600_000;
+  const salt = nodeCrypto.randomBytes(16);
+  const iv = nodeCrypto.randomBytes(12);
+  const key = nodeCrypto.pbkdf2Sync(password, salt, ITERATIONS, 32, "sha256");
+  const cipher = nodeCrypto.createCipheriv("aes-256-gcm", key, iv);
+  const encrypted = Buffer.concat([cipher.update(token, "utf8"), cipher.final()]);
+  const tag = cipher.getAuthTag(); // 16 bytes
+  // Web Crypto's AES-GCM appends the tag to ciphertext — match that layout
+  const combined = Buffer.concat([salt, iv, encrypted, tag]);
+  return combined.toString("base64");
+};
+
+    /** Read a single non-VITE_ env var from the .env file without exposing everything. */
+    const readEnvVar = (name: string): string => {
+      const envPath = path.resolve(__dirname, ".env");
+      if (!fs.existsSync(envPath)) return "";
+      const match = fs.readFileSync(envPath, "utf8").match(new RegExp(`^${name}=(.*)$`, "m"));
+      if (!match) return "";
+      return match[1].replace(/^["']|["']$/g, "").trim();
+    };
+
+    export default defineConfig(({ command }) => {
       ensureSeedData();
 
       return {
@@ -786,9 +814,19 @@ const manifestBuildPlugin = () => ({
           }),
         ],
         define: {
-          "import.meta.env.VITE_GITHUB_OWNER": JSON.stringify(process.env.GITHUB_OWNER || ""),
-          "import.meta.env.VITE_GITHUB_REPO": JSON.stringify(process.env.GITHUB_REPO || ""),
-          "import.meta.env.VITE_GITHUB_BRANCH": JSON.stringify(process.env.GITHUB_BRANCH || ""),
+          "import.meta.env.VITE_GITHUB_OWNER": JSON.stringify(readEnvVar("GITHUB_OWNER")),
+          "import.meta.env.VITE_GITHUB_REPO": JSON.stringify(readEnvVar("GITHUB_REPO")),
+          "import.meta.env.VITE_GITHUB_BRANCH": JSON.stringify(readEnvVar("GITHUB_BRANCH")),
+          "__ENCRYPTED_GITHUB_TOKEN__": (() => {
+            const token = readEnvVar("GITHUB_TOKEN");
+            const secret = readEnvVar("VITE_TOKEN_SECRET");
+            if (token && secret) {
+              const blob = encryptTokenAtBuild(token, secret);
+              console.log("[token-encrypt] GitHub token encrypted.");
+              return JSON.stringify(blob);
+            }
+            return JSON.stringify("");
+          })(),
         },
       };
     });

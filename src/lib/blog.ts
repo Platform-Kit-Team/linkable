@@ -99,6 +99,7 @@ marked.use({
 // ── types ────────────────────────────────────────────────────────────
 
 export type BlogPostMeta = {
+  id: string; // stable UUID — survives slug renames
   slug: string;
   title: string;
   date: string;
@@ -188,10 +189,33 @@ export const serializeFrontmatter = (
 
 const asString = (v: unknown) => (typeof v === "string" ? v : "");
 
+/**
+ * Deterministic ID derived from a slug. Uses FNV-1a–style hashing to
+ * produce a UUID-formatted string so legacy posts without an explicit
+ * `id` frontmatter field always resolve to the same stable identifier.
+ */
+export const idFromSlug = (slug: string): string => {
+  let h1 = 0x811c9dc5;
+  let h2 = 0x01000193;
+  let h3 = 0xcbf29ce4;
+  let h4 = 0x84222325;
+  for (let i = 0; i < slug.length; i++) {
+    const c = slug.charCodeAt(i);
+    h1 = Math.imul(h1 ^ c, 0x01000193);
+    h2 = Math.imul(h2 ^ c, 0x100001b3);
+    h3 = Math.imul(h3 ^ c, 0x01000193);
+    h4 = Math.imul(h4 ^ c, 0x100001b3);
+  }
+  const hex = (n: number) => (n >>> 0).toString(16).padStart(8, "0");
+  const h = hex(h1) + hex(h2) + hex(h3) + hex(h4);
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20, 32)}`;
+};
+
 export const metaFromRaw = (
   raw: Record<string, unknown>,
   slug: string,
 ): BlogPostMeta => ({
+  id: asString(raw.id) || idFromSlug(slug),
   slug: asString(raw.slug) || slug,
   title: asString(raw.title) || "Untitled",
   date: asString(raw.date) || new Date().toISOString().slice(0, 10),

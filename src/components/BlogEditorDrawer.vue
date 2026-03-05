@@ -81,25 +81,19 @@
           <!-- Date -->
           <div class="grid gap-1.5">
             <label class="text-xs font-extrabold text-[color:var(--color-ink-soft)]">Date</label>
-            <InputText v-model="localDate" class="w-full" placeholder="2026-03-02" />
+            <DatePicker v-model="localDateObj" dateFormat="yy-mm-dd" class="w-full" showIcon iconDisplay="input" />
           </div>
 
           <!-- Cover Image -->
           <div class="grid gap-1.5">
-            <label class="text-xs font-extrabold text-[color:var(--color-ink-soft)]">Cover Image URL</label>
-            <InputText v-model="localCoverImage" class="w-full" placeholder="/uploads/cover.jpg or https://…" />
+            <ImageUploadField
+              v-model="localCoverImage"
+              label="Cover Image"
+              description="Displayed at the top of the blog post. Aim for 1200 × 630 px."
+              :targetFilename="coverFilename"
+            />
           </div>
 
-          <!-- Published -->
-          <div class="flex items-center justify-between gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--glass-2)] p-3">
-            <div>
-              <div class="text-xs font-extrabold text-[color:var(--color-ink)]">Published</div>
-              <div class="mt-0.5 text-xs font-semibold text-[color:var(--color-ink-soft)]">
-                Draft posts won't appear on the public page.
-              </div>
-            </div>
-            <ToggleSwitch v-model="localPublished" />
-          </div>
         </div>
       </div>
 
@@ -112,6 +106,17 @@
             placeholder="Write your blog post in Markdown…"
           />
         </div>
+      </div>
+
+      <!-- Published -->
+      <div class="flex items-center justify-between gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--glass)] p-3 shadow-sm">
+        <div>
+          <div class="text-xs font-extrabold text-[color:var(--color-ink)]">Published</div>
+          <div class="mt-0.5 text-xs font-semibold text-[color:var(--color-ink-soft)]">
+            Draft posts won't appear on the public page.
+          </div>
+        </div>
+        <ToggleSwitch v-model="localPublished" />
       </div>
 
       <!-- Actions -->
@@ -148,11 +153,13 @@
 <script lang="ts">
 import { computed, defineComponent, ref, watch, type PropType } from "vue";
 import Button from "primevue/button";
+import DatePicker from "primevue/datepicker";
 import Drawer from "primevue/drawer";
 import InputText from "primevue/inputtext";
 import MultiSelect from "primevue/multiselect";
 import Textarea from "primevue/textarea";
 import ToggleSwitch from "primevue/toggleswitch";
+import ImageUploadField from "./ImageUploadField.vue";
 import MarkdownEditor from "./MarkdownEditor.vue";
 import { useToast } from "primevue/usetoast";
 
@@ -171,7 +178,7 @@ const toSlug = (title: string) =>
 
 export default defineComponent({
   name: "BlogEditorDrawer",
-  components: { Button, Drawer, InputText, MultiSelect, Textarea, ToggleSwitch, MarkdownEditor },
+  components: { Button, DatePicker, Drawer, ImageUploadField, InputText, MultiSelect, Textarea, ToggleSwitch, MarkdownEditor },
   props: {
     open: { type: Boolean, required: true },
     post: { type: Object as PropType<BlogPost | null>, default: null },
@@ -189,6 +196,7 @@ export default defineComponent({
     watch(visible, (v) => emit("update:open", v));
 
     const isNew = ref(!props.post);
+    const localId = ref(props.post?.id || crypto.randomUUID());
     const localTitle = ref(props.post?.title ?? "");
     const localSlug = ref(props.post?.slug ?? "");
     const localDate = ref(props.post?.date ?? new Date().toISOString().slice(0, 10));
@@ -197,6 +205,24 @@ export default defineComponent({
     const localPublished = ref(props.post?.published ?? true);
     const localTagsList = ref<string[]>(props.post?.tags ? [...props.post.tags] : []);
     const localBody = ref(props.post?.content ?? "");
+
+    const coverFilename = computed(() => {
+      return `cover-${localId.value}.jpg`;
+    });
+
+    const localDateObj = computed({
+      get: () => {
+        const d = new Date(localDate.value + "T00:00:00");
+        return isNaN(d.getTime()) ? new Date() : d;
+      },
+      set: (v: Date | null) => {
+        if (!v) return;
+        const y = v.getFullYear();
+        const m = String(v.getMonth() + 1).padStart(2, "0");
+        const d = String(v.getDate()).padStart(2, "0");
+        localDate.value = `${y}-${m}-${d}`;
+      },
+    });
 
     const tagFilterValue = ref("");
 
@@ -221,6 +247,7 @@ export default defineComponent({
 
     watch(() => props.post, (p) => {
       isNew.value = !p;
+      localId.value = p?.id || crypto.randomUUID();
       localTitle.value = p?.title ?? "";
       localSlug.value = p?.slug ?? "";
       localDate.value = p?.date ?? new Date().toISOString().slice(0, 10);
@@ -245,6 +272,7 @@ export default defineComponent({
         }
 
         const frontmatter: Record<string, unknown> = {
+          id: localId.value,
           title: localTitle.value.trim() || "Untitled",
           slug,
           date: localDate.value.trim() || new Date().toISOString().slice(0, 10),
@@ -292,6 +320,8 @@ export default defineComponent({
       localTagsList,
       localBody,
       saving,
+      coverFilename,
+      localDateObj,
       savePost,
       deletePost,
       allBlogTags,
@@ -338,5 +368,27 @@ export default defineComponent({
 .cms-expand-toggle:hover {
   background: rgba(11, 18, 32, 0.06);
   color: rgba(11, 18, 32, 0.8);
+}
+
+:deep(.p-datepicker-input-icon-container) {
+  position: absolute;
+  right: 0.75rem;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  color: rgba(11, 18, 32, 0.4);
+  pointer-events: none;
+}
+:deep(.p-datepicker-input-icon) {
+  display: block;
+  line-height: 1;
+}
+:deep(.p-datepicker) {
+  position: relative;
+}
+:deep(.p-datepicker .p-inputtext) {
+  width: 100%;
+  padding-right: 2.5rem;
 }
 </style>

@@ -1,5 +1,11 @@
+import { decryptToken, isEncryptedBlob } from "./token-crypto";
+
+// Build-time encrypted token (injected by Vite define)
+declare const __ENCRYPTED_GITHUB_TOKEN__: string;
+const EMBEDDED_TOKEN: string =
+  typeof __ENCRYPTED_GITHUB_TOKEN__ !== "undefined" ? __ENCRYPTED_GITHUB_TOKEN__ : "";
+
 const SETTINGS_KEY = "github-sync-settings";
-const TOKEN_KEY = "github-sync-token";
 export const GITHUB_SYNC_EVENT = "github-sync-updated";
 
 export type GithubSettings = {
@@ -122,26 +128,69 @@ export const saveGithubSettings = (settings: GithubSettings): void => {
   dispatchSyncEvent();
 };
 
-export const getGithubToken = (): string => {
-  const storage = getStorage();
-  if (!storage) return "";
-  return storage.getItem(TOKEN_KEY) ?? "";
+// ── Token management ─────────────────────────────────────────────────
+
+const TOKEN_STORAGE_KEY = "github-session-token";
+
+// In-memory cache — also hydrated from localStorage on first access.
+let _sessionToken: string | null = null;
+let _hydrated = false;
+
+/** Hydrate the in-memory token from localStorage (once). */
+const hydrateToken = (): void => {
+  if (_hydrated) return;
+  _hydrated = true;
+  const stored = getStorage()?.getItem(TOKEN_STORAGE_KEY);
+  if (stored) _sessionToken = stored;
 };
 
-export const saveGithubToken = (token: string): void => {
-  const storage = getStorage();
-  if (!storage) return;
+/** Whether an encrypted token was embedded at build time. */
+export const hasEmbeddedToken = (): boolean =>
+  !!EMBEDDED_TOKEN && isEncryptedBlob(EMBEDDED_TOKEN);
 
-  storage.setItem(TOKEN_KEY, token.trim());
+/** Whether the token has been unlocked for this session. */
+export const isTokenUnlocked = (): boolean => {
+  hydrateToken();
+  return !!_sessionToken;
+};
+
+/**
+ * Get the usable plaintext token.
+ * Requires unlock via password first (decrypts the build-time encrypted blob).
+ */
+export const getPlaintextToken = (): string => {
+  hydrateToken();
+  if (_sessionToken) return _sessionToken;
+  return "";
+};
+
+/** Cache a decrypted token and persist to localStorage. */
+export const setSessionToken = (plaintext: string): void => {
+  _sessionToken = plaintext;
+  getStorage()?.setItem(TOKEN_STORAGE_KEY, plaintext);
   dispatchSyncEvent();
 };
 
-export const clearGithubToken = (): void => {
-  const storage = getStorage();
-  if (!storage) return;
-
-  storage.removeItem(TOKEN_KEY);
+/** Clear the cached token from memory and localStorage. */
+export const clearSessionToken = (): void => {
+  _sessionToken = null;
+  getStorage()?.removeItem(TOKEN_STORAGE_KEY);
   dispatchSyncEvent();
+};
+
+/**
+ * Decrypt the embedded token with a password and cache it.
+ * Throws if the password is wrong.
+ */
+export const unlockToken = async (password: string): Promise<string> => {
+  if (!hasEmbeddedToken()) {
+    throw new Error("No encrypted token is embedded in this build.");
+  }
+  const plaintext = await decryptToken(EMBEDDED_TOKEN, password);
+  _sessionToken = plaintext;
+  getStorage()?.setItem(TOKEN_STORAGE_KEY, plaintext);
+  dispatchSyncEvent();
+  return plaintext;
 };
 
 export const hasGithubSettings = (): boolean => {
@@ -150,7 +199,7 @@ export const hasGithubSettings = (): boolean => {
 };
 
 export const canUseGithubSync = (): boolean => {
-  const token = getGithubToken().trim();
+  const token = getPlaintextToken().trim();
   return !!token && hasGithubSettings();
 };
 
@@ -160,11 +209,14 @@ type GithubCredentials = {
 };
 
 const ensureGithubCredentials = (): GithubCredentials => {
-  const token = getGithubToken().trim();
+  const token = getPlaintextToken().trim();
   const settings = loadGithubSettings();
 
   if (!token) {
-    throw new Error("Add a GitHub personal access token in settings to enable sync.");
+    if (hasEmbeddedToken()) {
+      throw new Error("Your token is encrypted. Enter your password in GitHub settings to unlock.");
+    }
+    throw new Error("No GitHub token available. Set GITHUB_TOKEN in your environment.");
   }
 
   if (!settings.owner || !settings.repo) {

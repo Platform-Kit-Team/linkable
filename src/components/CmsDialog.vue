@@ -43,12 +43,12 @@
             <button
               type="button"
               class="cms__tab"
-              :class="{ 'is-active': tab === 'socials' }"
-              @click="tab = 'socials'"
+              :class="{ 'is-active': tab === 'embeds' }"
+              @click="tab = 'embeds'"
             >
-              <span class="cms__tab-icon"><i class="pi pi-share-alt" /></span>
-              <span class="cms__tab-label">Socials</span>
-              <span class="cms__tab-pill">{{ draft.socials.length }}</span>
+              <span class="cms__tab-icon"><i class="pi pi-code" /></span>
+              <span class="cms__tab-label">Embeds</span>
+              <span class="cms__tab-pill" :class="{ 'cms__tab-pill--ghost': draft.embeds.length === 0 }">{{ draft.embeds.length }}</span>
             </button>
 
             <button
@@ -372,99 +372,52 @@
                   <div class="mt-4 grid gap-3 md:grid-cols-2">
                     <div class="grid gap-2">
                       <label class="text-xs font-bold text-[color:var(--color-ink-soft)]">Owner</label>
-                      <InputText v-model="githubForm.owner" placeholder="e.g. your-github-username" :disabled="!!envOwner" />
-                      <span v-if="envOwner" class="text-[11px] font-semibold text-[color:var(--color-ink-soft)]">Set via environment variable</span>
+                      <InputText :model-value="githubForm.owner" placeholder="e.g. your-github-username" disabled />
                     </div>
 
                     <div class="grid gap-2">
                       <label class="text-xs font-bold text-[color:var(--color-ink-soft)]">Repository</label>
-                      <InputText v-model="githubForm.repo" placeholder="e.g. linkable" :disabled="!!envRepo" />
-                      <span v-if="envRepo" class="text-[11px] font-semibold text-[color:var(--color-ink-soft)]">Set via environment variable</span>
+                      <InputText :model-value="githubForm.repo" placeholder="e.g. linkable" disabled />
                     </div>
 
                     <div class="grid gap-2">
                       <label class="text-xs font-bold text-[color:var(--color-ink-soft)]">Branch</label>
-                      <InputText v-model="githubForm.branch" placeholder="main" :disabled="!!envBranch" />
-                      <span v-if="envBranch" class="text-[11px] font-semibold text-[color:var(--color-ink-soft)]">Set via environment variable</span>
+                      <InputText :model-value="githubForm.branch" placeholder="main" disabled />
                     </div>
 
                     <div class="grid gap-2">
                       <label class="text-xs font-bold text-[color:var(--color-ink-soft)]">Uploads directory</label>
-                      <InputText v-model="githubForm.uploadsDir" placeholder="public/uploads" />
-                      <span class="text-[11px] font-semibold text-[color:var(--color-ink-soft)]">
-                        Image uploads will be stored in this path.
-                      </span>
+                      <InputText :model-value="githubForm.uploadsDir" placeholder="public/uploads" disabled />
                     </div>
 
                     <div class="grid gap-2">
                       <label class="text-xs font-bold text-[color:var(--color-ink-soft)]">Data file path</label>
-                      <InputText v-model="githubForm.dataPath" placeholder="cms-data.json" />
+                      <InputText :model-value="githubForm.dataPath" placeholder="cms-data.json" disabled />
                     </div>
 
                     <div class="grid gap-2">
                       <label class="text-xs font-bold text-[color:var(--color-ink-soft)]">Static data path</label>
-                      <InputText v-model="githubForm.staticDataPath" placeholder="public/data.json" />
-                      <span class="text-[11px] font-semibold text-[color:var(--color-ink-soft)]">
-                        Optional second file to keep your exported JSON in sync.
-                      </span>
+                      <InputText :model-value="githubForm.staticDataPath" placeholder="public/data.json" disabled />
                     </div>
 
                     <div class="grid gap-2">
                       <label class="text-xs font-bold text-[color:var(--color-ink-soft)]">Blog directory</label>
-                      <InputText v-model="githubForm.blogDir" placeholder="blog" />
-                      <span class="text-[11px] font-semibold text-[color:var(--color-ink-soft)]">
-                        Blog markdown files are stored in this repo path.
-                      </span>
+                      <InputText :model-value="githubForm.blogDir" placeholder="blog" disabled />
                     </div>
 
                     <div class="grid gap-2">
                       <label class="text-xs font-bold text-[color:var(--color-ink-soft)]">Committer name</label>
-                      <InputText v-model="githubForm.committerName" placeholder="Linkable CMS" />
+                      <InputText :model-value="githubForm.committerName" placeholder="Linkable CMS" disabled />
                     </div>
 
                     <div class="grid gap-2">
                       <label class="text-xs font-bold text-[color:var(--color-ink-soft)]">Committer email</label>
-                      <InputText v-model="githubForm.committerEmail" placeholder="cms@linkable.local" />
+                      <InputText :model-value="githubForm.committerEmail" placeholder="cms@linkable.local" disabled />
                     </div>
 
-                    <div class="md:col-span-2 grid gap-2">
-                      <label class="text-xs font-bold text-[color:var(--color-ink-soft)]">Personal access token</label>
-                      <InputText
-                        v-model="githubForm.token"
-                        type="password"
-                        placeholder="ghp_..."
-                        autocomplete="off"
-                      />
-                      <span class="text-[11px] font-semibold text-[color:var(--color-ink-soft)]">
-                        Store a token with <code>repo</code> scope. It's saved locally in your browser.
-                      </span>
-                    </div>
                   </div>
                 </div>
 
-                <div
-                  class="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-dashed border-[var(--color-border)] bg-[var(--glass-2)] p-4 text-[13px] font-semibold text-[color:var(--color-ink-soft)]"
-                >
-                  <div>
-                    <div class="font-extrabold text-[color:var(--color-ink)]">Tips</div>
-                    <ul class="mt-1 space-y-1 text-xs font-semibold text-[color:var(--color-ink-soft)]">
-                      <li>Use fine-grained PATs limited to this repository when possible.</li>
-                      <li>Commits run from your browser; no secrets leave your device.</li>
-                      <li>Keep static deployments fresh by running <code>npm run export</code> after syncing.</li>
-                    </ul>
-                  </div>
-
-                  <Button
-                    text
-                    severity="danger"
-                    class="!rounded-full"
-                    @click="clearGithubToken"
-                    :disabled="!githubForm.token"
-                  >
-                    <i class="pi pi-times" />
-                    <span class="ml-2">Clear token</span>
-                  </Button>
-                </div>
 
                 <div class="mt-4 flex gap-2 justify-end">
                   <Button
@@ -476,15 +429,6 @@
                   >
                     <i class="pi pi-shield" />
                     <span class="ml-2">Test connection</span>
-                  </Button>
-                  <Button
-                    rounded
-                    severity="secondary"
-                    :loading="githubSaving"
-                    @click="handleGithubSave"
-                  >
-                    <i class="pi pi-check" />
-                    <span class="ml-2">Save</span>
                   </Button>
                 </div>
               </div>
@@ -539,61 +483,56 @@
             </div>
           </Transition>
 
-          <!-- Embeds -->
-          <button type="button" class="cms__accordion-trigger" @click="siteSection.embeds = !siteSection.embeds">
-            <span class="cms__accordion-label"><i class="pi pi-code" /> Embeds</span>
-            <i class="pi" :class="siteSection.embeds ? 'pi-chevron-up' : 'pi-chevron-down'" />
+          <!-- Socials -->
+          <button type="button" class="cms__accordion-trigger" @click="siteSection.socials = !siteSection.socials">
+            <span class="cms__accordion-label"><i class="pi pi-share-alt" /> Socials</span>
+            <i class="pi" :class="siteSection.socials ? 'pi-chevron-up' : 'pi-chevron-down'" />
           </button>
           <Transition name="cms-collapse">
-            <div v-if="siteSection.embeds" class="cms__accordion-body">
+            <div v-if="siteSection.socials" class="cms__accordion-body">
               <div class="cms__form">
                 <div class="cms__help" style="margin-bottom: 8px">
-                  Add HTML embeds (Cal.com, Zoom, YouTube, etc.) that appear as separate tabs in your navigation.
+                  Add social links that show under your name.
                 </div>
 
                 <div class="flex justify-end" style="margin-bottom: 8px">
-                  <Button rounded class="cms__primary cms__primary--addon" @click="createAndEditEmbed">
+                  <Button rounded class="cms__primary cms__primary--addon" @click="createAndEditSocial">
                     <i class="pi pi-plus" />
-                    <span class="cms__btn-label">Add embed</span>
+                    <span class="cms__btn-label">Add social</span>
                   </Button>
                 </div>
 
-                <div v-if="draft.embeds.length === 0" class="cms__empty">
-                  <div class="cms__empty-title">No embeds yet</div>
-                  <div class="cms__empty-sub">Click "Add embed" to create your first embedded tab.</div>
+                <div v-if="draft.socials.length === 0" class="cms__empty">
+                  <div class="cms__empty-title">No socials yet</div>
+                  <div class="cms__empty-sub">
+                    Add GitHub, Instagram, X, YouTube, TikTok, or Website.
+                  </div>
                 </div>
 
-                <draggable
-                  v-else
-                  v-model="draft.embeds"
-                  item-key="id"
-                  handle=".drag"
-                  :animation="160"
-                  class="cms__list"
-                >
-                  <template #item="{ element }">
-                    <button type="button" class="cms__row" @click="openEmbedEditor(element.id)">
-                      <span class="cms__row-drag drag" aria-label="Drag">
-                        <i class="pi pi-bars" />
-                      </span>
+                <div v-else class="cms__socialList">
+                  <button
+                    v-for="s in draft.socials"
+                    :key="s.id"
+                    type="button"
+                    class="cms__row"
+                    @click="openSocialEditor(s.id)"
+                  >
+                    <span class="cms__row-drag cms__row-drag--muted" aria-hidden="true">
+                      <component :is="resolveLucideIcon(s.icon)" :size="16" />
+                    </span>
 
-                      <span class="cms__row-thumb">
-                        <component :is="resolveLucideIcon(element.icon)" :size="18" class="text-[color:var(--color-ink-soft)]" />
-                      </span>
+                    <span class="cms__row-text">
+                      <span class="cms__row-title">{{ s.label || s.icon || 'Social' }}</span>
+                      <span class="cms__row-sub">{{ s.url || "(no url)" }}</span>
+                    </span>
 
-                      <span class="cms__row-text">
-                        <span class="cms__row-title">{{ element.label || "Untitled" }}</span>
-                        <span class="cms__row-sub">{{ element.html ? 'Has embed code' : '(no embed code)' }}</span>
-                      </span>
-
-                      <span class="cms__row-meta">
-                        <Tag v-if="!element.enabled" severity="warning" value="Hidden" class="!rounded-full" />
-                        <i v-else class="pi pi-check-circle cms__ok" />
-                        <i class="pi pi-angle-right text-[color:var(--color-ink-soft)]" />
-                      </span>
-                    </button>
-                  </template>
-                </draggable>
+                    <span class="cms__row-meta">
+                      <Tag v-if="!s.enabled" severity="warning" value="Hidden" class="!rounded-full" />
+                      <i v-else class="pi pi-check-circle cms__ok" />
+                      <i class="pi pi-angle-right text-[color:var(--color-ink-soft)]" />
+                    </span>
+                  </button>
+                </div>
               </div>
             </div>
           </Transition>
@@ -692,52 +631,57 @@
           </div>
         </section>
 
-        <section v-else-if="tab === 'socials'" class="cms__panel">
+        <section v-else-if="tab === 'embeds'" class="cms__panel">
           <div class="cms__panel-head cms__panel-head--row">
             <div>
-              <div class="cms__title">Social links</div>
-              <div class="cms__sub">Add socials that show under your name.</div>
+              <div class="cms__title">Embeds</div>
+              <div class="cms__sub">Add HTML embeds (Cal.com, Zoom, YouTube, etc.) that appear as separate tabs.</div>
             </div>
 
-            <Button rounded class="cms__primary cms__primary--addon" @click="createAndEditSocial">
+            <Button rounded class="cms__primary cms__primary--addon" @click="createAndEditEmbed">
               <i class="pi pi-plus" />
-              <span class="cms__btn-label">Add social</span>
+              <span class="cms__btn-label">Add embed</span>
               <span class="cms__btn-label--compact">Add</span>
             </Button>
           </div>
 
           <div class="cms__card">
-            <div v-if="draft.socials.length === 0" class="cms__empty">
-              <div class="cms__empty-title">No socials yet</div>
-              <div class="cms__empty-sub">
-                Add GitHub, Instagram, X, YouTube, TikTok, or Website.
-              </div>
+            <div v-if="draft.embeds.length === 0" class="cms__empty">
+              <div class="cms__empty-title">No embeds yet</div>
+              <div class="cms__empty-sub">Click "Add embed" to create your first embedded tab.</div>
             </div>
 
-            <div v-else class="cms__socialList">
-              <button
-                v-for="s in draft.socials"
-                :key="s.id"
-                type="button"
-                class="cms__row"
-                @click="openSocialEditor(s.id)"
-              >
-                <span class="cms__row-drag cms__row-drag--muted" aria-hidden="true">
-                  <component :is="resolveLucideIcon(s.icon)" :size="16" />
-                </span>
+            <draggable
+              v-else
+              v-model="draft.embeds"
+              item-key="id"
+              handle=".drag"
+              :animation="160"
+              class="cms__list"
+            >
+              <template #item="{ element }">
+                <button type="button" class="cms__row" @click="openEmbedEditor(element.id)">
+                  <span class="cms__row-drag drag" aria-label="Drag">
+                    <i class="pi pi-bars" />
+                  </span>
 
-                <span class="cms__row-text">
-                  <span class="cms__row-title">{{ s.label || s.icon || 'Social' }}</span>
-                  <span class="cms__row-sub">{{ s.url || "(no url)" }}</span>
-                </span>
+                  <span class="cms__row-thumb">
+                    <component :is="resolveLucideIcon(element.icon)" :size="18" class="text-[color:var(--color-ink-soft)]" />
+                  </span>
 
-                <span class="cms__row-meta">
-                  <Tag v-if="!s.enabled" severity="warning" value="Hidden" class="!rounded-full" />
-                  <i v-else class="pi pi-check-circle cms__ok" />
-                  <i class="pi pi-angle-right text-[color:var(--color-ink-soft)]" />
-                </span>
-              </button>
-            </div>
+                  <span class="cms__row-text">
+                    <span class="cms__row-title">{{ element.label || "Untitled" }}</span>
+                    <span class="cms__row-sub">{{ element.html ? 'Has embed code' : '(no embed code)' }}</span>
+                  </span>
+
+                  <span class="cms__row-meta">
+                    <Tag v-if="!element.enabled" severity="warning" value="Hidden" class="!rounded-full" />
+                    <i v-else class="pi pi-check-circle cms__ok" />
+                    <i class="pi pi-angle-right text-[color:var(--color-ink-soft)]" />
+                  </span>
+                </button>
+              </template>
+            </draggable>
           </div>
         </section>
 
@@ -1218,9 +1162,7 @@ import {
 import {
   loadGithubSettings,
   saveGithubSettings,
-  getGithubToken,
-  saveGithubToken,
-  clearGithubToken,
+  getPlaintextToken,
   canUseGithubSync,
   testGithubConnection,
   type GithubSettings,
@@ -1248,20 +1190,49 @@ export default defineComponent({
   props: {
     open: { type: Boolean, required: true },
     model: { type: Object as () => BioModel, required: true },
-    initialTab: { type: String as () => "profile" | "links" | "socials" | "resume" | "gallery" | "blog", default: "links" },
+    initialTab: { type: String as () => "profile" | "links" | "embeds" | "resume" | "gallery" | "blog", default: "profile" },
+    initialEmbedId: { type: String, default: "" },
     initialBlogSlug: { type: String, default: "" },
   },
-  emits: ["update:open", "update:model", "open-github"],
+  emits: ["update:open", "update:model"],
   setup(props, { emit }) {
     const toast = useToast();
 
     const visible = ref(props.open);
+
+    const tab = ref<"profile" | "links" | "embeds" | "resume" | "gallery" | "blog">(props.initialTab);
+
+    const siteSection = reactive({
+      identity: false,
+      images: false,
+      favicon: false,
+      theme: false,
+      github: false,
+      search: false,
+      navigation: false,
+      socials: false,
+      scripts: false,
+    });
+
     watch(
       () => props.open,
       (v) => {
         visible.value = v;
         if (v) {
+          // Close all editor sidebars before switching tabs
+          linkEditorOpen.value = false;
+          socialEditorOpen.value = false;
+          resumeEditorOpen.value = false;
+          galleryEditorOpen.value = false;
+          blogEditorOpen.value = false;
+          embedEditorOpen.value = false;
+
           tab.value = props.initialTab;
+          // If an embed ID is provided, auto-open the embed editor for that embed
+          if (props.initialEmbedId) {
+            tab.value = 'embeds';
+            openEmbedEditor(props.initialEmbedId);
+          }
           // If a blog slug is provided, auto-open the blog editor for that post
           if (props.initialBlogSlug) {
             tab.value = 'blog';
@@ -1272,20 +1243,6 @@ export default defineComponent({
     );
     watch(visible, (v) => emit("update:open", v));
 
-    const tab = ref<"profile" | "links" | "socials" | "resume" | "gallery" | "blog">(props.initialTab);
-
-    const siteSection = reactive({
-      identity: false,
-      images: false,
-      favicon: false,
-      theme: false,
-      github: false,
-      search: false,
-      navigation: false,
-      embeds: false,
-      scripts: false,
-    });
-
     const defaultTabOptions = [
       { label: "Links", value: "links" },
       { label: "Resume", value: "resume" },
@@ -1294,18 +1251,22 @@ export default defineComponent({
     ];
 
     const draft = ref<BioModel>(sanitizeModel(props.model));
+    // Cache the serialised saved-model so hasChanges doesn't re-stringify it on every access
+    const savedSnapshot = ref(stableStringify(sanitizeModel(props.model)));
+
     watch(
       () => props.model,
       (m) => {
-        draft.value = sanitizeModel(m);
+        const sanitized = sanitizeModel(m);
+        savedSnapshot.value = stableStringify(sanitized);
+        draft.value = sanitized;
       },
       { deep: true },
     );
 
     const hasChanges = computed(
       () =>
-        stableStringify(sanitizeModel(draft.value)) !==
-        stableStringify(sanitizeModel(props.model)),
+        stableStringify(draft.value) !== savedSnapshot.value,
     );
 
     const linkEditorOpen = ref(false);
@@ -1698,27 +1659,24 @@ export default defineComponent({
     });
 
     // GitHub Settings
-    type GithubFormState = GithubSettings & { token: string };
     const envOwner = import.meta.env.VITE_GITHUB_OWNER || "";
     const envRepo = import.meta.env.VITE_GITHUB_REPO || "";
     const envBranch = import.meta.env.VITE_GITHUB_BRANCH || "";
 
-    const defaultGithubForm = (): GithubFormState => {
+    const defaultGithubForm = (): GithubSettings => {
       const settings = loadGithubSettings();
       return {
         ...settings,
         owner: envOwner || settings.owner,
         repo: envRepo || settings.repo,
         branch: envBranch || settings.branch,
-        token: getGithubToken(),
       };
     };
 
-    const githubForm = reactive<GithubFormState>(defaultGithubForm());
+    const githubForm = reactive<GithubSettings>(defaultGithubForm());
     const githubSaving = ref(false);
     const githubTesting = ref(false);
     const githubReady = ref(canUseGithubSync());
-
     const refreshGithubForm = () => {
       const current = defaultGithubForm();
       Object.assign(githubForm, current);
@@ -1734,9 +1692,6 @@ export default defineComponent({
       }
       if (!githubForm.branch.trim()) {
         throw new Error("Branch is required.");
-      }
-      if (!githubForm.token.trim()) {
-        throw new Error("Personal access token is required.");
       }
     };
 
@@ -1755,9 +1710,7 @@ export default defineComponent({
 
       githubSaving.value = true;
       try {
-        const { token, ...settings } = githubForm;
-        saveGithubSettings(settings);
-        saveGithubToken(token);
+        saveGithubSettings(githubForm);
         githubReady.value = canUseGithubSync();
         toast.add({
           severity: "success",
@@ -1782,7 +1735,11 @@ export default defineComponent({
     const handleGithubTest = async () => {
       githubTesting.value = true;
       try {
-        await testGithubConnection(githubForm, githubForm.token);
+        const token = getPlaintextToken();
+        if (!token) {
+          throw new Error("No token available. Unlock or configure a token first.");
+        }
+        await testGithubConnection(githubForm, token);
         toast.add({
           severity: "success",
           summary: "Connection successful",
@@ -1803,17 +1760,7 @@ export default defineComponent({
       }
     };
 
-    const clearGithubToken = () => {
-      clearGithubToken();
-      githubForm.token = "";
-      githubReady.value = canUseGithubSync();
-      toast.add({
-        severity: "info",
-        summary: "Token cleared",
-        detail: "Add a new token to resume syncing.",
-        life: 2200,
-      });
-    };
+
 
     // ── Blog ─────────────────────────────────────────────────────────
     const blogPosts = ref<BlogPostMeta[]>([]);
@@ -1913,7 +1860,6 @@ export default defineComponent({
       githubReady,
       handleGithubSave,
       handleGithubTest,
-      clearGithubToken,
       envOwner,
       envRepo,
       envBranch,
