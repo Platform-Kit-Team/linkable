@@ -574,7 +574,149 @@ const blogBuildPlugin = () => ({
 
     console.log(`[blog-build] Generated ${files.length} blog post(s) into public/blog/`);
   },
+  /** After the full build, generate pre-rendered HTML for each blog post so
+   *  crawlers (iMessage, Twitter, etc.) get post-specific OG meta tags. */
+  closeBundle() {
+    const distDir = path.resolve(__dirname, "dist");
+    const indexHtmlPath = path.join(distDir, "index.html");
+    if (!fs.existsSync(indexHtmlPath)) return;
+
+    const blogIndexPath = path.join(distDir, "blog", "index.json");
+    if (!fs.existsSync(blogIndexPath)) return;
+
+    const siteModel = fs.existsSync(dataFilePath)
+      ? sanitizeModel(JSON.parse(fs.readFileSync(dataFilePath, "utf8")))
+      : readDefaultModel();
+    const siteUrl = (process.env.VITE_SITE_URL || "").replace(/\/$/, "");
+
+    const toAbsolute = (url: string) => {
+      if (!url) return "";
+      if (/^https?:\/\//.test(url)) return url;
+      return siteUrl ? `${siteUrl}${url.startsWith("/") ? "" : "/"}${url}` : url;
+    };
+
+    const esc = (s: string) =>
+      s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+    const baseHtml = fs.readFileSync(indexHtmlPath, "utf8");
+    const posts: any[] = JSON.parse(fs.readFileSync(blogIndexPath, "utf8"));
+    let count = 0;
+
+    for (const post of posts) {
+      const postJsonPath = path.join(distDir, "blog", `${post.slug}.json`);
+      if (!fs.existsSync(postJsonPath)) continue;
+
+      const full = JSON.parse(fs.readFileSync(postJsonPath, "utf8"));
+      const title = full.title || post.title || "Blog Post";
+      const excerpt = full.excerpt || "";
+      const coverImage = full.coverImage || siteModel?.profile?.ogImageUrl || "";
+      const postUrl = siteUrl ? `${siteUrl}/content/${encodeURIComponent(post.slug)}` : "";
+
+      // Build post-specific OG tags
+      const ogTags: string[] = [];
+      ogTags.push(`<meta property="og:title" content="${esc(title)}" />`);
+      if (excerpt) {
+        ogTags.push(`<meta property="og:description" content="${esc(excerpt)}" />`);
+      }
+      if (coverImage) {
+        ogTags.push(`<meta property="og:image" content="${esc(toAbsolute(coverImage))}" />`);
+        ogTags.push(`<meta name="twitter:card" content="summary_large_image" />`);
+      }
+      ogTags.push(`<meta property="og:type" content="article" />`);
+      if (postUrl) {
+        ogTags.push(`<meta property="og:url" content="${esc(postUrl)}" />`);
+      }
+
+      // Start from base HTML, replace the site-level OG tags with post-specific ones
+      let postHtml = baseHtml;
+
+      // Remove existing OG/twitter meta tags injected by ogMetaPlugin
+      postHtml = postHtml.replace(/<meta\s+(?:property="og:|name="twitter:)[^>]*\/>\s*\n?\s*/g, "");
+
+      // Update <title>
+      postHtml = postHtml.replace(/<title>[^<]*<\/title>/, `<title>${esc(title)}</title>`);
+
+      // Update description
+      postHtml = postHtml.replace(
+        /<meta\s+name="description"\s+content="[^"]*"\s*\/?>/,
+        `<meta name="description" content="${esc(excerpt)}" />`,
+      );
+
+      // Inject post OG tags before </head>
+      postHtml = postHtml.replace("</head>", `    ${ogTags.join("\n    ")}\n  </head>`);
+
+      // Write to dist/content/{slug}/index.html
+      const outDir = path.join(distDir, "content", post.slug);
+      fs.mkdirSync(outDir, { recursive: true });
+      fs.writeFileSync(path.join(outDir, "index.html"), postHtml);
+      count++;
+    }
+
+    if (count > 0) {
+      console.log(`[blog-build] Pre-rendered ${count} blog post HTML file(s) into dist/content/`);
+    }
+  },
 });
+
+/** Build plugin: inject OG meta tags into index.html from CMS data so social
+ *  crawlers (iMessage, Twitter, Facebook, etc.) can read them without JS. */
+const ogMetaPlugin = () => {
+  const getModel = () => {
+    return fs.existsSync(dataFilePath)
+      ? sanitizeModel(JSON.parse(fs.readFileSync(dataFilePath, "utf8")))
+      : readDefaultModel();
+  };
+
+  const buildOgTags = (model: any) => {
+    const p = model?.profile;
+    if (!p) return "";
+
+    const siteUrl = (process.env.VITE_SITE_URL || "").replace(/\/$/, "");
+
+    const toAbsolute = (url: string) => {
+      if (!url) return "";
+      if (/^https?:\/\//.test(url)) return url;
+      return siteUrl ? `${siteUrl}${url.startsWith("/") ? "" : "/"}${url}` : url;
+    };
+
+    const escAttr = (s: string) =>
+      s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+    const tags: string[] = [];
+
+    if (p.displayName) {
+      tags.push(`<meta property="og:title" content="${escAttr(p.displayName)}" />`);
+    }
+    if (p.tagline) {
+      tags.push(`<meta property="og:description" content="${escAttr(p.tagline)}" />`);
+    }
+    if (p.ogImageUrl) {
+      const abs = toAbsolute(p.ogImageUrl);
+      tags.push(`<meta property="og:image" content="${escAttr(abs)}" />`);
+      tags.push(`<meta name="twitter:card" content="summary_large_image" />`);
+    }
+    tags.push(`<meta property="og:type" content="website" />`);
+    if (siteUrl) {
+      tags.push(`<meta property="og:url" content="${escAttr(siteUrl)}" />`);
+    }
+
+    return tags.join("\n    ");
+  };
+
+  return {
+    name: "og-meta",
+    transformIndexHtml: {
+      order: "pre" as const,
+      handler(html: string) {
+        const model = getModel();
+        const tags = buildOgTags(model);
+        if (!tags) return html;
+        // Inject OG tags right before </head>
+        return html.replace("</head>", `    ${tags}\n  </head>`);
+      },
+    },
+  };
+};
 
 /** Build plugin: generate manifest.json at build time from CMS data. */
 const manifestBuildPlugin = () => ({
@@ -602,6 +744,7 @@ const manifestBuildPlugin = () => ({
           cmsMiddlewarePlugin(),
           blogBuildPlugin(),
           manifestBuildPlugin(),
+          ogMetaPlugin(),
           vue({
             template: {
               compilerOptions: {

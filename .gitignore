@@ -26,6 +26,10 @@ dist-ssr
 .env
 .env.local
 
+# Generated NGINX files
+nginx.conf
+nginx.pid
+
 # User content (personal data, not part of the template)
 cms-data.json
 public/data.json
