@@ -88,11 +88,11 @@
       >
         <button
           v-if="enabledLinks.length > 0"
-          class="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition mx-1"
+          class="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition m-[5px]"
           :class="
             activeTab === 'links'
-              ? 'bg-blue-500/10 shadow-lg border-blue-500/30   text-[color:var(--color-brand)] '
-              : 'border-[var(--color-border)] bg-none text-[color:var(--color-ink-soft)] hover:bg-[var(--glass-strong)]'
+              ? 'bg-blue-500/10 shadow-lg text-[color:var(--color-brand)] '
+              : 'bg-none text-[color:var(--color-ink-soft)] hover:bg-[var(--glass-strong)]'
           "
           @click="switchTab('links')"
         >
@@ -101,11 +101,11 @@
         </button>
         <button
           v-if="resumeHasContent"
-          class="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition mx-1"
+          class="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition m-[5px]"
           :class="
             activeTab === 'resume'
-              ? 'bg-blue-500/10 shadow-lg   border-blue-500/30    text-[color:var(--color-brand)] '
-              : 'border-[var(--color-border)] bg-none text-[color:var(--color-ink-soft)] hover:bg-[var(--glass-strong)]'
+              ? 'bg-blue-500/10 shadow-lg text-[color:var(--color-brand)] '
+              : 'bg-none text-[color:var(--color-ink-soft)] hover:bg-[var(--glass-strong)]'
           "
           @click="switchTab('resume')"
         >
@@ -114,11 +114,11 @@
         </button>
         <button
           v-if="galleryHasContent"
-          class="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition mx-1"
+          class="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition m-[5px]"
           :class="
             activeTab === 'gallery'
-              ? 'bg-blue-500/10 shadow-lg  border-blue-500/30    text-[color:var(--color-brand)]'
-              : 'border-[var(--color-border)] bg-none text-[color:var(--color-ink-soft)] hover:bg-[var(--glass-strong)]'
+              ? 'bg-blue-500/10 shadow-lg text-[color:var(--color-brand)]'
+              : 'bg-none text-[color:var(--color-ink-soft)] hover:bg-[var(--glass-strong)]'
           "
           @click="switchTab('gallery')"
         >
@@ -127,11 +127,11 @@
         </button>
         <button
           v-if="blogHasContent"
-          class="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition mx-1"
+          class="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition m-[5px]"
           :class="
             activeTab === 'blog'
-              ? 'bg-blue-500/10 shadow-lg  border-blue-500/30    text-[color:var(--color-brand)]'
-              : 'border-[var(--color-border)] bg-none text-[color:var(--color-ink-soft)] hover:bg-[var(--glass-strong)]'
+              ? 'bg-blue-500/10 shadow-lg text-[color:var(--color-brand)]'
+              : 'bg-none text-[color:var(--color-ink-soft)] hover:bg-[var(--glass-strong)]'
           "
           @click="switchTab('blog'); goBackFromBlogPost()"
         >
@@ -141,11 +141,11 @@
         <button
           v-for="embed in enabledEmbeds"
           :key="embed.id"
-          class="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition mx-1"
+          class="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition m-[5px]"
           :class="
             activeTab === 'embed-' + embed.id
-              ? 'bg-blue-500/10 shadow-lg border-blue-500/30 text-[color:var(--color-brand)]'
-              : 'border-[var(--color-border)] bg-none text-[color:var(--color-ink-soft)] hover:bg-[var(--glass-strong)]'
+              ? 'bg-blue-500/10 shadow-lg text-[color:var(--color-brand)]'
+              : 'bg-none text-[color:var(--color-ink-soft)] hover:bg-[var(--glass-strong)]'
           "
           @click="switchTab('embed-' + embed.id)"
         >
