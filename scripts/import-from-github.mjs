@@ -125,13 +125,22 @@ const run = async () => {
     for (const file of uploadFiles) {
       if (file.type !== "file") continue;
 
-      // Fetch raw content
-      const fileRes = await ghFetch(file.url, token);
-      const fileMeta = await fileRes.json();
+      // Use download_url (raw) to avoid the 1MB base64 limit of the Contents API
+      const rawUrl = file.download_url;
+      if (!rawUrl) {
+        console.log(`  ⚠ No download URL for ${file.name} — skipping.`);
+        continue;
+      }
 
-      if (!fileMeta.content) continue;
+      const rawRes = await fetch(rawUrl, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!rawRes.ok) {
+        console.log(`  ⚠ Failed to download ${file.name} (${rawRes.status}) — skipping.`);
+        continue;
+      }
 
-      const buf = Buffer.from(fileMeta.content, "base64");
+      const buf = Buffer.from(await rawRes.arrayBuffer());
       const dest = path.join(localUploadsDir, file.name);
       await writeFile(dest, buf);
       count++;
