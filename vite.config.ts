@@ -819,7 +819,7 @@ const encryptTokenAtBuild = (token: string, password: string): string => {
           "import.meta.env.VITE_GITHUB_BRANCH": JSON.stringify(readEnvVar("GITHUB_BRANCH")),
           "__ENCRYPTED_GITHUB_TOKEN__": (() => {
             const token = readEnvVar("GITHUB_TOKEN");
-            const secret = readEnvVar("VITE_TOKEN_SECRET");
+            const secret = readEnvVar("TOKEN_SECRET");
             if (token && secret) {
               const blob = encryptTokenAtBuild(token, secret);
               console.log("[token-encrypt] GitHub token encrypted.");

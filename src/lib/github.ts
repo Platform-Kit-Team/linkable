@@ -132,15 +132,23 @@ export const saveGithubSettings = (settings: GithubSettings): void => {
 
 const TOKEN_STORAGE_KEY = "github-session-token";
 
-// In-memory cache — also hydrated from localStorage on first access.
+// In-memory cache — also hydrated from sessionStorage on first access.
 let _sessionToken: string | null = null;
 let _hydrated = false;
 
-/** Hydrate the in-memory token from localStorage (once). */
+const getSessionStore = () => (isBrowser ? window.sessionStorage : undefined);
+
+/** Hydrate the in-memory token from sessionStorage (once). */
 const hydrateToken = (): void => {
   if (_hydrated) return;
   _hydrated = true;
-  const stored = getStorage()?.getItem(TOKEN_STORAGE_KEY);
+  // Migrate any token left in localStorage from older versions
+  const legacy = getStorage()?.getItem(TOKEN_STORAGE_KEY);
+  if (legacy) {
+    getStorage()?.removeItem(TOKEN_STORAGE_KEY);
+    getSessionStore()?.setItem(TOKEN_STORAGE_KEY, legacy);
+  }
+  const stored = getSessionStore()?.getItem(TOKEN_STORAGE_KEY);
   if (stored) _sessionToken = stored;
 };
 
@@ -164,17 +172,17 @@ export const getPlaintextToken = (): string => {
   return "";
 };
 
-/** Cache a decrypted token and persist to localStorage. */
+/** Cache a decrypted token and persist to sessionStorage. */
 export const setSessionToken = (plaintext: string): void => {
   _sessionToken = plaintext;
-  getStorage()?.setItem(TOKEN_STORAGE_KEY, plaintext);
+  getSessionStore()?.setItem(TOKEN_STORAGE_KEY, plaintext);
   dispatchSyncEvent();
 };
 
-/** Clear the cached token from memory and localStorage. */
+/** Clear the cached token from memory and sessionStorage. */
 export const clearSessionToken = (): void => {
   _sessionToken = null;
-  getStorage()?.removeItem(TOKEN_STORAGE_KEY);
+  getSessionStore()?.removeItem(TOKEN_STORAGE_KEY);
   dispatchSyncEvent();
 };
 
@@ -188,7 +196,7 @@ export const unlockToken = async (password: string): Promise<string> => {
   }
   const plaintext = await decryptToken(EMBEDDED_TOKEN, password);
   _sessionToken = plaintext;
-  getStorage()?.setItem(TOKEN_STORAGE_KEY, plaintext);
+  getSessionStore()?.setItem(TOKEN_STORAGE_KEY, plaintext);
   dispatchSyncEvent();
   return plaintext;
 };
@@ -316,7 +324,9 @@ const commitBase64Content = async (
     body.committer = { name: settings.committerName, email: settings.committerEmail };
   }
 
-  console.warn("[Linkable] PUT", url, { branch: body.branch, sha: existing?.sha ?? "(new file)" });
+  if (import.meta.env.DEV) {
+    console.warn("[Linkable] PUT", url, { branch: body.branch, sha: existing?.sha ?? "(new file)" });
+  }
 
   const response = await fetch(url, {
     method: "PUT",
@@ -324,7 +334,9 @@ const commitBase64Content = async (
     body: JSON.stringify(body),
   });
 
-  console.warn("[Linkable] response", response.status, response.statusText);
+  if (import.meta.env.DEV) {
+    console.warn("[Linkable] response", response.status, response.statusText);
+  }
 
   if (!response.ok) {
     let reason = `${response.status} ${response.statusText}`;
