@@ -45,7 +45,8 @@
     "supabase:env": "node scripts/supabase-env.mjs",
     "supabase:secrets": "node scripts/supabase-secrets.mjs",
     "supabase:functions": "npx supabase functions serve --env-file .env",
-    "supabase:types": "npx supabase gen types typescript --local > src/lib/database.types.ts"
+    "supabase:types": "npx supabase gen types typescript --local > src/lib/database.types.ts",
+    "deploy:supabase": "node bin/cli.mjs deploy"
   },
   "dependencies": {
     "@floating-ui/dom": "^1.7.5",

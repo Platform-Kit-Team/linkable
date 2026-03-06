@@ -6,6 +6,7 @@
  * Commands:
  *   npx linkable serve ./my-content        Serve using your content
  *   npx linkable build ./my-content        Build a static site with your content
+ *   npx linkable deploy                    Deploy Supabase edge functions & migrations
  *   npx linkable ./my-content              Alias for serve (default)
  *   npx linkable --help                    Show help
  *
@@ -44,10 +45,12 @@ if (args.includes("--help") || args.includes("-h") || args.length === 0) {
   Commands:
     linkable serve <content-dir>     Serve your site locally
     linkable build <content-dir>     Build a static site into ./dist
+    linkable deploy                  Deploy Supabase migrations & edge functions
 
   Options:
     --port, -p <port>    Port for serve (default: 3000)
     --out, -o <dir>      Output directory for build (default: ./dist)
+    --project-ref        Supabase project ref for deploy
     --help, -h           Show this help
 
   The content directory should contain:
@@ -58,6 +61,7 @@ if (args.includes("--help") || args.includes("-h") || args.length === 0) {
     npx linkable serve ./my-site
     npx linkable build ./my-site
     npx linkable build ./my-site --out ./public
+    npx linkable deploy --project-ref abcdefghijklmnop
     npx linkable ./my-site                        (defaults to serve)
 `);
   process.exit(0);
@@ -68,10 +72,11 @@ let command = "serve"; // default
 let positionalArgs = [];
 let port = 3000;
 let outDir = null;
+let projectRef = null;
 
 for (let i = 0; i < args.length; i++) {
   const arg = args[i];
-  if (i === 0 && (arg === "serve" || arg === "build")) {
+  if (i === 0 && (arg === "serve" || arg === "build" || arg === "deploy")) {
     command = arg;
   } else if ((arg === "--port" || arg === "-p") && args[i + 1]) {
     port = parseInt(args[i + 1], 10);
@@ -82,6 +87,9 @@ for (let i = 0; i < args.length; i++) {
     i++;
   } else if ((arg === "--out" || arg === "-o") && args[i + 1]) {
     outDir = path.resolve(args[i + 1]);
+    i++;
+  } else if (arg === "--project-ref" && args[i + 1]) {
+    projectRef = args[i + 1];
     i++;
   } else if (!arg.startsWith("-")) {
     positionalArgs.push(arg);
@@ -334,10 +342,126 @@ const runServe = () => {
   });
 };
 
+// ── DEPLOY command ───────────────────────────────────────────────────
+
+const runDeploy = () => {
+  console.log(`\n🚀  Deploying Supabase (migrations + edge functions)…\n`);
+
+  const supabaseDir = path.join(packageRoot, "supabase");
+  if (!existsSync(supabaseDir)) {
+    console.error("❌  No supabase/ directory found in the project.");
+    process.exit(1);
+  }
+
+  // Resolve project ref from --project-ref flag, env var, or linked project
+  const ref = projectRef
+    || process.env.SUPABASE_PROJECT_REF
+    || (() => {
+      const refFile = path.join(supabaseDir, ".temp", "project-ref");
+      if (existsSync(refFile)) return readFileSync(refFile, "utf8").trim();
+      return null;
+    })();
+
+  // Check that supabase CLI is available
+  try {
+    execSync("npx supabase --version", { cwd: packageRoot, stdio: "pipe" });
+  } catch {
+    console.error("❌  Supabase CLI not found. Install it with: npm i -D supabase");
+    process.exit(1);
+  }
+
+  // Link project if ref provided and not already linked
+  if (ref) {
+    const refFile = path.join(supabaseDir, ".temp", "project-ref");
+    const alreadyLinked = existsSync(refFile) && readFileSync(refFile, "utf8").trim() === ref;
+    if (!alreadyLinked) {
+      console.log(`  🔗 Linking to Supabase project: ${ref}\n`);
+      try {
+        execSync(`npx supabase link --project-ref ${ref}`, {
+          cwd: packageRoot,
+          stdio: "inherit",
+        });
+      } catch {
+        console.error(`\n❌  Failed to link project. Make sure you're logged in: npx supabase login`);
+        process.exit(1);
+      }
+    }
+  } else {
+    // Check if already linked
+    const refFile = path.join(supabaseDir, ".temp", "project-ref");
+    if (!existsSync(refFile)) {
+      console.error("❌  No Supabase project linked. Use --project-ref <ref> or run: npx supabase link");
+      process.exit(1);
+    }
+  }
+
+  // ── Step 1: Push database migrations ───────────────────────────────
+
+  const migrationsDir = path.join(supabaseDir, "migrations");
+  const hasMigrations = existsSync(migrationsDir) && readdirSync(migrationsDir).filter(f => f.endsWith(".sql")).length > 0;
+
+  if (hasMigrations) {
+    const migrationCount = readdirSync(migrationsDir).filter(f => f.endsWith(".sql")).length;
+    console.log(`  📦 Pushing ${migrationCount} migration(s) to remote database…\n`);
+    try {
+      execSync("npx supabase db push", {
+        cwd: packageRoot,
+        stdio: "inherit",
+      });
+      console.log(`\n  ✔ Database migrations applied\n`);
+    } catch {
+      console.error(`\n❌  Database migration push failed.`);
+      process.exit(1);
+    }
+  } else {
+    console.log("  ℹ No migrations found — skipping database push.\n");
+  }
+
+  // ── Step 2: Deploy edge functions ──────────────────────────────────
+
+  const functionsDir = path.join(supabaseDir, "functions");
+  if (!existsSync(functionsDir)) {
+    console.log("  ℹ No functions/ directory — skipping edge function deployment.\n");
+    console.log(`✅  Deploy complete.\n`);
+    return;
+  }
+
+  // Discover function directories (skip _shared and hidden dirs)
+  const functionNames = readdirSync(functionsDir).filter((name) => {
+    if (name.startsWith("_") || name.startsWith(".")) return false;
+    const fullPath = path.join(functionsDir, name);
+    return statSync(fullPath).isDirectory();
+  });
+
+  if (functionNames.length === 0) {
+    console.log("  ℹ No edge functions found — skipping.\n");
+    console.log(`✅  Deploy complete.\n`);
+    return;
+  }
+
+  console.log(`  ⚡ Deploying ${functionNames.length} edge function(s): ${functionNames.join(", ")}\n`);
+
+  // Deploy all functions at once
+  try {
+    execSync("npx supabase functions deploy", {
+      cwd: packageRoot,
+      stdio: "inherit",
+    });
+    console.log(`\n  ✔ All edge functions deployed\n`);
+  } catch {
+    console.error(`\n❌  Edge function deployment failed.`);
+    process.exit(1);
+  }
+
+  console.log(`✅  Supabase deploy complete.\n`);
+};
+
 // ── Dispatch ─────────────────────────────────────────────────────────
 
 if (command === "build") {
   runBuild();
+} else if (command === "deploy") {
+  runDeploy();
 } else {
   runServe();
 }

@@ -17,6 +17,7 @@ A design-forward, open-source link-in-bio page with a built-in CMS. Built with V
 - **Custom embeds** — arbitrary HTML/iframe injection as separate tabs (Spotify, donation widgets, etc.)
 - **Content scheduling** — publish dates and expiration dates on links, gallery items, embeds, and blog posts
 - **Theming** — 20+ CSS variables, light/dark/custom presets, glassmorphism, border-radius control
+- **Newsletter** — email signup, subscriber management, scheduled broadcasts with cover images and tags
 - **Search & filtering** — per-section search bars with multi-select tag filters
 - **Tab navigation** — customizable labels and Lucide icons, default tab setting
 - **GitHub sync** — push/pull content to a private GitHub repo
@@ -117,11 +118,13 @@ Whenever you push changes to your content repo (new links, updated bio, etc.), V
 ```
 linkable serve <content-dir>           Serve your site locally
 linkable build <content-dir>           Build a static site into ./dist
+linkable deploy                        Deploy Supabase migrations & edge functions
 linkable --help                        Show help
 
 Options:
   --port, -p <port>    Port for serve (default: 3000)
   --out, -o <dir>      Output directory for build (default: ./dist)
+  --project-ref        Supabase project ref for deploy
 ```
 
 ***
@@ -521,6 +524,79 @@ Or use the built-in CLI:
 
 ```bash
 node bin/cli.mjs ./my-content
+```
+
+### Supabase Deployment
+
+The newsletter feature requires a [Supabase](https://supabase.com) project with edge functions and database migrations. Use the built-in `deploy` command to push everything in one step.
+
+#### Prerequisites
+
+1. Install the Supabase CLI: `npm i -D supabase`
+2. Log in: `npx supabase login`
+3. Create a Supabase project at [supabase.com/dashboard](https://supabase.com/dashboard)
+4. Set your environment variables in `.env`:
+
+```env
+VITE_SUPABASE_URL=https://<ref>.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJ...
+```
+
+#### Deploy via CLI
+
+Deploy database migrations and all edge functions to your remote Supabase project:
+
+```bash
+npx linkable deploy --project-ref <your-project-ref>
+```
+
+Or set the ref as an environment variable:
+
+```bash
+export SUPABASE_PROJECT_REF=abcdefghijklmnop
+npx linkable deploy
+```
+
+If you've already linked the project (`npx supabase link`), the ref is auto-detected and no flag is needed:
+
+```bash
+npx linkable deploy
+```
+
+There is also a convenience npm script:
+
+```bash
+npm run deploy:supabase
+```
+
+#### What it does
+
+1. **Links the project** — connects to your remote Supabase project (if not already linked)
+2. **Pushes migrations** — applies all pending SQL migrations from `supabase/migrations/` to the remote database via `supabase db push`
+3. **Deploys edge functions** — deploys all functions from `supabase/functions/` (newsletter-signup, newsletter-admin, newsletter-view, etc.)
+
+#### Full build + deploy
+
+To build the static site and deploy Supabase in sequence:
+
+```bash
+npx linkable build ./my-content && npx linkable deploy --project-ref <ref>
+```
+
+#### Setting secrets
+
+Edge functions need SMTP credentials and other secrets. Push them to your remote project:
+
+```bash
+npx supabase secrets set SMTP_HOST=smtp.example.com SMTP_PORT=587 SMTP_USER=you@example.com SMTP_PASS=secret SMTP_FROM=noreply@example.com
+npx supabase secrets set NEWSLETTER_HMAC_SECRET=your-random-secret
+npx supabase secrets set CMS_PASSWORD_HASH=your-bcrypt-hash
+```
+
+Or use the helper script if available:
+
+```bash
+npm run supabase:secrets
 ```
 
 ***
