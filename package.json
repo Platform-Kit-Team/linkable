@@ -40,7 +40,7 @@
     "supabase:stop": "npx supabase stop",
     "supabase:reset": "npx supabase db reset",
     "supabase:migrate": "npx supabase migration new",
-    "supabase:migrate:up": "npx supabase migration up --local",
+    "supabase:migrate:up": "npx supabase migration up --local && node scripts/sync-vault-local.mjs",
     "supabase:status": "npx supabase status",
     "supabase:env": "node scripts/supabase-env.mjs",
     "supabase:secrets": "node scripts/supabase-secrets.mjs",

@@ -417,6 +417,44 @@ const runDeploy = () => {
     console.log("  ℹ No migrations found — skipping database push.\n");
   }
 
+  // ── Step 1b: Sync Vault secrets ────────────────────────────────────
+  // pg_cron reads project_url, anon_key, and cron_secret from Vault
+  // to build HTTP requests to edge functions.
+  const getEnv = (key) => {
+    if (process.env[key]) return process.env[key];
+    try {
+      const envFile = readFileSync(path.join(packageRoot, ".env"), "utf-8");
+      const m = envFile.match(new RegExp(`^${key}=["']?([^"'\\s]+)["']?`, "m"));
+      return m ? m[1] : null;
+    } catch { return null; }
+  };
+
+  const vaultSecrets = [
+    { name: "project_url", value: getEnv("VITE_SUPABASE_URL") },
+    { name: "anon_key", value: getEnv("VITE_SUPABASE_ANON_KEY") },
+    { name: "cron_secret", value: getEnv("CRON_SECRET") },
+  ].filter(s => s.value);
+
+  if (vaultSecrets.length > 0) {
+    console.log(`  🔐 Syncing ${vaultSecrets.map(s => s.name).join(", ")} into Vault…\n`);
+    const esc = (v) => v.replace(/'/g, "''");
+    const sql = vaultSecrets
+      .map(s => `DELETE FROM vault.secrets WHERE name = '${s.name}'; SELECT vault.create_secret('${esc(s.value)}', '${s.name}');`)
+      .join("\n");
+    try {
+      execSync(`npx supabase db execute --remote`, {
+        input: sql,
+        cwd: packageRoot,
+        stdio: ["pipe", "inherit", "inherit"],
+      });
+      console.log(`  ✔ Vault secrets synced\n`);
+    } catch {
+      console.warn("  ⚠  Could not sync Vault secrets. You may need to set them manually.\n");
+    }
+  } else {
+    console.warn("  ⚠  No Vault secrets found in .env — pg_cron may not work.\n");
+  }
+
   // ── Step 2: Deploy edge functions ──────────────────────────────────
 
   const functionsDir = path.join(supabaseDir, "functions");

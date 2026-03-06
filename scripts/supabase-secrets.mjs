@@ -26,6 +26,7 @@ const EDGE_KEYS = new Set([
   "SMTP_FROM_NAME",
   "NEWSLETTER_SECRET",
   "SITE_NAME",
+  "CRON_SECRET",
 ]);
 
 // Parse .env file (if it exists)
