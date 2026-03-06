@@ -390,6 +390,8 @@ Inject custom JavaScript or HTML into your page via the CMS:
 | `GITHUB_BRANCH` | No | GitHub branch (default: `main`) |
 | `GITHUB_TOKEN` | For sync | GitHub personal access token |
 | `CMS_PASSWORD` | For CMS lock | Password for encrypting the GitHub token in the build |
+| `SUPABASE_ACCESS_TOKEN` | For deploy | Supabase personal access token (for `linkable deploy` in CI) |
+| `SUPABASE_PROJECT_REF` | For deploy | Supabase project ref ID (for `linkable deploy` in CI) |
 
 ***
 

@@ -16,7 +16,7 @@ Open-source link-in-bio alternative — feature roadmap and implementation statu
 
 | # | Feature                             | Status | Description                                                                                                                                                                                                                                |
 | - | ----------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 1 | **Analytics & Click Tracking**      | ⬜      | Built-in click counts per link, page view tracking, and a simple analytics dashboard in the CMS. Currently only external script injection is supported.                                                                                    |
+| 1 | **Analytics & Click Tracking**      | ✅      | Built-in click counts per link, page view tracking, and a simple analytics dashboard in the CMS. Currently only external script injection is supported.                                                                                    |
 | 2 | **Drag-and-Drop Reordering**        | ✅      | Drag-to-reorder for links, gallery items, social icons, embeds, and resume sections via `vuedraggable`.                                                                                                                                    |
 | 3 | **Font Customization**              | ⬜      | Font family and weight picker in the theme settings. Google Fonts selector with a CSS variable for easy theming.                                                                                                                           |
 | 4 | **Animated / Gradient Backgrounds** | ⬜      | CSS gradient presets, animated gradients, and background effects beyond solid colors and glass morphism.                                                                                                                                   |
@@ -28,7 +28,7 @@ Open-source link-in-bio alternative — feature roadmap and implementation statu
 
 | #  | Feature                           | Status | Description                                                                                                                       |
 | -- | --------------------------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------- |
-| 8  | **Email / Newsletter Collection** | ⬜      | Built-in email signup block with optional integration for Mailchimp, ConvertKit, Buttondown, or local CSV export.                 |
+| 8  | **Email / Newsletter Collection** | ✅      | Built-in email signup block with optional integration for Mailchimp, ConvertKit, Buttondown, or local CSV export.                 |
 | 9  | **Contact Form**                  | ⬜      | Simple name/email/message form that forwards submissions to the site owner without exposing their email address.                  |
 | 10 | **Auto-Favicon for Links**        | ⬜      | Automatically fetch the favicon or OG image from a link's target URL as a default thumbnail when no custom image is set.          |
 | 11 | **Multiple Layout Options**       | ⬜      | Alternative layouts for links and profile: grid vs. list vs. carousel, centered vs. left-aligned vs. minimal profile card styles. |

@@ -557,6 +557,43 @@ const runDeploy = async () => {
     process.exit(1);
   }
 
+  // ── Step 3: Push edge function secrets ─────────────────────────────
+
+  const EDGE_SECRET_KEYS = [
+    "CMS_PASSWORD",
+    "VITE_SUPABASE_ANON_KEY",
+    "SMTP_HOST",
+    "SMTP_PORT",
+    "SMTP_USER",
+    "SMTP_PASSWORD",
+    "SMTP_FROM_EMAIL",
+    "SMTP_FROM_NAME",
+    "NEWSLETTER_SECRET",
+    "SITE_NAME",
+    "CRON_SECRET",
+  ];
+
+  const secretPairs = EDGE_SECRET_KEYS
+    .map(key => ({ key, value: getEnv(key) }))
+    .filter(s => s.value);
+
+  if (secretPairs.length > 0) {
+    console.log(`  🔑 Pushing ${secretPairs.length} edge function secret(s): ${secretPairs.map(s => s.key).join(", ")}\n`);
+    const secretArgs = secretPairs.map(({ key, value }) => `'${key}=${value}'`).join(" ");
+    try {
+      execSync(`npx supabase secrets set ${secretArgs}`, {
+        cwd: packageRoot,
+        stdio: "inherit",
+      });
+      console.log(`\n  ✔ Edge function secrets updated\n`);
+    } catch {
+      console.error(`\n❌  Failed to push edge function secrets.`);
+      process.exit(1);
+    }
+  } else {
+    console.log("  ℹ No edge function secrets found in .env — skipping.\n");
+  }
+
   console.log(`✅  Supabase deploy complete.\n`);
 };
 

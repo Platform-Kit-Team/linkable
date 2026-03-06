@@ -18,6 +18,7 @@ const envPath = resolve(__dirname, "..", ".env");
 // Keys that edge functions need. Add more here as needed.
 const EDGE_KEYS = new Set([
   "CMS_PASSWORD",
+  "VITE_SUPABASE_ANON_KEY",
   "SMTP_HOST",
   "SMTP_PORT",
   "SMTP_USER",
@@ -46,7 +47,7 @@ try {
       .trim()
       .replace(/^["']|["']$/g, "");
 
-    if (key.startsWith("VITE_")) continue;
+    if (key.startsWith("VITE_") && key !== "VITE_SUPABASE_ANON_KEY") continue;
     if (EDGE_KEYS.has(key) && value) {
       found.set(key, value);
     }
