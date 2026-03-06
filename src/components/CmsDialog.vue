@@ -48,6 +48,7 @@
             </button>
 
             <button
+              v-if="supabaseUrl"
               type="button"
               class="cms__tab"
               :class="{ 'is-active': tab === 'newsletter' }"
@@ -2505,7 +2506,7 @@ cms__tabBar {
 
 .cms__tabs {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
 
