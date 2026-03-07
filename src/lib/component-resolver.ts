@@ -2,9 +2,14 @@
  * Component override & layout resolver.
  *
  * Resolution priority (highest → lowest):
- *   1. `src/overrides/<Name>.vue`          — user custom override
- *   2. `src/layouts/<layout>/<Name>.vue`   — selected layout variant
- *   3. fallback (from `src/components/`)   — default layout
+ *   1. `src/overrides/user/<Name>.vue`     — content-repo custom override
+ *   2. `src/overrides/<Name>.vue`          — core project override
+ *   3. `src/layouts/<layout>/<Name>.vue`   — selected layout variant
+ *   4. fallback (from `src/components/`)   — default layout
+ *
+ * User-provided layouts live under `src/layouts/user/<name>/` and are
+ * discovered as layout name `user/<name>`.  They are staged from
+ * `<content-repo>/layouts/` at build time and gitignored.
  *
  * Usage in App.vue:
  *   const ProfileHeader = useComponent('ProfileHeader', DefaultProfileHeader, layout);
@@ -24,7 +29,7 @@ const layoutModules = import.meta.glob<{ default: Component }>(
 );
 
 const manifestModules = import.meta.glob<{ default: LayoutManifest }>(
-  "../layouts/*/manifest.ts",
+  "../layouts/**/manifest.ts",
   { eager: true },
 );
 
@@ -35,8 +40,8 @@ const manifestModules = import.meta.glob<{ default: LayoutManifest }>(
 export function getAvailableLayouts(): string[] {
   const names = new Set<string>(["default"]);
   for (const key of Object.keys(layoutModules)) {
-    // key looks like "../layouts/minimal/ProfileHeader.vue"
-    const match = key.match(/^\.\.\/layouts\/([^/]+)\//);
+    // Matches both "../layouts/minimal/X.vue" and "../layouts/user/bento/X.vue"
+    const match = key.match(/^\.\.\/layouts\/((?:user\/)?[^/]+)\//);
     if (match) names.add(match[1]);
   }
   return Array.from(names).sort();
@@ -56,6 +61,11 @@ export function useComponent(
 ): Component {
   // If no layout ref supplied, behave like the old static resolver
   if (!layout) {
+    // Check user override first, then core override
+    const userOverrideKey = `../overrides/user/${name}.vue`;
+    if (overrideModules[userOverrideKey]) {
+      return defineAsyncComponent(overrideModules[userOverrideKey]);
+    }
     const overrideKey = `../overrides/${name}.vue`;
     if (overrideModules[overrideKey]) {
       return defineAsyncComponent(overrideModules[overrideKey]);
@@ -65,7 +75,13 @@ export function useComponent(
 
   // Reactive: re-resolve whenever layout changes
   return computed(() => {
-    // 1. Override always wins
+    // 1. User override (content-repo) wins first
+    const userOverrideKey = `../overrides/user/${name}.vue`;
+    if (overrideModules[userOverrideKey]) {
+      return defineAsyncComponent(overrideModules[userOverrideKey]);
+    }
+
+    // 2. Core override
     const overrideKey = `../overrides/${name}.vue`;
     if (overrideModules[overrideKey]) {
       return defineAsyncComponent(overrideModules[overrideKey]);

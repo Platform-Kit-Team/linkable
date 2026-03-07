@@ -13,6 +13,8 @@
  * The content directory should contain:
  *   data.json     — your Linkable CMS data
  *   uploads/      — (optional) uploaded images
+ *   layouts/      — (optional) custom layouts (staged as user/<name>)
+ *   overrides/    — (optional) global component overrides
  */
 
 import { createServer } from "node:http";
@@ -56,6 +58,8 @@ if (args.includes("--help") || args.includes("-h") || args.length === 0) {
   The content directory should contain:
     data.json     Your CMS content (exported from Linkable)
     uploads/      Optional folder with uploaded images
+    layouts/      Optional custom layouts (staged as user/<name>)
+    overrides/    Optional global component overrides
 
   Examples:
     npx linkable serve ./my-site
@@ -228,6 +232,33 @@ const runBuild = () => {
     }
   }
 
+  // Copy layouts/ → src/layouts/user/ (user-provided theme overrides)
+  const userLayoutsDir = path.join(contentDir, "layouts");
+  const destUserLayouts = path.join(packageRoot, "src", "layouts", "user");
+  if (existsSync(userLayoutsDir) && statSync(userLayoutsDir).isDirectory()) {
+    // Clean any previous staged user layouts
+    if (existsSync(destUserLayouts)) {
+      rmSync(destUserLayouts, { recursive: true, force: true });
+    }
+    copyDirSync(userLayoutsDir, destUserLayouts);
+    const layoutNames = readdirSync(destUserLayouts).filter(
+      (f) => statSync(path.join(destUserLayouts, f)).isDirectory(),
+    );
+    console.log(`  ✔ Staged ${layoutNames.length} user layout(s): ${layoutNames.join(", ")}`);
+  }
+
+  // Copy overrides/ → src/overrides/user/ (user-provided component overrides)
+  const userOverridesDir = path.join(contentDir, "overrides");
+  const destUserOverrides = path.join(packageRoot, "src", "overrides", "user");
+  if (existsSync(userOverridesDir) && statSync(userOverridesDir).isDirectory()) {
+    if (existsSync(destUserOverrides)) {
+      rmSync(destUserOverrides, { recursive: true, force: true });
+    }
+    copyDirSync(userOverridesDir, destUserOverrides);
+    const overrideFiles = readdirSync(destUserOverrides).filter((f) => f.endsWith(".vue"));
+    console.log(`  ✔ Staged ${overrideFiles.length} user override(s)`);
+  }
+
   // ── 2. Load env vars from content dir's .env file ──────────────────
 
   const contentEnv = loadEnvFile(contentDir);
@@ -278,6 +309,18 @@ const runBuild = () => {
   const viteCmd = existsSync(viteBin) ? viteBin : "npx vite";
   const buildCmd = `${viteCmd} build --outDir ${JSON.stringify(buildOutDir)}`;
 
+  /** Remove staged user layouts & overrides to keep the core tree clean. */
+  const cleanupUserStaged = () => {
+    const userLayoutsPath = path.join(packageRoot, "src", "layouts", "user");
+    const userOverridesPath = path.join(packageRoot, "src", "overrides", "user");
+    if (existsSync(userLayoutsPath)) {
+      rmSync(userLayoutsPath, { recursive: true, force: true });
+    }
+    if (existsSync(userOverridesPath)) {
+      rmSync(userOverridesPath, { recursive: true, force: true });
+    }
+  };
+
   try {
     execSync(buildCmd, {
       cwd: packageRoot,
@@ -285,9 +328,12 @@ const runBuild = () => {
       stdio: "inherit",
     });
   } catch (err) {
+    cleanupUserStaged();
     console.error(`\n❌  Vite build failed.`);
     process.exit(1);
   }
+
+  cleanupUserStaged();
 
   console.log(`\n✅  Built to ${buildOutDir}`);
   console.log(`    Deploy this folder to any static host (Vercel, Netlify, Cloudflare Pages, etc.)\n`);

@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 26,
+  "schemaVersion": 27,
   "profile": {
     "displayName": "Linkable",
     "tagline": "Design-forward links. Clean, fast, yours.",
@@ -114,7 +114,8 @@
     "cardText": "#0b1220",
     "radiusXl": "1.6rem",
     "radiusLg": "1.2rem",
-    "layoutVars": {}
+    "layoutVars": {},
+    "layoutData": {}
   },
   "layoutThemes": {
     "default": {
@@ -136,7 +137,8 @@
       "cardText": "#0b1220",
       "radiusXl": "1.6rem",
       "radiusLg": "1.2rem",
-      "layoutVars": {}
+      "layoutVars": {},
+      "layoutData": {}
     },
     "minimal": {
       "layout": "minimal",
@@ -157,7 +159,8 @@
       "cardText": "#0b1220",
       "radiusXl": "1.6rem",
       "radiusLg": "1.2rem",
-      "layoutVars": {}
+      "layoutVars": {},
+      "layoutData": {}
     }
   }
 }

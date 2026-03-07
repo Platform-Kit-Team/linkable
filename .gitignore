@@ -41,3 +41,7 @@ public/uploads/
 public/blog/
 public/rss.xml
 content/blog/*.md
+
+# User-provided layouts & overrides (staged from content repo at build time)
+src/layouts/user/
+src/overrides/user/

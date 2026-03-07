@@ -122,6 +122,7 @@ export type BioTheme = {
   radiusXl: string;
   radiusLg: string;
   layoutVars: Record<string, string>;
+  layoutData: Record<string, unknown>;
 };
 
 export type BioBlog = {
@@ -259,6 +260,7 @@ export const defaultTheme = (): BioTheme => ({
   radiusXl: "1.6rem",
   radiusLg: "1.2rem",
   layoutVars: {},
+  layoutData: {},
 });
 
 export const darkTheme = (): BioTheme => ({
@@ -281,6 +283,7 @@ export const darkTheme = (): BioTheme => ({
   radiusXl: "1.6rem",
   radiusLg: "1.2rem",
   layoutVars: {},
+  layoutData: {},
 });
 
 export const minimalLightTheme = (): BioTheme => ({
@@ -303,6 +306,7 @@ export const minimalLightTheme = (): BioTheme => ({
   radiusXl: "1.6rem",
   radiusLg: "1.2rem",
   layoutVars: {},
+  layoutData: {},
 });
 
 export const minimalDarkTheme = (): BioTheme => ({
@@ -325,6 +329,7 @@ export const minimalDarkTheme = (): BioTheme => ({
   radiusXl: "1.6rem",
   radiusLg: "1.2rem",
   layoutVars: {},
+  layoutData: {},
 });
 
 export const THEME_PRESETS: Record<string, () => BioTheme> = {
@@ -511,6 +516,7 @@ const sanitizeTheme = (raw: unknown, fallback: BioTheme): BioTheme => {
     radiusXl: asString(t.radiusXl).slice(0, 20) || fallback.radiusXl,
     radiusLg: asString(t.radiusLg).slice(0, 20) || fallback.radiusLg,
     layoutVars: sanitizeLayoutVars(t.layoutVars),
+    layoutData: (t.layoutData && typeof t.layoutData === "object" && !Array.isArray(t.layoutData)) ? (t.layoutData as Record<string, unknown>) : {},
   };
 };
 

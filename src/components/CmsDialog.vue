@@ -70,6 +70,19 @@
               <span class="cms__tab-label">Analytics</span>
               <span class="cms__tab-pill cms__tab-pill--ghost" aria-hidden="true">0</span>
             </button>
+
+            <button
+              v-for="lt in layoutCmsTabs"
+              :key="lt.key"
+              type="button"
+              class="cms__tab"
+              :class="{ 'is-active': tab === lt.key }"
+              @click="tab = lt.key"
+            >
+              <span class="cms__tab-icon"><i :class="'pi ' + lt.icon" /></span>
+              <span class="cms__tab-label">{{ lt.label }}</span>
+              <span class="cms__tab-pill cms__tab-pill--ghost" aria-hidden="true">0</span>
+            </button>
           </div>
         </div>
       </div>
@@ -362,6 +375,16 @@
                       </div>
                     </div>
                   </div>
+                </template>
+
+                <!-- Layout-specific schema settings -->
+                <template v-if="activeManifest?.schema?.length">
+                  <div class="cms__color-section-label">{{ activeManifest.name }} Settings</div>
+                  <LayoutSchemaRenderer
+                    :schema="activeManifest.schema"
+                    :modelValue="draft.theme.layoutData"
+                    @update:modelValue="draft.theme.layoutData = $event"
+                  />
                 </template>
 
                 <button
@@ -1414,6 +1437,31 @@
           @reauth="$emit('reauth')"
         />
 
+        <!-- Layout-contributed CMS tabs -->
+        <section
+          v-else-if="layoutCmsTabs.some(lt => lt.key === tab)"
+          class="cms__panel"
+        >
+          <template v-for="lt in layoutCmsTabs" :key="lt.key">
+            <template v-if="lt.key === tab">
+              <!-- Custom component override -->
+              <component
+                v-if="lt.component"
+                :is="lt.component"
+                :modelValue="getTabData(lt.key)"
+                @update:modelValue="setTabData(lt.key, $event)"
+              />
+              <!-- Schema-driven auto-rendered form -->
+              <LayoutSchemaRenderer
+                v-else-if="lt.schema"
+                :schema="lt.schema"
+                :modelValue="getTabData(lt.key)"
+                @update:modelValue="setTabData(lt.key, $event)"
+              />
+            </template>
+          </template>
+        </section>
+
       </div>
     </div>
 
@@ -1492,7 +1540,7 @@
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, onMounted, reactive, ref, watch } from "vue";
+import { computed, defineComponent, onMounted, reactive, ref, shallowRef, watch, watchEffect, type Component, markRaw } from "vue";
 import draggable from "vuedraggable";
 
 import Button from "primevue/button";
@@ -1504,6 +1552,7 @@ import Tag from "primevue/tag";
 import Textarea from "primevue/textarea";
 import ToggleSwitch from "primevue/toggleswitch";
 import { useToast } from "primevue/usetoast";
+import LayoutSchemaRenderer from "./LayoutSchemaRenderer.vue";
 
 import ImageUploadField from "./ImageUploadField.vue";
 import LinkEditorDrawer from "./LinkEditorDrawer.vue";
@@ -1574,6 +1623,7 @@ export default defineComponent({
     NewsletterComposeDrawer,
     AnalyticsPanel,
     ToggleSwitch,
+    LayoutSchemaRenderer,
   },
   props: {
     open: { type: Boolean, required: true },
@@ -1607,7 +1657,7 @@ export default defineComponent({
     }
 
     const initialResolved = resolveInitialTab(props.initialTab);
-    const tab = ref<"site" | "content" | "newsletter" | "analytics">(initialResolved.main);
+    const tab = ref<string>(initialResolved.main);
     const contentSubTab = ref<ContentSubTab>(initialResolved.sub);
 
     const siteSection = reactive({
@@ -1994,6 +2044,43 @@ export default defineComponent({
     const activeManifest = computed<LayoutManifest | null>(() =>
       getLayoutManifest(draft.value.theme.layout || "default"),
     );
+
+    const layoutCmsTabs = shallowRef<Array<{ key: string; label: string; icon: string; component?: Component; schema?: import('@formkit/core').FormKitSchemaNode[] }>>([]);
+    watchEffect(async () => {
+      const manifest = activeManifest.value;
+      // Resolve CMS tabs (component-based ones need async resolution)
+      if (manifest?.cmsTabs?.length) {
+        const tabs = await Promise.all(
+          manifest.cmsTabs.map(async (t) => {
+            let comp: Component | undefined;
+            if (t.component) {
+              const mod = await t.component();
+              comp = markRaw(mod.default);
+            }
+            return { key: t.key, label: t.label, icon: t.icon, component: comp, schema: t.schema };
+          }),
+        );
+        layoutCmsTabs.value = tabs;
+      } else {
+        layoutCmsTabs.value = [];
+      }
+    });
+
+    /** Get sub-keyed layoutData for a CMS tab */
+    const getTabData = (key: string): Record<string, unknown> => {
+      const data = draft.value.theme.layoutData?.[key];
+      return (data && typeof data === "object" && !Array.isArray(data))
+        ? data as Record<string, unknown>
+        : {};
+    };
+
+    /** Set sub-keyed layoutData for a CMS tab */
+    const setTabData = (key: string, value: Record<string, unknown>) => {
+      draft.value.theme.layoutData = {
+        ...draft.value.theme.layoutData,
+        [key]: value,
+      };
+    };
 
     const getLayoutVar = (v: LayoutVar): string => {
       const stored = draft.value.theme.layoutVars?.[v.cssVar];
@@ -2496,6 +2583,9 @@ export default defineComponent({
       presetOptions,
       layoutOptions,
       activeManifest,
+      layoutCmsTabs,
+      getTabData,
+      setTabData,
       getLayoutVar,
       setLayoutVar,
       applyPreset,

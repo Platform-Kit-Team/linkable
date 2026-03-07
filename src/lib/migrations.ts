@@ -29,7 +29,7 @@
 
 // ── current version ──────────────────────────────────────────────────
 
-export const CURRENT_SCHEMA_VERSION = 26;
+export const CURRENT_SCHEMA_VERSION = 27;
 
 // ── migration registry ──────────────────────────────────────────────
 
@@ -420,6 +420,23 @@ const migrations: Migration[] = [
       }
       data.layoutThemes[layout] = { ...data.theme };
       data.schemaVersion = 26;
+      return data;
+    },
+  },
+  {
+    toVersion: 27,
+    migrate: (data: Record<string, any>) => {
+      // Add layoutData to theme and all layoutThemes entries
+      if (!data.theme) data.theme = {};
+      data.theme.layoutData ??= {};
+      if (data.layoutThemes && typeof data.layoutThemes === "object") {
+        for (const key of Object.keys(data.layoutThemes)) {
+          if (data.layoutThemes[key] && typeof data.layoutThemes[key] === "object") {
+            data.layoutThemes[key].layoutData ??= {};
+          }
+        }
+      }
+      data.schemaVersion = 27;
       return data;
     },
   },

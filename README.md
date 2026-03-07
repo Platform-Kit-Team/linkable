@@ -609,6 +609,197 @@ npm run supabase:secrets
 
 ***
 
+## Layout Extensibility
+
+Layouts can contribute custom settings and CMS pages through the manifest system. Each layout exports a manifest from `src/layouts/<name>/manifest.ts`:
+
+```ts
+import type { LayoutManifest } from "../../lib/layout-manifest";
+
+export default {
+  name: "My Layout",
+  vars: [], // CSS variable overrides (shown in Theme panel)
+  schema: [], // FormKit schema for inline settings (optional)
+  cmsTabs: [], // Additional CMS tabs (optional)
+} satisfies LayoutManifest;
+```
+
+### Three levels of extensibility
+
+| Need | Manifest field | Renders in | Author writes |
+|---|---|---|---|
+| Simple theme settings | `schema` | Theme panel (inline) | FormKit JSON schema |
+| Full CMS tab, simple UI | `cmsTabs[].schema` | Own top-level tab | FormKit JSON schema |
+| Full CMS tab, complex UI | `cmsTabs[].component` | Own top-level tab | Custom Vue component |
+
+### Schema-driven settings (no Vue code required)
+
+The `schema` field on the manifest uses [FormKit schema](https://formkit.com/essentials/schema) to auto-render form inputs in the Theme panel. Available input types include all [FormKit inputs](https://formkit.com/inputs) plus the custom `colorpicker` type.
+
+```ts
+export default {
+  name: "Bento",
+  vars: [],
+  schema: [
+    { $formkit: "range", name: "gap", label: "Card Gap (px)", min: 4, max: 24, value: 8 },
+    { $formkit: "colorpicker", name: "cardAccent", label: "Card Accent", value: "#3b82f6" },
+    { $formkit: "toggle", name: "showLabels", label: "Show card labels", value: true },
+  ],
+} satisfies LayoutManifest;
+```
+
+Schema-driven settings read and write to the root of `layoutData` (stored per-layout in `theme.layoutData`).
+
+### CMS tabs
+
+Layouts can add full top-level CMS tabs alongside the built-in tabs (Site, Content, Newsletter, Analytics). Each tab's data is sub-keyed at `layoutData[tab.key]`, preventing collisions.
+
+**Schema-driven tab** (no Vue component needed):
+
+```ts
+cmsTabs: [
+  {
+    key: "integrations",
+    label: "Integrations",
+    icon: "pi-link",
+    schema: [
+      { $formkit: "url", name: "spotifyPlaylist", label: "Spotify Playlist URL" },
+      { $formkit: "toggle", name: "showGithubActivity", label: "Show activity graph", value: false },
+    ],
+  },
+],
+```
+
+**Component-driven tab** (full custom UI):
+
+```ts
+cmsTabs: [
+  {
+    key: "grid",
+    label: "Grid Editor",
+    icon: "pi-th-large",
+    component: () => import("./BentoGridEditor.vue"),
+  },
+],
+```
+
+Component-driven tabs receive `modelValue` (`layoutData[tab.key]`) and emit `update:modelValue`.
+
+### Zod validation
+
+Both the root `schema` and individual `cmsTabs` entries support an optional `validation` field accepting a Zod schema:
+
+```ts
+import { z } from "zod";
+
+export default {
+  name: "Bento",
+  vars: [],
+  schema: [
+    { $formkit: "range", name: "gap", label: "Gap", min: 4, max: 24, value: 8 },
+  ],
+  validation: z.object({
+    gap: z.number().min(4).max(24),
+  }),
+} satisfies LayoutManifest;
+```
+
+### CSS variable overrides
+
+The `vars` array registers layout-specific CSS custom properties that are editable in the Theme panel and persisted in `theme.layoutVars`:
+
+```ts
+vars: [
+  {
+    cssVar: "--bento-card-radius",
+    label: "Card Radius",
+    type: "text",
+    defaultLight: "1rem",
+    defaultDark: "1rem",
+  },
+],
+```
+
+### Custom FormKit inputs
+
+Custom FormKit inputs are registered in `src/lib/formkit-config.ts`. Currently available:
+
+- `colorpicker` — color swatch + hex text input
+
+To add more, follow the [FormKit custom input guide](https://formkit.com/guides/create-a-custom-input) and register in the config file.
+
+***
+
+## User-Provided Themes & Overrides
+
+Users can ship custom layouts and component overrides as part of their content repo. These are staged into the core app at build time and kept completely isolated from the core codebase.
+
+### Content repo structure
+
+```
+my-content/
+  data.json
+  uploads/
+  blog/
+  layouts/              ← custom layouts (optional)
+    bento/
+      manifest.ts       ← layout manifest (name, schema, cmsTabs, vars)
+      ProfileHeader.vue ← component overrides for this layout
+      LinksSection.vue
+      BentoGridEditor.vue
+  overrides/             ← global component overrides (optional)
+    ProfileHeader.vue    ← overrides ProfileHeader in ALL layouts
+```
+
+### How it works
+
+1. **At build time**, the CLI copies `layouts/` → `src/layouts/user/` and `overrides/` → `src/overrides/user/`
+2. **Vite's `import.meta.glob`** discovers the files alongside core layouts
+3. **Layout names** are namespaced as `user/<name>` (e.g. `user/bento`) — no collision with built-in layouts
+4. **After the build**, staged files are cleaned up — the core repo is never contaminated
+5. **`.gitignore`** excludes `src/layouts/user/` and `src/overrides/user/`
+
+### Resolution priority
+
+When rendering a component, the resolver checks in order:
+
+1. **User overrides** — `src/overrides/user/<Name>.vue` (from content repo `overrides/`)
+2. **Core overrides** — `src/overrides/<Name>.vue`
+3. **Layout variant** — `src/layouts/<layout>/<Name>.vue` (works for both `minimal` and `user/bento`)
+4. **Fallback** — default component from `src/components/`
+
+User overrides apply globally across all layouts. Layout-specific overrides only apply when that layout is active.
+
+### Writing a user layout
+
+A minimal user layout needs only a `manifest.ts`:
+
+```ts
+// my-content/layouts/bento/manifest.ts
+import type { LayoutManifest } from "../../lib/layout-manifest";
+
+export default {
+  name: "Bento",
+  vars: [],
+  schema: [
+    { $formkit: "range", name: "columns", label: "Columns", min: 2, max: 6, value: 4 },
+    { $formkit: "toggle", name: "showLabels", label: "Show labels", value: true },
+  ],
+} satisfies LayoutManifest;
+```
+
+Add Vue components alongside the manifest to override specific sections (e.g. `ProfileHeader.vue`, `LinksSection.vue`). Any component not overridden falls back to the default.
+
+### Building with user themes
+
+```bash
+npx linkable build ./my-content
+```
+
+The CLI detects `layouts/` and `overrides/` in the content directory and stages them automatically. No extra flags needed.
+
+***
+
 ## Tech Stack
 
 - **Vue 3** — reactive UI framework
