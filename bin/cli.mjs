@@ -182,14 +182,21 @@ const runBuild = () => {
   // ── 1. Stage user content into the package's expected locations ────
 
   // Copy data.json → cms-data.json + public/data.json (where Vite plugins expect it)
+  // Check for data.json first, then cms-data.json as fallback
   const userDataFile = path.join(contentDir, "data.json");
-  if (existsSync(userDataFile)) {
-    const dataContent = readFileSync(userDataFile, "utf8");
+  const userCmsFile = path.join(contentDir, "cms-data.json");
+  const sourceDataFile = existsSync(userDataFile)
+    ? userDataFile
+    : existsSync(userCmsFile)
+      ? userCmsFile
+      : null;
+  if (sourceDataFile) {
+    const dataContent = readFileSync(sourceDataFile, "utf8");
     writeFileSync(path.join(packageRoot, "cms-data.json"), dataContent);
     writeFileSync(path.join(packageRoot, "public", "data.json"), dataContent);
-    console.log(`  ✔ Staged data.json`);
+    console.log(`  ✔ Staged ${path.basename(sourceDataFile)}`);
   } else {
-    console.warn(`  ⚠ No data.json found in ${contentDir} — using default content.`);
+    console.warn(`  ⚠ No data.json or cms-data.json found in ${contentDir} — using default content.`);
   }
 
   // Copy uploads/ → public/uploads/
@@ -229,6 +236,39 @@ const runBuild = () => {
 
   // Merge: process.env takes precedence, then content .env, then cwd .env
   const mergedEnv = { ...cwdEnv, ...contentEnv, ...process.env };
+
+  // ── 2b. Run import-from-github if env vars are available ───────────
+  //   This fetches the latest content from the private GitHub content repo,
+  //   overwriting cms-data.json and public/data.json with the remote version.
+  if (mergedEnv.GITHUB_OWNER && mergedEnv.GITHUB_REPO) {
+    const importScript = path.join(packageRoot, "scripts", "import-from-github.mjs");
+    if (existsSync(importScript)) {
+      console.log(`\n  📥 Running import from GitHub…\n`);
+      try {
+        execSync(`node ${JSON.stringify(importScript)}`, {
+          cwd: packageRoot,
+          env: mergedEnv,
+          stdio: "inherit",
+        });
+      } catch (err) {
+        console.warn(`  ⚠ GitHub import failed — continuing with local data.`);
+      }
+    }
+  }
+
+  // ── 2c. Run export-data to ensure public/data.json is in sync ──────
+  const exportScript = path.join(packageRoot, "scripts", "export-data.mjs");
+  if (existsSync(exportScript)) {
+    try {
+      execSync(`node ${JSON.stringify(exportScript)}`, {
+        cwd: packageRoot,
+        env: mergedEnv,
+        stdio: "inherit",
+      });
+    } catch (err) {
+      console.warn(`  ⚠ Export step failed — continuing with existing data.`);
+    }
+  }
 
   // ── 3. Run the real Vite build ─────────────────────────────────────
 
