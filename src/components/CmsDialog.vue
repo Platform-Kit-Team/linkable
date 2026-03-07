@@ -1449,6 +1449,7 @@
                 v-if="lt.component"
                 :is="lt.component"
                 :modelValue="getTabData(lt.key)"
+                :model="draft"
                 @update:modelValue="setTabData(lt.key, $event)"
               />
               <!-- Schema-driven auto-rendered form -->

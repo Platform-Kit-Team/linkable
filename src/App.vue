@@ -22,7 +22,8 @@
 
     <main
       v-if="!isOnLayoutRoute"
-      class="mx-auto w-full max-w-[740px] px-3 pb-24 pt-4 sm:px-4 sm:pb-10 sm:pt-6 d-block"
+      class="mx-auto w-full px-3 pb-24 pt-4 sm:px-4 sm:pb-10 sm:pt-6 d-block"
+      :style="{ maxWidth: 'var(--bento-grid-width, 740px)' }"
     >
       <component
         :is="resolvedTabNav"
@@ -345,6 +346,7 @@ import {
   nextTick,
   onBeforeUnmount,
   onMounted,
+  provide,
   ref,
   watch,
   watchEffect,
@@ -436,6 +438,7 @@ export default defineComponent({
 
     // ── Override-aware component resolution ──────────────────────────
     const model = ref<BioModel>(defaultModel());
+    provide("bioModel", model);
     const activeLayout = computed(() => model.value.theme.layout || "default");
 
     const resolvedProfileHeader = useComponent("ProfileHeader", DefaultProfileHeader, activeLayout);
@@ -831,6 +834,7 @@ export default defineComponent({
     });
 
     const canUseCms = computed(() => cmsBtnVisible.value);
+    provide("canUseCms", canUseCms);
 
     const openCms = async () => {
       if (hasEmbeddedToken() && !isTokenUnlocked()) {
@@ -1107,6 +1111,7 @@ export default defineComponent({
 
     // ── Blog ─────────────────────────────────────────────────────────
     const blogPosts = ref<BlogPostMeta[]>([]);
+    provide("blogPosts", blogPosts);
     const currentBlogPost = ref<BlogPost | null>(null);
 
     // Newsletter view state (driven by /newsletter/:id route)
@@ -1399,6 +1404,10 @@ export default defineComponent({
       activeVideoIdx.value = null;
       videoPlayerItem.value = null;
     };
+
+    // Expose lightbox/video openers for bento layout's LinksSection
+    (window as any).__bentoLightbox = openLightbox;
+    (window as any).__bentoVideo = openVideoPlayer;
 
     const initials = computed(() => {
       const name = (model.value.profile.displayName || "").trim();

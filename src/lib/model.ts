@@ -332,6 +332,52 @@ export const minimalDarkTheme = (): BioTheme => ({
   layoutData: {},
 });
 
+export const bentoLightTheme = (): BioTheme => ({
+  layout: "bento",
+  preset: "light",
+  colorBrand: "#6366f1",
+  colorBrandStrong: "#4f46e5",
+  colorAccent: "#f59e0b",
+  colorInk: "#1a1a2e",
+  colorInkSoft: "rgba(26, 26, 46, 0.5)",
+  bg: "#f5f5f7",
+  glass: "rgba(255, 255, 255, 0.95)",
+  glass2: "rgba(255, 255, 255, 0.7)",
+  glassStrong: "#ffffff",
+  colorBorder: "rgba(0, 0, 0, 0.04)",
+  colorBorder2: "rgba(0, 0, 0, 0.04)",
+  cardBg: "#ffffff",
+  cardBorder: "transparent",
+  cardText: "#1a1a2e",
+  radiusXl: "1.5rem",
+  radiusLg: "1.25rem",
+  layoutVars: {},
+  layoutData: {},
+});
+
+export const bentoDarkTheme = (): BioTheme => ({
+  layout: "bento",
+  preset: "dark",
+  colorBrand: "#818cf8",
+  colorBrandStrong: "#6366f1",
+  colorAccent: "#fbbf24",
+  colorInk: "#f1f5f9",
+  colorInkSoft: "rgba(241, 245, 249, 0.5)",
+  bg: "#0a0a0f",
+  glass: "rgba(255, 255, 255, 0.06)",
+  glass2: "rgba(255, 255, 255, 0.03)",
+  glassStrong: "rgba(30, 30, 50, 0.9)",
+  colorBorder: "rgba(255, 255, 255, 0.08)",
+  colorBorder2: "rgba(255, 255, 255, 0.05)",
+  cardBg: "rgba(255, 255, 255, 0.06)",
+  cardBorder: "rgba(255, 255, 255, 0.08)",
+  cardText: "#f1f5f9",
+  radiusXl: "1.6rem",
+  radiusLg: "1.25rem",
+  layoutVars: {},
+  layoutData: {},
+});
+
 export const THEME_PRESETS: Record<string, () => BioTheme> = {
   light: defaultTheme,
   dark: darkTheme,
@@ -340,6 +386,7 @@ export const THEME_PRESETS: Record<string, () => BioTheme> = {
 export const LAYOUT_PRESETS: Record<string, Record<string, () => BioTheme>> = {
   default: { light: defaultTheme, dark: darkTheme },
   minimal: { light: minimalLightTheme, dark: minimalDarkTheme },
+  bento: { light: bentoLightTheme, dark: bentoDarkTheme },
 };
 
 export const newEmbed = (): EmbedItem => ({

@@ -1,0 +1,367 @@
+<template>
+  <section class="bento-articles mx-auto w-full" style="max-width: var(--bento-grid-width, 960px)">
+    <!-- Article detail view -->
+    <template v-if="currentPost">
+      <div class="bento-card overflow-hidden p-3 sm:p-6">
+        <button
+          class="mb-4 flex items-center gap-1 text-xs font-medium text-[color:var(--color-ink-soft)] transition-colors hover:text-[color:var(--color-ink)]"
+          @click="$emit('back')"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m15 18-6-6 6-6" />
+          </svg>
+          Back
+        </button>
+        <img
+          v-if="currentPost.coverImage"
+          :src="currentPost.coverImage"
+          alt=""
+          class="mb-4 w-full rounded-2xl border border-[var(--bento-card-border)] object-cover shadow-sm"
+          style="max-height: 320px"
+        />
+        <div v-if="currentPost.date" class="mb-2 text-[11px] font-medium uppercase tracking-widest text-[color:var(--color-brand)]">
+          {{ formatDate(currentPost.date) }}
+        </div>
+        <h1 class="mb-4 text-2xl font-extrabold leading-tight text-[color:var(--color-ink)] sm:text-3xl">
+          {{ currentPost.title }}
+        </h1>
+        <div
+          class="prose-content text-[color:var(--color-ink)]"
+          v-html="currentPost.html"
+        />
+      </div>
+    </template>
+
+    <!-- Newsletter detail view -->
+    <template v-else-if="viewingNewsletter">
+      <div class="bento-card overflow-hidden p-3 sm:p-6">
+        <button
+          class="mb-4 flex items-center gap-1 text-xs font-medium text-[color:var(--color-ink-soft)] transition-colors hover:text-[color:var(--color-ink)]"
+          @click="viewingNewsletter = null"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m15 18-6-6 6-6" />
+          </svg>
+          Back
+        </button>
+        <div v-if="nlLoading" class="flex items-center justify-center py-16">
+          <div class="h-6 w-6 animate-spin rounded-full border-2 border-[color:var(--color-ink-soft)] border-t-transparent" />
+        </div>
+        <article v-else-if="nlData">
+          <img
+            v-if="nlData.cover_image"
+            :src="nlData.cover_image"
+            alt=""
+            class="mb-4 w-full rounded-2xl border border-[var(--bento-card-border)] object-cover shadow-sm"
+            style="max-height: 320px"
+          />
+          <div v-if="nlData.sent_at" class="mb-2 text-[11px] font-medium uppercase tracking-widest text-[color:var(--color-brand)]">
+            {{ formatDate(nlData.sent_at) }}
+          </div>
+          <h1 class="mb-4 text-2xl font-extrabold leading-tight text-[color:var(--color-ink)] sm:text-3xl">
+            {{ nlData.subject }}
+          </h1>
+          <div class="prose-content text-[color:var(--color-ink)]" v-html="nlData.body_html" />
+        </article>
+      </div>
+    </template>
+
+    <!-- List view -->
+    <template v-else>
+      <!-- Type filter + search -->
+      <div class="mb-4 flex flex-wrap items-center gap-2 px-1">
+        <button
+          v-for="f in typeFilters"
+          :key="f.value"
+          class="rounded-full px-3 py-1 text-xs font-medium transition"
+          :class="activeTypeFilter === f.value
+            ? 'bg-[var(--color-brand)] text-white'
+            : 'text-[color:var(--color-ink-soft)] hover:text-[color:var(--color-ink)]'"
+          @click="activeTypeFilter = f.value"
+        >
+          {{ f.label }}
+        </button>
+
+        <button
+          v-if="searchEnabled && (availableTags.length || allTags.length)"
+          class="ml-auto text-xs font-medium text-[color:var(--color-brand)] hover:underline"
+          @click="$emit('filter-click')"
+        >
+          Filter
+        </button>
+      </div>
+
+      <!-- Posts grid -->
+      <div
+        v-if="filteredItems.length"
+        class="grid gap-[var(--bento-gap)] sm:grid-cols-2 lg:grid-cols-3"
+      >
+        <button
+          v-for="item in filteredItems"
+          :key="item.id"
+          type="button"
+          class="bento-card group flex flex-col overflow-hidden text-left transition-transform"
+          @click="openItem(item)"
+        >
+          <img
+            v-if="item.coverImage"
+            :src="item.coverImage"
+            alt=""
+            class="h-40 w-full object-cover transition-transform duration-300 group-hover:scale-105"
+            loading="lazy"
+          />
+          <div class="flex flex-1 flex-col p-4">
+            <div class="mb-1 flex items-center gap-2">
+              <span
+                class="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider"
+                :class="item.kind === 'newsletter'
+                  ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300'
+                  : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'"
+              >
+                {{ item.kind === 'newsletter' ? 'Newsletter' : 'Article' }}
+              </span>
+              <span v-if="item.date" class="text-[10px] text-[color:var(--color-ink-soft)]">
+                {{ formatDate(item.date) }}
+              </span>
+            </div>
+            <h3 class="mt-1 text-sm font-semibold leading-snug text-[color:var(--color-ink)]">
+              {{ item.title }}
+            </h3>
+            <p v-if="item.excerpt" class="mt-1 line-clamp-2 text-xs text-[color:var(--color-ink-soft)]">
+              {{ item.excerpt }}
+            </p>
+          </div>
+        </button>
+      </div>
+
+      <div v-else class="py-16 text-center text-sm text-[color:var(--color-ink-soft)]">
+        No articles yet.
+      </div>
+    </template>
+  </section>
+</template>
+
+<script lang="ts">
+import { defineComponent, ref, computed, onMounted, type PropType } from "vue";
+import type { BlogPost, BlogPostMeta } from "../../lib/blog";
+export type { BlogSectionProps, BlogSectionEmits } from "../../lib/component-contracts";
+
+interface UnifiedItem {
+  id: string;
+  kind: "article" | "newsletter";
+  title: string;
+  excerpt: string;
+  coverImage: string;
+  date: string;
+  slug?: string;
+  sendId?: string;
+}
+
+interface NlSend {
+  id: string;
+  subject: string;
+  cover_image: string;
+  body_html: string;
+  sent_at: string | null;
+}
+
+const typeFilters = [
+  { value: "all", label: "All" },
+  { value: "article", label: "Articles" },
+  { value: "newsletter", label: "Newsletters" },
+] as const;
+
+export default defineComponent({
+  name: "BentoBlogSection",
+  props: {
+    posts: { type: Array as PropType<BlogPostMeta[]>, required: true },
+    currentPost: { type: Object as PropType<BlogPost | null>, default: null },
+    label: { type: String, default: "Articles" },
+    searchEnabled: { type: Boolean, default: false },
+    availableTags: { type: Array as PropType<string[]>, default: () => [] },
+    selectedTags: { type: Array as PropType<string[]>, default: () => [] },
+  },
+  emits: ["load-post", "back", "filter-click"],
+  setup(props, { emit }) {
+    const activeTypeFilter = ref<"all" | "article" | "newsletter">("all");
+    const newsletterSends = ref<NlSend[]>([]);
+    const viewingNewsletter = ref<string | null>(null);
+    const nlData = ref<NlSend | null>(null);
+    const nlLoading = ref(false);
+
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "http://127.0.0.1:54321";
+    const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
+
+    async function fetchNewsletterList() {
+      try {
+        const res = await fetch(`${supabaseUrl}/functions/v1/newsletter-view?list=1`, {
+          headers: { Accept: "application/json", Authorization: `Bearer ${anonKey}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data)) newsletterSends.value = data;
+        }
+      } catch {
+        /* silent */
+      }
+    }
+
+    async function fetchNewsletterDetail(id: string) {
+      nlLoading.value = true;
+      nlData.value = null;
+      try {
+        const res = await fetch(`${supabaseUrl}/functions/v1/newsletter-view?id=${encodeURIComponent(id)}`, {
+          headers: { Accept: "application/json", Authorization: `Bearer ${anonKey}` },
+        });
+        if (res.ok) nlData.value = await res.json();
+      } catch {
+        /* silent */
+      } finally {
+        nlLoading.value = false;
+      }
+    }
+
+    onMounted(fetchNewsletterList);
+
+    const allTags = computed(() => {
+      const tags = new Set<string>();
+      for (const p of props.posts) {
+        for (const t of p.tags ?? []) tags.add(t);
+      }
+      return [...tags];
+    });
+
+    const unifiedItems = computed<UnifiedItem[]>(() => {
+      const articles: UnifiedItem[] = props.posts.map((p) => ({
+        id: `blog-${p.slug}`,
+        kind: "article" as const,
+        title: p.title,
+        excerpt: p.excerpt ?? "",
+        coverImage: p.coverImage ?? "",
+        date: p.date ?? "",
+        slug: p.slug,
+      }));
+      const newsletters: UnifiedItem[] = newsletterSends.value.map((n) => ({
+        id: `nl-${n.id}`,
+        kind: "newsletter" as const,
+        title: n.subject,
+        excerpt: "",
+        coverImage: n.cover_image ?? "",
+        date: n.sent_at ?? "",
+        sendId: n.id,
+      }));
+      return [...articles, ...newsletters].sort((a, b) => {
+        const da = a.date ? new Date(a.date).getTime() : 0;
+        const db = b.date ? new Date(b.date).getTime() : 0;
+        return db - da;
+      });
+    });
+
+    const filteredItems = computed(() => {
+      if (activeTypeFilter.value === "all") return unifiedItems.value;
+      return unifiedItems.value.filter((i) => i.kind === activeTypeFilter.value);
+    });
+
+    const openItem = (item: UnifiedItem) => {
+      if (item.kind === "article" && item.slug) {
+        emit("load-post", item.slug);
+      } else if (item.kind === "newsletter" && item.sendId) {
+        viewingNewsletter.value = item.sendId;
+        fetchNewsletterDetail(item.sendId);
+      }
+    };
+
+    const formatDate = (d: string) => {
+      if (!d) return "";
+      try {
+        return new Date(d).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+      } catch {
+        return d;
+      }
+    };
+
+    return {
+      typeFilters,
+      activeTypeFilter,
+      allTags,
+      filteredItems,
+      viewingNewsletter,
+      nlData,
+      nlLoading,
+      openItem,
+      formatDate,
+    };
+  },
+});
+</script>
+
+<style scoped>
+.bento-card {
+  background: var(--bento-card-bg, #fff);
+  border: 1px solid var(--bento-card-border, transparent);
+  border-radius: var(--bento-card-radius, 1.5rem);
+  box-shadow: var(--bento-card-shadow, 0 1px 2px rgba(0,0,0,0.04));
+  transition: transform 0.25s cubic-bezier(.4,0,.2,1);
+}
+.bento-card:hover {
+  transform: scale(var(--bento-hover-scale, 1.02));
+}
+
+.prose-content :deep(h2) {
+  font-size: 1.375rem;
+  font-weight: 700;
+  margin: 1.5em 0 0.5em;
+}
+.prose-content :deep(h3) {
+  font-size: 1.125rem;
+  font-weight: 700;
+  margin: 1.2em 0 0.4em;
+}
+.prose-content :deep(p) {
+  margin: 0.6em 0;
+  line-height: 1.7;
+}
+.prose-content :deep(ul),
+.prose-content :deep(ol) {
+  padding-left: 1.5em;
+  margin: 0.6em 0;
+}
+.prose-content :deep(blockquote) {
+  border-left: 3px solid var(--color-accent, #3b82f6);
+  padding-left: 1em;
+  margin: 1em 0;
+  color: var(--color-ink-soft);
+  font-style: italic;
+}
+.prose-content :deep(img) {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  margin: 1em 0;
+}
+.prose-content :deep(a) {
+  color: var(--color-accent, #3b82f6);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.prose-content :deep(pre) {
+  background: #1e1e2e;
+  color: #cdd6f4;
+  border-radius: 8px;
+  padding: 14px 16px;
+  overflow-x: auto;
+  font-size: 0.8125rem;
+  margin: 1em 0;
+}
+.prose-content :deep(code) {
+  background: rgba(59, 130, 246, 0.08);
+  border-radius: 4px;
+  padding: 0.15em 0.35em;
+  font-size: 0.9em;
+}
+.prose-content :deep(pre code) {
+  background: none;
+  padding: 0;
+  font-size: inherit;
+}
+</style>

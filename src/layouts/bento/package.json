@@ -1,0 +1,7 @@
+{
+  "name": "@layouts/bento",
+  "private": true,
+  "dependencies": {
+    "grid-layout-plus": "^1.1.1"
+  }
+}
