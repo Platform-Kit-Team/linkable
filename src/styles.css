@@ -86,6 +86,31 @@ body {
   display: none;
 }
 
+/* Minimal layout: clean search bars matching gallery cell styling */
+[data-layout="minimal"] .search-bar {
+  background: rgba(0, 0, 0, 0.03);
+  border-color: rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+  backdrop-filter: none;
+}
+[data-layout="minimal"] .search-bar:hover,
+[data-layout="minimal"] .search-bar.search-bar--active,
+[data-layout="minimal"] .search-bar:focus-within {
+  background: rgba(0, 0, 0, 0.05);
+  border-color: rgba(0, 0, 0, 0.12);
+}
+[data-dark][data-layout="minimal"] .search-bar {
+  background: transparent !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.08), 0 0 40px rgba(255, 255, 255, 0.04);
+}
+[data-dark][data-layout="minimal"] .search-bar:hover,
+[data-dark][data-layout="minimal"] .search-bar.search-bar--active,
+[data-dark][data-layout="minimal"] .search-bar:focus-within {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
 /* Super subtle noise */
 body::before {
   content: '';

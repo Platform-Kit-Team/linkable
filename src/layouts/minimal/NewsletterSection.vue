@@ -29,7 +29,8 @@
       <!-- Search -->
       <div
         v-if="searchEnabled"
-        class="mt-3 flex items-center gap-2.5 rounded-lg shadow-sm  px-3.5 py-2.5 text-sm transition-all focus-within:border-[var(--color-brand)] focus-within:shadow-[0_0_0_3px_rgba(var(--brand-rgb,59,130,246),0.08)] bg-white"
+        class="search-bar mt-3 flex items-center gap-2.5 rounded-xl border border-transparent px-3 py-2 text-sm backdrop-blur-md transition-all duration-200 focus-within:border-[var(--color-brand)] focus-within:ring-1 focus-within:ring-[var(--color-brand)]"
+        :class="searchQuery.trim() ? 'search-bar--active' : ''"
       >
         <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24"
           fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"

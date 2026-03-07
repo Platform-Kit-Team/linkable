@@ -1,5 +1,5 @@
 <template>
-  <section class="space-y-3">
+  <section class="minimal-gallery space-y-3">
     <SearchBar
       v-if="searchEnabled || availableTags.length > 0"
       v-model="searchQuery"
@@ -14,12 +14,12 @@
       <div
         v-for="(item, index) in filteredItems"
         :key="item.id"
-        :class="['gallery-cell overflow-hidden rounded-lg', { 'gallery-cell--wide': (index + 1) % 4 === 0 }]"
+        :class="['gallery-cell rounded-lg', { 'gallery-cell--wide': (index + 1) % 4 === 0 }]"
       >
         <button
           v-if="item.type === 'image'"
           type="button"
-          class="group relative block h-full w-full"
+          class="group relative block h-full w-full overflow-hidden rounded-lg"
           @click="$emit('open-lightbox', item)"
         >
           <img
@@ -41,7 +41,7 @@
         <button
           v-else-if="item.type === 'video'"
           type="button"
-          class="group relative block h-full w-full"
+          class="group relative block h-full w-full overflow-hidden rounded-lg"
           @click="$emit('open-video', item)"
         >
           <img
@@ -120,8 +120,8 @@ export default defineComponent({
 });
 </script>
 
-<style scoped>
-.gallery-grid {
+<style>
+.minimal-gallery .gallery-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   grid-auto-rows: 80px;
@@ -130,16 +130,22 @@ export default defineComponent({
 }
 
 @media (max-width: 639px) {
-  .gallery-grid {
+  .minimal-gallery .gallery-grid {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
-.gallery-cell {
+.minimal-gallery .gallery-cell {
   grid-row: span 1;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
 }
 
-.gallery-cell--wide {
+[data-dark] .minimal-gallery .gallery-cell {
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.08), 0 0 40px rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.minimal-gallery .gallery-cell--wide {
   grid-column: span 2;
   grid-row: span 2;
 }
