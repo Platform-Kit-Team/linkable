@@ -1,7 +1,7 @@
 <template>
   <nav
     v-if="visible"
-    class="mx-auto mb-6 flex items-center justify-center gap-1"
+    class="mx-auto mb-6 flex flex-wrap items-center justify-center gap-1"
   >
     <button
       v-for="tab in tabs"
