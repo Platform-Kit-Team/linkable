@@ -44,7 +44,7 @@
             >
               <span class="cms__tab-icon"><i class="pi pi-th-large" /></span>
               <span class="cms__tab-label">Content</span>
-              <span class="cms__tab-pill">{{ draft.links.length + draft.embeds.length + draft.gallery.items.length }}</span>
+              <span class="cms__tab-pill">{{ draftLinks.length + draftEmbedItems.length + draftGalleryItems.length }}</span>
             </button>
 
             <button
@@ -408,19 +408,19 @@
               <div class="cms__form">
                 <div class="cms__help" style="margin-bottom: 8px">Enable search bars for visitors to filter content in each section.</div>
                 <div class="cms__field" style="display: flex; align-items: center; gap: 12px">
-                  <ToggleSwitch v-model="draft.profile.searchLinks" />
+                  <ToggleSwitch v-model="draft.collections.links.searchEnabled" />
                   <label class="cms__label" style="margin: 0">Links search</label>
                 </div>
                 <div class="cms__field" style="display: flex; align-items: center; gap: 12px">
-                  <ToggleSwitch v-model="draft.profile.searchGallery" />
+                  <ToggleSwitch v-model="draft.collections.gallery.searchEnabled" />
                   <label class="cms__label" style="margin: 0">Gallery search</label>
                 </div>
                 <div class="cms__field" style="display: flex; align-items: center; gap: 12px">
-                  <ToggleSwitch v-model="draft.profile.searchBlog" />
+                  <ToggleSwitch v-model="draft.collections.blog.searchEnabled" />
                   <label class="cms__label" style="margin: 0">Blog search</label>
                 </div>
                 <div v-if="supabaseUrl" class="cms__field" style="display: flex; align-items: center; gap: 12px">
-                  <ToggleSwitch v-model="draft.profile.searchNewsletter" />
+                  <ToggleSwitch v-model="draft.collections.newsletter.searchEnabled" />
                   <label class="cms__label" style="margin: 0">Newsletter search</label>
                 </div>
               </div>
@@ -706,13 +706,13 @@
             <div class="cms__form">
               <div class="cms__field">
                 <label class="cms__label">Tab label</label>
-                <InputText v-model="draft.profile.linksLabel" class="w-full" placeholder="Links" />
+                <InputText v-model="draft.collections.links.label" class="w-full" placeholder="Links" />
                 <div class="cms__help">Customise the tab name shown on the public page.</div>
               </div>
               <div class="cms__field">
                 <label class="cms__label">Tab icon</label>
                 <AutoComplete
-                  v-model="draft.profile.linksIcon"
+                  v-model="draft.collections.links.icon"
                   :suggestions="filteredTabIcons"
                   @complete="searchTabIcons"
                   placeholder="Search icons… e.g. Link"
@@ -739,14 +739,14 @@
           </div>
 
           <div class="cms__card">
-            <div v-if="draft.links.length === 0" class="cms__empty">
+            <div v-if="draftLinks.length === 0" class="cms__empty">
               <div class="cms__empty-title">No links yet</div>
               <div class="cms__empty-sub">Click “Add link” to create your first one.</div>
             </div>
 
             <draggable
               v-else
-              v-model="draft.links"
+              v-model="draftLinks"
               item-key="id"
               handle=".drag"
               :animation="160"
@@ -802,13 +802,13 @@
             <div class="cms__form">
               <div class="cms__field">
                 <label class="cms__label">Tab label</label>
-                <InputText v-model="draft.profile.galleryLabel" class="w-full" placeholder="Gallery" />
+                <InputText v-model="draft.collections.gallery.label" class="w-full" placeholder="Gallery" />
                 <div class="cms__help">Customise the tab name shown on the public page.</div>
               </div>
               <div class="cms__field">
                 <label class="cms__label">Tab icon</label>
                 <AutoComplete
-                  v-model="draft.profile.galleryIcon"
+                  v-model="draft.collections.gallery.icon"
                   :suggestions="filteredTabIcons"
                   @complete="searchTabIcons"
                   placeholder="Search icons… e.g. Images"
@@ -844,18 +844,18 @@
                     When disabled, the gallery tab will not appear on the public page.
                   </div>
                 </div>
-                <ToggleSwitch v-model="draft.gallery.enabled" />
+                <ToggleSwitch v-model="draft.collections.gallery.enabled" />
               </div>
             </div>
 
-            <div v-if="draft.gallery.items.length === 0" class="cms__empty mt-3">
+            <div v-if="draftGalleryItems.length === 0" class="cms__empty mt-3">
               <div class="cms__empty-title">No gallery items yet</div>
               <div class="cms__empty-sub">Click "Add item" to upload an image or add a video.</div>
             </div>
 
             <draggable
               v-else
-              v-model="draft.gallery.items"
+              v-model="draftGalleryItems"
               item-key="id"
               handle=".drag"
               :animation="160"
@@ -918,13 +918,13 @@
             <div class="cms__form">
               <div class="cms__field">
                 <label class="cms__label">Tab label</label>
-                <InputText v-model="draft.profile.blogLabel" class="w-full" placeholder="Blog" />
+                <InputText v-model="draft.collections.blog.label" class="w-full" placeholder="Blog" />
                 <div class="cms__help">Customise the tab name shown on the public page.</div>
               </div>
               <div class="cms__field">
                 <label class="cms__label">Tab icon</label>
                 <AutoComplete
-                  v-model="draft.profile.blogIcon"
+                  v-model="draft.collections.blog.icon"
                   :suggestions="filteredTabIcons"
                   @complete="searchTabIcons"
                   placeholder="Search icons… e.g. Pencil"
@@ -959,7 +959,7 @@
                     When disabled, the blog tab will not appear on the public page.
                   </div>
                 </div>
-                <ToggleSwitch v-model="draft.blog.enabled" />
+                <ToggleSwitch v-model="draft.collections.blog.enabled" />
               </div>
             </div>
 
@@ -1007,13 +1007,13 @@
             <div class="cms__form">
               <div class="cms__field">
                 <label class="cms__label">Tab label</label>
-                <InputText v-model="draft.profile.resumeLabel" class="w-full" placeholder="Resume" />
+                <InputText v-model="draft.collections.resume.label" class="w-full" placeholder="Resume" />
                 <div class="cms__help">Customise the tab name shown on the public page.</div>
               </div>
               <div class="cms__field">
                 <label class="cms__label">Tab icon</label>
                 <AutoComplete
-                  v-model="draft.profile.resumeIcon"
+                  v-model="draft.collections.resume.icon"
                   :suggestions="filteredTabIcons"
                   @complete="searchTabIcons"
                   placeholder="Search icons… e.g. FileText"
@@ -1049,13 +1049,13 @@
                     When disabled, the resume tab will not appear on the public page.
                   </div>
                 </div>
-                <ToggleSwitch v-model="draft.resume.enabled" />
+                <ToggleSwitch v-model="draft.collections.resume.enabled" />
               </div>
 
               <!-- Bio -->
               <div class="cms__field">
                 <label class="cms__label">Bio</label>
-                <Textarea v-model="draft.resume.bio" autoResize rows="4" class="w-full" placeholder="A brief professional summary…" />
+                <Textarea v-model="resumeData.bio" autoResize rows="4" class="w-full" placeholder="A brief professional summary…" />
               </div>
 
               <!-- Education -->
@@ -1068,12 +1068,12 @@
                   </Button>
                 </div>
 
-                <div v-if="draft.resume.education.length === 0" class="cms__empty">
+                <div v-if="resumeData.education.length === 0" class="cms__empty">
                   <div class="cms__empty-sub">No education entries yet.</div>
                 </div>
                 <draggable
                   v-else
-                  v-model="draft.resume.education"
+                  v-model="resumeData.education"
                   item-key="id"
                   handle=".drag"
                   :animation="160"
@@ -1112,12 +1112,12 @@
                   </Button>
                 </div>
 
-                <div v-if="draft.resume.employment.length === 0" class="cms__empty">
+                <div v-if="resumeData.employment.length === 0" class="cms__empty">
                   <div class="cms__empty-sub">No employment entries yet.</div>
                 </div>
                 <draggable
                   v-else
-                  v-model="draft.resume.employment"
+                  v-model="resumeData.employment"
                   item-key="id"
                   handle=".drag"
                   :animation="160"
@@ -1151,7 +1151,7 @@
                 <label class="cms__label">Skills</label>
                 <div class="flex flex-wrap gap-2">
                   <span
-                    v-for="(skill, i) in draft.resume.skills"
+                    v-for="(skill, i) in resumeData.skills"
                     :key="i"
                     class="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-border)] bg-[var(--glass)] px-3 py-1 text-xs font-semibold text-[color:var(--color-ink)] shadow-sm"
                   >
@@ -1184,12 +1184,12 @@
                   </Button>
                 </div>
 
-                <div v-if="draft.resume.achievements.length === 0" class="cms__empty">
+                <div v-if="resumeData.achievements.length === 0" class="cms__empty">
                   <div class="cms__empty-sub">No achievements yet.</div>
                 </div>
                 <draggable
                   v-else
-                  v-model="draft.resume.achievements"
+                  v-model="resumeData.achievements"
                   item-key="id"
                   handle=".drag"
                   :animation="160"
@@ -1236,14 +1236,14 @@
           </div>
 
           <div class="cms__card">
-            <div v-if="draft.embeds.length === 0" class="cms__empty">
+            <div v-if="draftEmbedItems.length === 0" class="cms__empty">
               <div class="cms__empty-title">No embeds yet</div>
               <div class="cms__empty-sub">Click "Add embed" to create your first embedded tab.</div>
             </div>
 
             <draggable
               v-else
-              v-model="draft.embeds"
+              v-model="draftEmbedItems"
               item-key="id"
               handle=".drag"
               :animation="160"
@@ -1287,7 +1287,7 @@
             <div class="cms__form">
               <div class="cms__help" style="margin-bottom: 8px">Show an email signup form on your page so visitors can subscribe to your newsletter.</div>
               <div class="cms__field" style="display: flex; align-items: center; gap: 12px">
-                <ToggleSwitch v-model="draft.profile.newsletterEnabled" />
+                <ToggleSwitch v-model="draft.collections.newsletter.enabled" />
                 <label class="cms__label" style="margin: 0">Enable newsletter signup</label>
               </div>
             </div>
@@ -1297,13 +1297,13 @@
             <div class="cms__form">
               <div class="cms__field">
                 <label class="cms__label">Tab label</label>
-                <InputText v-model="draft.profile.newsletterLabel" class="w-full" placeholder="Newsletter" />
+                <InputText v-model="draft.collections.newsletter.label" class="w-full" placeholder="Newsletter" />
                 <div class="cms__help">Customise the tab name shown on the public page.</div>
               </div>
               <div class="cms__field">
                 <label class="cms__label">Tab icon</label>
                 <AutoComplete
-                  v-model="draft.profile.newsletterIcon"
+                  v-model="draft.collections.newsletter.icon"
                   :suggestions="filteredTabIcons"
                   @complete="searchTabIcons"
                   placeholder="Search icons… e.g. Mail"
@@ -1567,11 +1567,9 @@ import AnalyticsPanel from "./AnalyticsPanel.vue";
 import { icons as lucideIcons } from "lucide-vue-next";
 import { getAvailableLayouts, getLayoutManifest } from "../lib/component-resolver";
 import type { LayoutManifest, LayoutVar } from "../lib/layout-manifest";
-import type { BioLink, BioModel, SocialLink, EducationEntry, EmploymentEntry, AchievementEntry, GalleryItem, ThemePreset, EmbedItem } from "../lib/model";
+import type { BioLink, BioModel, SocialLink, EducationEntry, EmploymentEntry, AchievementEntry, GalleryItem, ThemePreset, EmbedItem, ResumeData } from "../lib/model";
 import {
   defaultModel,
-  defaultResume,
-  defaultGallery,
   defaultTheme,
   darkTheme,
   THEME_PRESETS,
@@ -1629,7 +1627,7 @@ export default defineComponent({
   props: {
     open: { type: Boolean, required: true },
     model: { type: Object as () => BioModel, required: true },
-    initialTab: { type: String as () => "site" | "content" | "newsletter" | "analytics" | "links" | "embeds" | "resume" | "gallery" | "blog", default: "site" },
+    initialTab: { type: String, default: "site" },
     initialEmbedId: { type: String, default: "" },
     initialBlogSlug: { type: String, default: "" },
   },
@@ -1889,6 +1887,22 @@ export default defineComponent({
     };
 
     const draft = ref<BioModel>(sanitizeModel(props.model));
+
+    // ── Writable computed aliases for collection items ────────────
+    const draftLinks = computed({
+      get: () => draft.value.collections.links.items as BioLink[],
+      set: (v: BioLink[]) => { draft.value.collections.links.items = v; },
+    });
+    const draftGalleryItems = computed({
+      get: () => draft.value.collections.gallery.items as GalleryItem[],
+      set: (v: GalleryItem[]) => { draft.value.collections.gallery.items = v; },
+    });
+    const draftEmbedItems = computed({
+      get: () => draft.value.collections.embeds.items as EmbedItem[],
+      set: (v: EmbedItem[]) => { draft.value.collections.embeds.items = v; },
+    });
+    const resumeData = computed(() => draft.value.collections.resume.items[0] as ResumeData);
+
     // Cache the serialised saved-model so hasChanges doesn't re-stringify it on every access
     const savedSnapshot = ref(stableStringify(sanitizeModel(props.model)));
 
@@ -1911,7 +1925,7 @@ export default defineComponent({
     const activeLink = computed<BioLink | null>(() => {
       const id = activeLinkId.value;
       if (!id) return null;
-      return draft.value.links.find((l) => l.id === id) ?? null;
+      return draftLinks.value.find((l) => l.id === id) ?? null;
     });
 
     const activeLinkProxy = computed<BioLink>({
@@ -1919,8 +1933,8 @@ export default defineComponent({
         return activeLink.value ?? newLink();
       },
       set(v) {
-        const idx = draft.value.links.findIndex((l) => l.id === v.id);
-        if (idx >= 0) draft.value.links[idx] = v;
+        const idx = draftLinks.value.findIndex((l) => l.id === v.id);
+        if (idx >= 0) draftLinks.value[idx] = v;
       },
     });
 
@@ -1932,7 +1946,7 @@ export default defineComponent({
     const createAndEditLink = () => {
       const l = newLink();
       l.subtitle = "";
-      draft.value.links.unshift(l);
+      draftLinks.value.unshift(l);
       activeLinkId.value = l.id;
       tab.value = "links";
       linkEditorOpen.value = true;
@@ -1942,7 +1956,7 @@ export default defineComponent({
     const deleteActiveLink = () => {
       const l = activeLink.value;
       if (!l) return;
-      draft.value.links = draft.value.links.filter((x) => x.id !== l.id);
+      draftLinks.value = draftLinks.value.filter((x) => x.id !== l.id);
       linkEditorOpen.value = false;
       activeLinkId.value = "";
       toast.add({ severity: "warn", summary: "Deleted", detail: "Link removed.", life: 1600 });
@@ -2183,14 +2197,6 @@ export default defineComponent({
     };
 
     if (!draft.value) draft.value = defaultModel();
-    // ensure resume section exists on draft
-    if (!draft.value.resume) {
-      draft.value.resume = defaultResume();
-    }
-    // ensure gallery section exists on draft
-    if (!draft.value.gallery) {
-      draft.value.gallery = defaultGallery();
-    }
 
     // Resume editor state
     const resumeEditorOpen = ref(false);
@@ -2203,19 +2209,19 @@ export default defineComponent({
     const activeEducation = computed<EducationEntry | null>(() => {
       const id = activeEducationId.value;
       if (!id) return null;
-      return draft.value.resume.education.find((e) => e.id === id) ?? null;
+      return resumeData.value.education.find((e) => e.id === id) ?? null;
     });
 
     const activeEmployment = computed<EmploymentEntry | null>(() => {
       const id = activeEmploymentId.value;
       if (!id) return null;
-      return draft.value.resume.employment.find((e) => e.id === id) ?? null;
+      return resumeData.value.employment.find((e) => e.id === id) ?? null;
     });
 
     const activeAchievement = computed<AchievementEntry | null>(() => {
       const id = activeAchievementId.value;
       if (!id) return null;
-      return draft.value.resume.achievements.find((a) => a.id === id) ?? null;
+      return resumeData.value.achievements.find((a) => a.id === id) ?? null;
     });
 
     const openEducationEditor = (id: string) => {
@@ -2238,53 +2244,53 @@ export default defineComponent({
 
     const addEducation = () => {
       const e = newEducation();
-      draft.value.resume.education.push(e);
+      resumeData.value.education.push(e);
       openEducationEditor(e.id);
       toast.add({ severity: "success", summary: "Added", detail: "Education entry created.", life: 1600 });
     };
 
     const addEmployment = () => {
       const e = newEmployment();
-      draft.value.resume.employment.push(e);
+      resumeData.value.employment.push(e);
       openEmploymentEditor(e.id);
       toast.add({ severity: "success", summary: "Added", detail: "Employment entry created.", life: 1600 });
     };
 
     const addAchievementEntry = () => {
       const a = newAchievement();
-      draft.value.resume.achievements.push(a);
+      resumeData.value.achievements.push(a);
       openAchievementEditor(a.id);
       toast.add({ severity: "success", summary: "Added", detail: "Achievement entry created.", life: 1600 });
     };
 
     const updateEducation = (updated: EducationEntry) => {
-      const idx = draft.value.resume.education.findIndex((e) => e.id === updated.id);
-      if (idx >= 0) draft.value.resume.education[idx] = { ...updated };
+      const idx = resumeData.value.education.findIndex((e) => e.id === updated.id);
+      if (idx >= 0) resumeData.value.education[idx] = { ...updated };
     };
 
     const updateEmployment = (updated: EmploymentEntry) => {
-      const idx = draft.value.resume.employment.findIndex((e) => e.id === updated.id);
-      if (idx >= 0) draft.value.resume.employment[idx] = { ...updated };
+      const idx = resumeData.value.employment.findIndex((e) => e.id === updated.id);
+      if (idx >= 0) resumeData.value.employment[idx] = { ...updated };
     };
 
     const updateAchievement = (updated: AchievementEntry) => {
-      const idx = draft.value.resume.achievements.findIndex((a) => a.id === updated.id);
-      if (idx >= 0) draft.value.resume.achievements[idx] = { ...updated };
+      const idx = resumeData.value.achievements.findIndex((a) => a.id === updated.id);
+      if (idx >= 0) resumeData.value.achievements[idx] = { ...updated };
     };
 
     const deleteResumeEntry = () => {
       if (resumeEditMode.value === "education" && activeEducationId.value) {
-        draft.value.resume.education = draft.value.resume.education.filter(
+        resumeData.value.education = resumeData.value.education.filter(
           (e) => e.id !== activeEducationId.value
         );
         activeEducationId.value = "";
       } else if (resumeEditMode.value === "employment" && activeEmploymentId.value) {
-        draft.value.resume.employment = draft.value.resume.employment.filter(
+        resumeData.value.employment = resumeData.value.employment.filter(
           (e) => e.id !== activeEmploymentId.value
         );
         activeEmploymentId.value = "";
       } else if (resumeEditMode.value === "achievement" && activeAchievementId.value) {
-        draft.value.resume.achievements = draft.value.resume.achievements.filter(
+        resumeData.value.achievements = resumeData.value.achievements.filter(
           (a) => a.id !== activeAchievementId.value
         );
         activeAchievementId.value = "";
@@ -2296,13 +2302,13 @@ export default defineComponent({
     const addSkill = () => {
       const skill = newSkillText.value.trim();
       if (!skill) return;
-      if (draft.value.resume.skills.includes(skill)) return;
-      draft.value.resume.skills.push(skill);
+      if (resumeData.value.skills.includes(skill)) return;
+      resumeData.value.skills.push(skill);
       newSkillText.value = "";
     };
 
     const removeSkill = (index: number) => {
-      draft.value.resume.skills.splice(index, 1);
+      resumeData.value.skills.splice(index, 1);
     };
 
     watch(resumeEditorOpen, (open) => {
@@ -2319,7 +2325,7 @@ export default defineComponent({
     const activeGalleryItem = computed<GalleryItem | null>(() => {
       const id = activeGalleryItemId.value;
       if (!id) return null;
-      return draft.value.gallery.items.find((g) => g.id === id) ?? null;
+      return draftGalleryItems.value.find((g) => g.id === id) ?? null;
     });
 
     const openGalleryEditor = (id: string) => {
@@ -2329,21 +2335,21 @@ export default defineComponent({
 
     const createAndEditGalleryItem = () => {
       const item = newGalleryItem();
-      draft.value.gallery.items.unshift(item);
+      draftGalleryItems.value.unshift(item);
       activeGalleryItemId.value = item.id;
       galleryEditorOpen.value = true;
       toast.add({ severity: "success", summary: "Added", detail: "Gallery item created.", life: 1600 });
     };
 
     const updateGalleryItem = (updated: GalleryItem) => {
-      const idx = draft.value.gallery.items.findIndex((g) => g.id === updated.id);
-      if (idx >= 0) draft.value.gallery.items[idx] = { ...updated };
+      const idx = draftGalleryItems.value.findIndex((g) => g.id === updated.id);
+      if (idx >= 0) draftGalleryItems.value[idx] = { ...updated };
     };
 
     const deleteActiveGalleryItem = () => {
       const id = activeGalleryItemId.value;
       if (!id) return;
-      draft.value.gallery.items = draft.value.gallery.items.filter((g) => g.id !== id);
+      draftGalleryItems.value = draftGalleryItems.value.filter((g) => g.id !== id);
       galleryEditorOpen.value = false;
       activeGalleryItemId.value = "";
       toast.add({ severity: "warn", summary: "Deleted", detail: "Gallery item removed.", life: 1600 });
@@ -2360,7 +2366,7 @@ export default defineComponent({
     const activeEmbed = computed<EmbedItem | null>(() => {
       const id = activeEmbedId.value;
       if (!id) return null;
-      return draft.value.embeds.find((e) => e.id === id) ?? null;
+      return draftEmbedItems.value.find((e) => e.id === id) ?? null;
     });
 
     const activeEmbedProxy = computed<EmbedItem>({
@@ -2368,8 +2374,8 @@ export default defineComponent({
         return activeEmbed.value ?? newEmbed();
       },
       set(v) {
-        const idx = draft.value.embeds.findIndex((e) => e.id === v.id);
-        if (idx >= 0) draft.value.embeds[idx] = v;
+        const idx = draftEmbedItems.value.findIndex((e) => e.id === v.id);
+        if (idx >= 0) draftEmbedItems.value[idx] = v;
       },
     });
 
@@ -2380,7 +2386,7 @@ export default defineComponent({
 
     const createAndEditEmbed = () => {
       const item = newEmbed();
-      draft.value.embeds.unshift(item);
+      draftEmbedItems.value.unshift(item);
       activeEmbedId.value = item.id;
       embedEditorOpen.value = true;
       toast.add({ severity: "success", summary: "Added", detail: "Embed created.", life: 1600 });
@@ -2389,7 +2395,7 @@ export default defineComponent({
     const deleteActiveEmbed = () => {
       const id = activeEmbedId.value;
       if (!id) return;
-      draft.value.embeds = draft.value.embeds.filter((e) => e.id !== id);
+      draftEmbedItems.value = draftEmbedItems.value.filter((e) => e.id !== id);
       embedEditorOpen.value = false;
       activeEmbedId.value = "";
       toast.add({ severity: "warn", summary: "Deleted", detail: "Embed removed.", life: 1600 });
@@ -2549,7 +2555,7 @@ export default defineComponent({
     // ── Tag collections for editor drawers ───────────────────────
     const allLinkTags = computed(() => {
       const tagSet = new Set<string>();
-      for (const l of draft.value.links) {
+      for (const l of draftLinks.value) {
         if (l.tags) l.tags.forEach((t: string) => tagSet.add(t));
       }
       return [...tagSet].sort();
@@ -2557,7 +2563,7 @@ export default defineComponent({
 
     const allGalleryTags = computed(() => {
       const tagSet = new Set<string>();
-      for (const item of draft.value.gallery.items) {
+      for (const item of draftGalleryItems.value) {
         if (item.tags) item.tags.forEach((t: string) => tagSet.add(t));
       }
       return [...tagSet].sort();
@@ -2575,6 +2581,10 @@ export default defineComponent({
       visible,
       tab,
       draft,
+      draftLinks,
+      draftGalleryItems,
+      draftEmbedItems,
+      resumeData,
       siteSection,
       hasChanges,
       discard,

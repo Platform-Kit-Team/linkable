@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 27,
+  "schemaVersion": 28,
   "profile": {
     "displayName": "Linkable",
     "tagline": "Design-forward links. Clean, fast, yours.",
@@ -7,58 +7,8 @@
     "bannerUrl": "",
     "faviconUrl": "",
     "ogImageUrl": "",
-    "linksLabel": "",
-    "resumeLabel": "",
-    "galleryLabel": "",
-    "blogLabel": "",
-    "newsletterLabel": "",
-    "linksIcon": "",
-    "resumeIcon": "",
-    "galleryIcon": "",
-    "blogIcon": "",
-    "newsletterIcon": "",
-    "defaultTab": "links",
-    "searchLinks": false,
-    "searchGallery": false,
-    "searchBlog": false,
-    "searchNewsletter": false,
-    "newsletterEnabled": false
+    "defaultTab": "links"
   },
-  "links": [
-    {
-      "id": "link-portfolio",
-      "title": "My portfolio",
-      "subtitle": "Selected work & case studies",
-      "url": "https://example.com",
-      "imageUrl": "",
-      "enabled": true,
-      "tags": [],
-      "publishDate": "",
-      "expirationDate": ""
-    },
-    {
-      "id": "link-book-call",
-      "title": "Book a call",
-      "subtitle": "15 minutes to see if we fit",
-      "url": "https://example.com",
-      "imageUrl": "",
-      "enabled": true,
-      "tags": [],
-      "publishDate": "",
-      "expirationDate": ""
-    },
-    {
-      "id": "link-shop-presets",
-      "title": "Shop presets",
-      "subtitle": "UI kits, templates, packs",
-      "url": "https://example.com",
-      "imageUrl": "",
-      "enabled": true,
-      "tags": [],
-      "publishDate": "",
-      "expirationDate": ""
-    }
-  ],
   "socials": [
     {
       "id": "social-instagram",
@@ -75,22 +25,92 @@
       "enabled": false
     }
   ],
-  "resume": {
-    "enabled": false,
-    "bio": "",
-    "education": [],
-    "employment": [],
-    "skills": [],
-    "achievements": []
+  "collections": {
+    "links": {
+      "enabled": true,
+      "label": "",
+      "icon": "",
+      "searchEnabled": false,
+      "items": [
+        {
+          "id": "link-portfolio",
+          "title": "My portfolio",
+          "subtitle": "Selected work & case studies",
+          "url": "https://example.com",
+          "imageUrl": "",
+          "enabled": true,
+          "tags": [],
+          "publishDate": "",
+          "expirationDate": ""
+        },
+        {
+          "id": "link-book-call",
+          "title": "Book a call",
+          "subtitle": "15 minutes to see if we fit",
+          "url": "https://example.com",
+          "imageUrl": "",
+          "enabled": true,
+          "tags": [],
+          "publishDate": "",
+          "expirationDate": ""
+        },
+        {
+          "id": "link-shop-presets",
+          "title": "Shop presets",
+          "subtitle": "UI kits, templates, packs",
+          "url": "https://example.com",
+          "imageUrl": "",
+          "enabled": true,
+          "tags": [],
+          "publishDate": "",
+          "expirationDate": ""
+        }
+      ]
+    },
+    "gallery": {
+      "enabled": false,
+      "label": "",
+      "icon": "",
+      "searchEnabled": false,
+      "items": []
+    },
+    "resume": {
+      "enabled": false,
+      "label": "",
+      "icon": "",
+      "searchEnabled": false,
+      "items": [
+        {
+          "bio": "",
+          "education": [],
+          "employment": [],
+          "skills": [],
+          "achievements": []
+        }
+      ]
+    },
+    "blog": {
+      "enabled": false,
+      "label": "",
+      "icon": "",
+      "searchEnabled": false,
+      "items": []
+    },
+    "embeds": {
+      "enabled": true,
+      "label": "",
+      "icon": "",
+      "searchEnabled": false,
+      "items": []
+    },
+    "newsletter": {
+      "enabled": false,
+      "label": "",
+      "icon": "",
+      "searchEnabled": false,
+      "items": []
+    }
   },
-  "gallery": {
-    "enabled": false,
-    "items": []
-  },
-  "blog": {
-    "enabled": false
-  },
-  "embeds": [],
   "scripts": {
     "headScript": "",
     "bodyEndScript": ""

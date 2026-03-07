@@ -25,22 +25,7 @@ export type BioProfile = {
   bannerUrl: string;
   faviconUrl: string;
   ogImageUrl: string;
-  linksLabel: string;
-  resumeLabel: string;
-  galleryLabel: string;
-  blogLabel: string;
-  newsletterLabel: string;
-  linksIcon: string;
-  resumeIcon: string;
-  galleryIcon: string;
-  blogIcon: string;
-  newsletterIcon: string;
-  defaultTab: "links" | "resume" | "gallery" | "blog";
-  searchLinks: boolean;
-  searchGallery: boolean;
-  searchBlog: boolean;
-  searchNewsletter: boolean;
-  newsletterEnabled: boolean;
+  defaultTab: string;
 };
 
 export type EducationEntry = {
@@ -69,14 +54,16 @@ export type AchievementEntry = {
   description: string;
 };
 
-export type BioResume = {
-  enabled: boolean;
+export type ResumeData = {
   bio: string;
   education: EducationEntry[];
   employment: EmploymentEntry[];
   skills: string[];
   achievements: AchievementEntry[];
 };
+
+/** @deprecated Use ResumeData instead — enabled flag now lives on ContentCollection */
+export type BioResume = ResumeData & { enabled?: boolean };
 
 export type GalleryItemType = "image" | "video";
 
@@ -95,6 +82,7 @@ export type GalleryItem = {
   expirationDate: string;
 };
 
+/** @deprecated Gallery is now a ContentCollection — use model.collections.gallery */
 export type BioGallery = {
   enabled: boolean;
   items: GalleryItem[];
@@ -125,6 +113,7 @@ export type BioTheme = {
   layoutData: Record<string, unknown>;
 };
 
+/** @deprecated Blog is now a ContentCollection — use model.collections.blog */
 export type BioBlog = {
   enabled: boolean;
 };
@@ -144,15 +133,19 @@ export type BioScripts = {
   bodyEndScript: string;
 };
 
+export type ContentCollection = {
+  enabled: boolean;
+  label: string;
+  icon: string;
+  searchEnabled: boolean;
+  items: unknown[];
+};
+
 export type BioModel = {
   schemaVersion: number;
   profile: BioProfile;
-  links: BioLink[];
   socials: SocialLink[];
-  resume: BioResume;
-  gallery: BioGallery;
-  blog: BioBlog;
-  embeds: EmbedItem[];
+  collections: Record<string, ContentCollection>;
   theme: BioTheme;
   layoutThemes: Record<string, BioTheme>;
   scripts: BioScripts;
@@ -209,13 +202,18 @@ export const newAchievement = (): AchievementEntry => ({
   description: "",
 });
 
-export const defaultResume = (): BioResume => ({
-  enabled: false,
+export const defaultResumeData = (): ResumeData => ({
   bio: "",
   education: [],
   employment: [],
   skills: [],
   achievements: [],
+});
+
+/** @deprecated Use defaultResumeData() instead */
+export const defaultResume = (): ResumeData & { enabled: boolean } => ({
+  enabled: false,
+  ...defaultResumeData(),
 });
 
 export const newGalleryItem = (): GalleryItem => ({
@@ -231,13 +229,23 @@ export const newGalleryItem = (): GalleryItem => ({
   expirationDate: "",
 });
 
+/** @deprecated Gallery is now a ContentCollection */
 export const defaultGallery = (): BioGallery => ({
   enabled: false,
   items: [],
 });
 
+/** @deprecated Blog is now a ContentCollection */
 export const defaultBlog = (): BioBlog => ({
   enabled: false,
+});
+
+export const defaultCollection = (enabled = false): ContentCollection => ({
+  enabled,
+  label: "",
+  icon: "",
+  searchEnabled: false,
+  items: [],
 });
 
 export const defaultTheme = (): BioTheme => ({
@@ -413,78 +421,72 @@ export const defaultModel = (): BioModel => ({
     bannerUrl: "",
     faviconUrl: "",
     ogImageUrl: "",
-    linksLabel: "",
-    resumeLabel: "",
-    galleryLabel: "",
-    blogLabel: "",
-    newsletterLabel: "",
-    linksIcon: "",
-    resumeIcon: "",
-    galleryIcon: "",
-    blogIcon: "",
-    newsletterIcon: "",
     defaultTab: "links",
-    searchLinks: false,
-    searchGallery: false,
-    searchBlog: false,
-    searchNewsletter: false,
-    newsletterEnabled: false,
   },
-  links: [
-    {
-      id: newId(),
-      title: "My portfolio",
-      subtitle: "Selected work & case studies",
-      url: "https://example.com",
-      imageUrl: "",
-      enabled: true,
-      tags: [],
-      publishDate: "",
-      expirationDate: "",
-    },
-    {
-      id: newId(),
-      title: "Book a call",
-      subtitle: "15 minutes to see if we fit",
-      url: "https://example.com",
-      imageUrl: "",
-      enabled: true,
-      tags: [],
-      publishDate: "",
-      expirationDate: "",
-    },
-    {
-      id: newId(),
-      title: "Shop presets",
-      subtitle: "UI kits, templates, packs",
-      url: "https://example.com",
-      imageUrl: "",
-      enabled: true,
-      tags: [],
-      publishDate: "",
-      expirationDate: "",
-    },
-  ],
   socials: [
     {
       id: newId(),
-      type: "instagram",
+      icon: "instagram",
       label: "Instagram",
       url: "https://instagram.com",
       enabled: true,
     },
     {
       id: newId(),
-      type: "github",
+      icon: "github",
       label: "Github",
       url: "https://github.com",
       enabled: false,
     },
   ],
-  resume: defaultResume(),
-  gallery: defaultGallery(),
-  blog: defaultBlog(),
-  embeds: [],
+  collections: {
+    links: {
+      ...defaultCollection(true),
+      items: [
+        {
+          id: newId(),
+          title: "My portfolio",
+          subtitle: "Selected work & case studies",
+          url: "https://example.com",
+          imageUrl: "",
+          enabled: true,
+          tags: [],
+          publishDate: "",
+          expirationDate: "",
+        },
+        {
+          id: newId(),
+          title: "Book a call",
+          subtitle: "15 minutes to see if we fit",
+          url: "https://example.com",
+          imageUrl: "",
+          enabled: true,
+          tags: [],
+          publishDate: "",
+          expirationDate: "",
+        },
+        {
+          id: newId(),
+          title: "Shop presets",
+          subtitle: "UI kits, templates, packs",
+          url: "https://example.com",
+          imageUrl: "",
+          enabled: true,
+          tags: [],
+          publishDate: "",
+          expirationDate: "",
+        },
+      ],
+    },
+    gallery: defaultCollection(),
+    resume: {
+      ...defaultCollection(),
+      items: [defaultResumeData()],
+    },
+    blog: defaultCollection(),
+    embeds: defaultCollection(true),
+    newsletter: defaultCollection(),
+  },
   theme: defaultTheme(),
   layoutThemes: {
     default: defaultTheme(),
@@ -577,39 +579,8 @@ export const sanitizeModel = (input: unknown): BioModel => {
     bannerUrl: sanitizeUrl(obj.profile?.bannerUrl),
     faviconUrl: sanitizeUrl(obj.profile?.faviconUrl),
     ogImageUrl: sanitizeUrl(obj.profile?.ogImageUrl),
-    linksLabel: asString(obj.profile?.linksLabel).slice(0, 30),
-    resumeLabel: asString(obj.profile?.resumeLabel).slice(0, 30),
-    galleryLabel: asString(obj.profile?.galleryLabel).slice(0, 30),
-    blogLabel: asString(obj.profile?.blogLabel).slice(0, 30),
-    newsletterLabel: asString(obj.profile?.newsletterLabel).slice(0, 30),
-    linksIcon: asString(obj.profile?.linksIcon).slice(0, 60),
-    resumeIcon: asString(obj.profile?.resumeIcon).slice(0, 60),
-    galleryIcon: asString(obj.profile?.galleryIcon).slice(0, 60),
-    blogIcon: asString(obj.profile?.blogIcon).slice(0, 60),
-    newsletterIcon: asString(obj.profile?.newsletterIcon).slice(0, 60),
-    defaultTab: (["links", "resume", "gallery", "blog"] as const).includes(obj.profile?.defaultTab) ? obj.profile.defaultTab : "links",
-    searchLinks: typeof obj.profile?.searchLinks === 'boolean' ? obj.profile.searchLinks : false,
-    searchGallery: typeof obj.profile?.searchGallery === 'boolean' ? obj.profile.searchGallery : false,
-    searchBlog: typeof obj.profile?.searchBlog === 'boolean' ? obj.profile.searchBlog : false,
-    searchNewsletter: typeof obj.profile?.searchNewsletter === 'boolean' ? obj.profile.searchNewsletter : false,
-    newsletterEnabled: typeof obj.profile?.newsletterEnabled === 'boolean' ? obj.profile.newsletterEnabled : false,
+    defaultTab: asString(obj.profile?.defaultTab).slice(0, 40) || "links",
   };
-
-  const linksRaw = Array.isArray(obj.links) ? obj.links : [];
-  const links: BioLink[] = linksRaw
-    .map((l: any) => ({
-      id: asString(l?.id) || newId(),
-      title: asString(l?.title).slice(0, 60),
-      subtitle: asString(l?.subtitle).slice(0, 90),
-      url: sanitizeUrl(l?.url),
-      imageUrl: sanitizeUrl(l?.imageUrl),
-      enabled: typeof l?.enabled === "boolean" ? l.enabled : true,
-      tags: Array.isArray(l?.tags) ? l.tags.filter((t: any) => typeof t === 'string').slice(0, 20) : [],
-      publishDate: asString(l?.publishDate).slice(0, 10),
-      expirationDate: asString(l?.expirationDate).slice(0, 10),
-    }))
-    .filter((l: BioLink) => !!l.id)
-    .slice(0, 60);
 
   const socialsRaw = Array.isArray(obj.socials) ? obj.socials : [];
   const socials: SocialLink[] = socialsRaw
@@ -623,9 +594,68 @@ export const sanitizeModel = (input: unknown): BioModel => {
     .filter((s: SocialLink) => !!s.id)
     .slice(0, 24);
 
-  const resumeRaw = obj.resume && typeof obj.resume === "object" ? obj.resume : {};
-  const resume: BioResume = {
-    enabled: typeof resumeRaw.enabled === "boolean" ? resumeRaw.enabled : false,
+  // ── Collections ─────────────────────────────────────────────────
+  const rawCollections = obj.collections && typeof obj.collections === "object" ? obj.collections : {};
+
+  const sanitizeCollectionMeta = (raw: unknown, defaults: ContentCollection): ContentCollection => {
+    const c = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
+    return {
+      enabled: typeof c.enabled === "boolean" ? c.enabled : defaults.enabled,
+      label: asString(c.label).slice(0, 30),
+      icon: asString(c.icon).slice(0, 60),
+      searchEnabled: typeof c.searchEnabled === "boolean" ? c.searchEnabled : defaults.searchEnabled,
+      items: Array.isArray(c.items) ? c.items : [],
+    };
+  };
+
+  // Links
+  const linksCol = sanitizeCollectionMeta(rawCollections.links, defaultCollection(true));
+  const links: BioLink[] = linksCol.items
+    .map((l: any) => ({
+      id: asString(l?.id) || newId(),
+      title: asString(l?.title).slice(0, 60),
+      subtitle: asString(l?.subtitle).slice(0, 90),
+      url: sanitizeUrl(l?.url),
+      imageUrl: sanitizeUrl(l?.imageUrl),
+      enabled: typeof l?.enabled === "boolean" ? l.enabled : true,
+      tags: Array.isArray(l?.tags) ? l.tags.filter((t: any) => typeof t === 'string').slice(0, 20) : [],
+      publishDate: asString(l?.publishDate).slice(0, 10),
+      expirationDate: asString(l?.expirationDate).slice(0, 10),
+    }))
+    .filter((l: BioLink) => !!l.id)
+    .slice(0, 60);
+  linksCol.items = links;
+
+  // Gallery
+  const galleryItemTypes: GalleryItemType[] = ["image", "video"];
+  const asGalleryItemType = (v: unknown): GalleryItemType =>
+    galleryItemTypes.includes(v as GalleryItemType) ? (v as GalleryItemType) : "image";
+
+  const galleryCol = sanitizeCollectionMeta(rawCollections.gallery, defaultCollection());
+  const galleryItems: GalleryItem[] = galleryCol.items
+    .map((g: any) => ({
+      id: asString(g?.id) || newId(),
+      type: asGalleryItemType(g?.type),
+      src: asString(g?.src).slice(0, 500),
+      coverUrl: sanitizeUrl(g?.coverUrl),
+      title: asString(g?.title).slice(0, 120),
+      description: asString(g?.description).slice(0, 500),
+      tags: (Array.isArray(g?.tags) ? g.tags : [])
+        .map((t: unknown) => asString(t).slice(0, 40))
+        .filter(Boolean)
+        .slice(0, 20),
+      enabled: typeof g?.enabled === "boolean" ? g.enabled : true,
+      publishDate: asString(g?.publishDate).slice(0, 10),
+      expirationDate: asString(g?.expirationDate).slice(0, 10),
+    }))
+    .filter((g: GalleryItem) => !!g.id)
+    .slice(0, 100);
+  galleryCol.items = galleryItems;
+
+  // Resume (singleton — items[0] is a ResumeData)
+  const resumeCol = sanitizeCollectionMeta(rawCollections.resume, defaultCollection());
+  const resumeRaw = resumeCol.items[0] && typeof resumeCol.items[0] === "object" ? resumeCol.items[0] as Record<string, any> : {};
+  const resumeData: ResumeData = {
     bio: asString(resumeRaw.bio).slice(0, 2000),
     education: (Array.isArray(resumeRaw.education) ? resumeRaw.education : [])
       .map((e: any) => ({
@@ -664,33 +694,47 @@ export const sanitizeModel = (input: unknown): BioModel => {
       .filter((a: AchievementEntry) => !!a.id)
       .slice(0, 30),
   };
+  resumeCol.items = [resumeData];
 
-  const galleryItemTypes: GalleryItemType[] = ["image", "video"];
-  const asGalleryItemType = (v: unknown): GalleryItemType =>
-    galleryItemTypes.includes(v as GalleryItemType) ? (v as GalleryItemType) : "image";
+  // Blog (external storage — items stay empty)
+  const blogCol = sanitizeCollectionMeta(rawCollections.blog, defaultCollection());
+  blogCol.items = [];
 
-  const galleryRaw = obj.gallery && typeof obj.gallery === "object" ? obj.gallery : {};
-  const gallery: BioGallery = {
-    enabled: typeof galleryRaw.enabled === "boolean" ? galleryRaw.enabled : false,
-    items: (Array.isArray(galleryRaw.items) ? galleryRaw.items : [])
-      .map((g: any) => ({
-        id: asString(g?.id) || newId(),
-        type: asGalleryItemType(g?.type),
-        src: asString(g?.src).slice(0, 500),
-        coverUrl: sanitizeUrl(g?.coverUrl),
-        title: asString(g?.title).slice(0, 120),
-        description: asString(g?.description).slice(0, 500),
-        tags: (Array.isArray(g?.tags) ? g.tags : [])
-          .map((t: unknown) => asString(t).slice(0, 40))
-          .filter(Boolean)
-          .slice(0, 20),
-        enabled: typeof g?.enabled === "boolean" ? g.enabled : true,
-        publishDate: asString(g?.publishDate).slice(0, 10),
-        expirationDate: asString(g?.expirationDate).slice(0, 10),
-      }))
-      .filter((g: GalleryItem) => !!g.id)
-      .slice(0, 100),
+  // Embeds
+  const embedsCol = sanitizeCollectionMeta(rawCollections.embeds, defaultCollection(true));
+  const embeds: EmbedItem[] = embedsCol.items
+    .map((e: any) => ({
+      id: asString(e?.id) || newId(),
+      label: asString(e?.label).slice(0, 60) || "Embed",
+      html: asString(e?.html).slice(0, 50000),
+      icon: asString(e?.icon).slice(0, 60) || "Code",
+      enabled: typeof e?.enabled === "boolean" ? e.enabled : true,
+      publishDate: asString(e?.publishDate).slice(0, 10),
+      expirationDate: asString(e?.expirationDate).slice(0, 10),
+    }))
+    .filter((e: EmbedItem) => !!e.id)
+    .slice(0, 20);
+  embedsCol.items = embeds;
+
+  // Newsletter (external storage — Supabase-backed)
+  const newsletterCol = sanitizeCollectionMeta(rawCollections.newsletter, defaultCollection());
+  newsletterCol.items = [];
+
+  const collections: Record<string, ContentCollection> = {
+    links: linksCol,
+    gallery: galleryCol,
+    resume: resumeCol,
+    blog: blogCol,
+    embeds: embedsCol,
+    newsletter: newsletterCol,
   };
+
+  // Also preserve any extra collections from other layouts
+  for (const [key, val] of Object.entries(rawCollections as Record<string, unknown>)) {
+    if (!collections[key]) {
+      collections[key] = sanitizeCollectionMeta(val, defaultCollection());
+    }
+  }
 
   const theme = sanitizeTheme(obj.theme, defaultTheme());
 
@@ -707,32 +751,13 @@ export const sanitizeModel = (input: unknown): BioModel => {
   // Keep layoutThemes in sync with active theme
   layoutThemes[theme.layout] = { ...theme };
 
-  const blogRaw = obj.blog && typeof obj.blog === "object" ? obj.blog : {};
-  const blog: BioBlog = {
-    enabled: typeof blogRaw.enabled === "boolean" ? blogRaw.enabled : false,
-  };
-
-  const embedsRaw = Array.isArray(obj.embeds) ? obj.embeds : [];
-  const embeds: EmbedItem[] = embedsRaw
-    .map((e: any) => ({
-      id: asString(e?.id) || newId(),
-      label: asString(e?.label).slice(0, 60) || "Embed",
-      html: asString(e?.html).slice(0, 50000),
-      icon: asString(e?.icon).slice(0, 60) || "Code",
-      enabled: typeof e?.enabled === "boolean" ? e.enabled : true,
-      publishDate: asString(e?.publishDate).slice(0, 10),
-      expirationDate: asString(e?.expirationDate).slice(0, 10),
-    }))
-    .filter((e: EmbedItem) => !!e.id)
-    .slice(0, 20);
-
   const scriptsRaw = obj.scripts && typeof obj.scripts === "object" ? obj.scripts : {};
   const scripts: BioScripts = {
     headScript: asString(scriptsRaw.headScript).slice(0, 10000),
     bodyEndScript: asString(scriptsRaw.bodyEndScript).slice(0, 10000),
   };
 
-  return { schemaVersion: CURRENT_SCHEMA_VERSION, profile, links, socials, resume, gallery, blog, embeds, theme, layoutThemes, scripts };
+  return { schemaVersion: CURRENT_SCHEMA_VERSION, profile, socials, collections, theme, layoutThemes, scripts };
 };
 
 export const stableStringify = (model: BioModel) => JSON.stringify(model, null, 2);

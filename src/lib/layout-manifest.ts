@@ -84,11 +84,50 @@ export interface LayoutRoute {
   };
 }
 
+/**
+ * A content collection schema declared by a layout.
+ *
+ * Layouts declare which content collections they consume via `contentSchemas`.
+ * Data for each collection lives in `model.collections[schema.key]`.
+ * Multiple layouts can declare the same key — data survives layout switches.
+ */
+export interface ContentSchema {
+  /** Collection key — used as the key in model.collections (e.g. "links", "gallery") */
+  key: string;
+  /** Human-visible label (e.g. "Links", "Gallery") */
+  label: string;
+  /** PrimeIcons class for CMS tab icon (e.g. "pi-link") */
+  icon: string;
+  /** Default enabled state for new users */
+  defaultEnabled: boolean;
+  /** Whether searchbar is available for this collection */
+  searchable: boolean;
+  /**
+   * If true, collection holds a single data object (items[0]) instead of a list.
+   * The CMS renders the editor directly instead of showing a list.
+   */
+  singleton?: boolean;
+  /**
+   * If true, items are stored externally (e.g. blog posts as Markdown files).
+   * The collection entry in the model only holds metadata (enabled, label, etc.)
+   * and items[] stays empty.
+   */
+  external?: boolean;
+}
+
 export interface LayoutManifest {
   /** Display name for the layout */
   name: string;
   /** Layout-specific CSS variables */
   vars: LayoutVar[];
+  /**
+   * Content collections this layout consumes.
+   * Each layout declares which collections it renders; data lives globally
+   * in model.collections so it survives layout switches.
+   */
+  contentSchemas?: ContentSchema[];
+  /** Default tab key when landing on this layout (must match a contentSchema key) */
+  defaultTab?: string;
   /**
    * Optional peer dependencies this layout needs (npm package names → semver).
    * These are installed from the content repo's package.json at import time.

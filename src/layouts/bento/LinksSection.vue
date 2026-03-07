@@ -302,13 +302,13 @@ export default defineComponent({
 
     const allLinks = computed(() => props.links);
     const allGalleryItems = computed<GalleryItem[]>(() =>
-      model?.value?.gallery?.items?.filter((i) => i.enabled) ?? [],
+      (model?.value?.collections?.gallery?.items as GalleryItem[] ?? []).filter((i) => i.enabled),
     );
     const allBlogPosts = computed<BlogPostMeta[]>(() =>
       blogPosts.value.filter((p) => p.published),
     );
     const allEmbeds = computed<EmbedItem[]>(() =>
-      (model?.value?.embeds ?? []).filter((e) => e.enabled),
+      ((model?.value?.collections?.embeds?.items as EmbedItem[]) ?? []).filter((e) => e.enabled),
     );
 
     const activeEmbed = ref<EmbedItem | null>(null);
@@ -549,11 +549,11 @@ export default defineComponent({
       const m = model.value;
       switch (selectedItem.value.type) {
         case "link":
-          return m.links.filter((l) => l.enabled).map((l) => ({ label: l.title || l.url, value: l.id }));
+          return (m.collections.links.items as any[]).filter((l) => l.enabled).map((l) => ({ label: l.title || l.url, value: l.id }));
         case "gallery":
-          return (m.gallery?.items || []).filter((g) => g.enabled).map((g) => ({ label: g.title || g.src, value: g.id }));
+          return ((m.collections.gallery?.items as any[]) || []).filter((g) => g.enabled).map((g) => ({ label: g.title || g.src, value: g.id }));
         case "embed":
-          return (m.embeds || []).filter((e) => e.enabled).map((e) => ({ label: e.label, value: e.id }));
+          return ((m.collections.embeds?.items as any[]) || []).filter((e) => e.enabled).map((e) => ({ label: e.label, value: e.id }));
         default:
           return [];
       }

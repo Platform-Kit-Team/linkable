@@ -1,10 +1,11 @@
 <template>
   <section class="bento-gallery mx-auto w-full" style="max-width: var(--bento-grid-width, 960px)">
     <!-- Search/filter bar -->
-    <div v-if="searchEnabled && availableTags.length" class="mb-4 flex items-center justify-between px-1">
-      <h2 class="text-lg font-bold text-[color:var(--color-ink)]">My Work</h2>
+    <div v-if="searchEnabled && availableTags.length" class="mb-4 flex items-center justify-between px-1 w-full block">
+      
       <button
-        class="text-xs font-medium text-[color:var(--color-brand)] hover:underline"
+        style="position:relative;top:0px;right:0px;z-index:9;"
+        class="text-xs bg-white  py-3 px-5 rounded-full font-medium text-[color:var(--color-brand)] "
         @click="$emit('filter-click')"
       >
         Filter

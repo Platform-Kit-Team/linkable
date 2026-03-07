@@ -29,7 +29,7 @@
 
 // ── current version ──────────────────────────────────────────────────
 
-export const CURRENT_SCHEMA_VERSION = 27;
+export const CURRENT_SCHEMA_VERSION = 28;
 
 // ── migration registry ──────────────────────────────────────────────
 
@@ -437,6 +437,108 @@ const migrations: Migration[] = [
         }
       }
       data.schemaVersion = 27;
+      return data;
+    },
+  },
+  {
+    toVersion: 28,
+    migrate: (data: Record<string, any>) => {
+      // v27 → v28: move top-level content into collections.
+      const p = data.profile && typeof data.profile === "object" ? data.profile : ({} as any);
+      const cols: Record<string, any> = data.collections && typeof data.collections === "object" ? data.collections : {};
+
+      // links
+      cols.links = {
+        enabled: true,
+        label: p.linksLabel ?? "",
+        icon: p.linksIcon ?? "",
+        searchEnabled: p.searchLinks ?? false,
+        items: Array.isArray(data.links) ? data.links : [],
+      };
+
+      // gallery
+      const gal = data.gallery && typeof data.gallery === "object" ? data.gallery : ({} as any);
+      cols.gallery = {
+        enabled: gal.enabled ?? false,
+        label: p.galleryLabel ?? "",
+        icon: p.galleryIcon ?? "",
+        searchEnabled: p.searchGallery ?? false,
+        items: Array.isArray(gal.items) ? gal.items : [],
+      };
+
+      // resume (singleton — stored as items[0])
+      const res = data.resume && typeof data.resume === "object" ? data.resume : ({} as any);
+      cols.resume = {
+        enabled: res.enabled ?? false,
+        label: p.resumeLabel ?? "",
+        icon: p.resumeIcon ?? "",
+        searchEnabled: false,
+        items: [
+          {
+            bio: res.bio ?? "",
+            education: Array.isArray(res.education) ? res.education : [],
+            employment: Array.isArray(res.employment) ? res.employment : [],
+            skills: Array.isArray(res.skills) ? res.skills : [],
+            achievements: Array.isArray(res.achievements) ? res.achievements : [],
+          },
+        ],
+      };
+
+      // blog (external storage — items stay empty)
+      const blog = data.blog && typeof data.blog === "object" ? data.blog : ({} as any);
+      cols.blog = {
+        enabled: blog.enabled ?? false,
+        label: p.blogLabel ?? "",
+        icon: p.blogIcon ?? "",
+        searchEnabled: p.searchBlog ?? false,
+        items: [],
+      };
+
+      // embeds
+      cols.embeds = {
+        enabled: true,
+        label: "",
+        icon: "",
+        searchEnabled: false,
+        items: Array.isArray(data.embeds) ? data.embeds : [],
+      };
+
+      // newsletter (external — Supabase-backed, items stay empty)
+      cols.newsletter = {
+        enabled: p.newsletterEnabled ?? false,
+        label: p.newsletterLabel ?? "",
+        icon: p.newsletterIcon ?? "",
+        searchEnabled: p.searchNewsletter ?? false,
+        items: [],
+      };
+
+      data.collections = cols;
+
+      // Clean up profile — remove fields now on collections
+      delete p.linksLabel;
+      delete p.linksIcon;
+      delete p.resumeLabel;
+      delete p.resumeIcon;
+      delete p.galleryLabel;
+      delete p.galleryIcon;
+      delete p.blogLabel;
+      delete p.blogIcon;
+      delete p.newsletterLabel;
+      delete p.newsletterIcon;
+      delete p.searchLinks;
+      delete p.searchGallery;
+      delete p.searchBlog;
+      delete p.searchNewsletter;
+      delete p.newsletterEnabled;
+
+      // Remove old top-level content fields
+      delete data.links;
+      delete data.gallery;
+      delete data.resume;
+      delete data.blog;
+      delete data.embeds;
+
+      data.schemaVersion = 28;
       return data;
     },
   },

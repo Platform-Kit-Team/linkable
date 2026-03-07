@@ -9,7 +9,7 @@
  *   import type { ProfileHeaderProps, ProfileHeaderEmits } from "../lib/component-contracts";
  */
 
-import type { BioLink, SocialLink, BioResume, GalleryItem } from "./model";
+import type { BioLink, SocialLink, ResumeData, GalleryItem } from "./model";
 import type { BlogPostMeta, BlogPost } from "./blog";
 import type { MasonryItem } from "../components/MasonryGrid.vue";
 
@@ -78,7 +78,7 @@ export interface LinksSectionEmits {
 /* ------------------------------------------------------------------ */
 
 export interface ResumeSectionProps {
-  resume: BioResume;
+  resume: ResumeData;
 }
 
 /* ------------------------------------------------------------------ */

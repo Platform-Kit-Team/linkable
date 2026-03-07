@@ -150,13 +150,13 @@
 
 <script lang="ts">
 import { defineComponent, type PropType } from "vue";
-import type { BioResume } from "../../lib/model";
+import type { ResumeData } from "../../lib/model";
 export type { ResumeSectionProps } from "../../lib/component-contracts";
 
 export default defineComponent({
   name: "MinimalResumeSection",
   props: {
-    resume: { type: Object as PropType<BioResume>, required: true },
+    resume: { type: Object as PropType<ResumeData>, required: true },
   },
 });
 </script>

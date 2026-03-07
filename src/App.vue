@@ -38,7 +38,7 @@
         v-if="showLinksSection"
         :is="resolvedLinksSection"
         :links="enabledLinks"
-        :search-enabled="model.profile.searchLinks"
+        :search-enabled="model.collections.links.searchEnabled"
         :available-tags="availableLinkTags"
         :selected-tags="selectedLinkTags"
         @link-click="trackClick"
@@ -60,7 +60,7 @@
       <component
         v-if="showResumeSection"
         :is="resolvedResumeSection"
-        :resume="model.resume"
+        :resume="resumeDataForDisplay"
       />
 
       <!-- Gallery section -->
@@ -68,7 +68,7 @@
         v-if="showGallerySection"
         :is="resolvedGallerySection"
         :items="masonryItems"
-        :search-enabled="!!model.profile.searchGallery"
+        :search-enabled="!!model.collections.gallery.searchEnabled"
         :available-tags="availableGalleryTags"
         :selected-tags="selectedGalleryTags"
         @open-lightbox="openLightbox"
@@ -82,8 +82,8 @@
         :is="resolvedBlogSection"
         :posts="publishedBlogPosts"
         :current-post="currentBlogPost"
-        :label="model.profile.blogLabel || 'Blog'"
-        :search-enabled="!!model.profile.searchBlog"
+        :label="model.collections.blog.label || 'Blog'"
+        :search-enabled="!!model.collections.blog.searchEnabled"
         :available-tags="availableBlogTags"
         :selected-tags="selectedBlogTags"
         @load-post="loadBlogPost"
@@ -125,7 +125,7 @@
       <component
         v-if="showNewsletterSection && !newsletterViewId && !confirmationStatus"
         :is="resolvedNewsletterSection"
-        :search-enabled="!!model.profile.searchNewsletter"
+        :search-enabled="!!model.collections.newsletter.searchEnabled"
         :available-tags="availableNewsletterTags"
         :selected-tags="selectedNewsletterTags"
         @view="viewNewsletter"
@@ -480,20 +480,18 @@ export default defineComponent({
 
     let keydownListener: ((e: KeyboardEvent) => void) | null = null;
 
-    onMounted(async () => {
-      // Handle hash-based tab navigation
-      const applyHashTab = () => {
-        if (typeof window === "undefined") return;
-        const hash = window.location.hash.toLowerCase();
-        if (hash === "#links" && enabledLinks.value.length > 0) {
-          activeTab.value = "links";
-        } else if (hash === "#resume" && resumeHasContent.value) {
+    const applyHashTab = () => {
+      if (typeof window === "undefined") return;
+      const hash = window.location.hash.toLowerCase();
+      if (hash === "#links" && enabledLinks.value.length > 0) {
+        activeTab.value = "links";
+      } else if (hash === "#resume" && resumeHasContent.value) {
           activeTab.value = "resume";
         } else if (hash === "#gallery" && galleryHasContent.value) {
           activeTab.value = "gallery";
         } else if (hash === "#blog" && blogHasContent.value) {
           activeTab.value = "blog";
-        } else if (hash === "#newsletter" && model.value.profile.newsletterEnabled) {
+        } else if (hash === "#newsletter" && model.value.collections.newsletter.enabled) {
           activeTab.value = "newsletter";
         } else if (hash.startsWith("#embed-")) {
           const embedId = window.location.hash.slice(1); // preserve case for ID
@@ -505,6 +503,7 @@ export default defineComponent({
         }
       };
 
+    onMounted(async () => {
       // initialize visibility, keyboard, and other window stuff first
       if (typeof window !== "undefined") {
         window.addEventListener(GITHUB_SYNC_EVENT, updateGithubStatus);
@@ -559,7 +558,7 @@ export default defineComponent({
 
       // Set default tab from model settings
       const dt = model.value.profile.defaultTab;
-      if (dt && ["links", "resume", "gallery", "blog"].includes(dt)) {
+      if (dt) {
         activeTab.value = dt;
       }
 
@@ -921,12 +920,12 @@ export default defineComponent({
             model.value.profile.avatarUrl,
             model.value.profile.bannerUrl,
           ];
-          model.value.links.forEach((l: any) => {
+          model.value.collections.links.items.forEach((l: any) => {
             if (l.imageUrl) usedPaths.push(l.imageUrl);
           });
           // include gallery image sources and cover thumbnails
-          if (model.value.gallery?.items) {
-            model.value.gallery.items.forEach((g: any) => {
+          if (model.value.collections.gallery?.items) {
+            model.value.collections.gallery.items.forEach((g: any) => {
               if (g.src) usedPaths.push(g.src);
               if (g.coverUrl) usedPaths.push(g.coverUrl);
             });
@@ -970,7 +969,7 @@ export default defineComponent({
     };
 
     const enabledLinks = computed(() =>
-      model.value.links.filter((l) => l.enabled && isScheduleVisible(l)),
+      (model.value.collections.links.items as any[]).filter((l) => l.enabled && isScheduleVisible(l)),
     );
     const enabledSocials = computed(() =>
       model.value.socials.filter((s) => s.enabled && s.url),
@@ -1001,12 +1000,12 @@ export default defineComponent({
             l.title.toLowerCase().includes(q) ||
             l.subtitle.toLowerCase().includes(q) ||
             l.url.toLowerCase().includes(q) ||
-            l.tags?.some((t) => t.toLowerCase().includes(q)),
+            l.tags?.some((t: string) => t.toLowerCase().includes(q)),
         );
       }
       if (tags.length > 0) {
         source = source.filter(
-          (l) => l.tags && tags.some((t) => l.tags.includes(t)),
+          (l) => l.tags && tags.some((t: string) => l.tags.includes(t)),
         );
       }
       return source;
@@ -1015,7 +1014,7 @@ export default defineComponent({
     const availableLinkTags = computed(() => {
       const tagSet = new Set<string>();
       for (const l of enabledLinks.value) {
-        if (l.tags) l.tags.forEach((t) => tagSet.add(t));
+        if (l.tags) l.tags.forEach((t: string) => tagSet.add(t));
       }
       return [...tagSet].sort();
     });
@@ -1049,29 +1048,46 @@ export default defineComponent({
     };
 
     const resumeHasContent = computed(() => {
-      const r = model.value.resume;
-      if (!r || !r.enabled) return false;
+      const rc = model.value.collections.resume;
+      if (!rc || !rc.enabled) return false;
+      const r = rc.items[0] as any;
+      if (!r) return false;
       return !!(
-        r.bio.trim() ||
-        r.education.length ||
-        r.employment.length ||
-        r.skills.length ||
-        r.achievements.length
+        r.bio?.trim() ||
+        r.education?.length ||
+        r.employment?.length ||
+        r.skills?.length ||
+        r.achievements?.length
       );
     });
 
+    // Resume singleton data for display
+    const resumeDataForDisplay = computed(() => {
+      const rc = model.value.collections.resume;
+      if (!rc) return { enabled: false, bio: "", education: [], employment: [], skills: [], achievements: [] };
+      const data = rc.items[0] as any ?? {};
+      return {
+        enabled: rc.enabled,
+        bio: data.bio ?? "",
+        education: data.education ?? [],
+        employment: data.employment ?? [],
+        skills: data.skills ?? [],
+        achievements: data.achievements ?? [],
+      };
+    });
+
     const enabledGalleryItems = computed(() => {
-      const g = model.value.gallery;
+      const g = model.value.collections.gallery;
       if (!g || !g.enabled) return [];
-      return g.items.filter((item) => item.enabled && item.src && isScheduleVisible(item));
+      return (g.items as any[]).filter((item) => item.enabled && item.src && isScheduleVisible(item));
     });
 
     const availableGalleryTags = computed(() => {
-      const g = model.value.gallery;
+      const g = model.value.collections.gallery;
       if (!g || !g.enabled) return [];
       const tagSet = new Set<string>();
-      for (const item of g.items) {
-        if (item.enabled && item.tags) item.tags.forEach((t) => tagSet.add(t));
+      for (const item of g.items as any[]) {
+        if (item.enabled && item.tags) item.tags.forEach((t: string) => tagSet.add(t));
       }
       return [...tagSet].sort();
     });
@@ -1147,14 +1163,14 @@ export default defineComponent({
     }
 
     const blogHasContent = computed(() => {
-      const b = model.value.blog;
+      const b = model.value.collections.blog;
       if (!b || !b.enabled) return false;
       return blogPosts.value.filter((p) => p.published).length > 0;
     });
 
     // ── Embeds ───────────────────────────────────────────────────────
     const enabledEmbeds = computed(() =>
-      (model.value.embeds || []).filter((e) => e.enabled && e.html.trim() && isScheduleVisible(e)),
+      (model.value.collections.embeds.items as any[]).filter((e) => e.enabled && e.html.trim() && isScheduleVisible(e)),
     );
 
     const activeEmbedItem = computed(() => {
@@ -1264,7 +1280,7 @@ export default defineComponent({
       if (galleryHasContent.value) count++;
       if (blogHasContent.value) count++;
       count += enabledEmbeds.value.length;
-      if (model.value.profile.newsletterEnabled) count++;
+      if (model.value.collections.newsletter.enabled) count++;
       return count;
     });
 
@@ -1273,22 +1289,22 @@ export default defineComponent({
     const tabItems = computed<TabItem[]>(() => {
       const items: TabItem[] = [];
       if (enabledLinks.value.length > 0) {
-        items.push({ key: "links", label: model.value.profile.linksLabel || "Links", icon: model.value.profile.linksIcon || "Link" });
+        items.push({ key: "links", label: model.value.collections.links.label || "Links", icon: model.value.collections.links.icon || "Link" });
       }
       if (galleryHasContent.value) {
-        items.push({ key: "gallery", label: model.value.profile.galleryLabel || "Gallery", icon: model.value.profile.galleryIcon || "Images" });
+        items.push({ key: "gallery", label: model.value.collections.gallery.label || "Gallery", icon: model.value.collections.gallery.icon || "Images" });
       }
       if (blogHasContent.value) {
-        items.push({ key: "blog", label: model.value.profile.blogLabel || "Blog", icon: model.value.profile.blogIcon || "Pencil" });
+        items.push({ key: "blog", label: model.value.collections.blog.label || "Blog", icon: model.value.collections.blog.icon || "Pencil" });
       }
       if (resumeHasContent.value) {
-        items.push({ key: "resume", label: model.value.profile.resumeLabel || "Resume", icon: model.value.profile.resumeIcon || "FileText" });
+        items.push({ key: "resume", label: model.value.collections.resume.label || "Resume", icon: model.value.collections.resume.icon || "FileText" });
       }
       for (const embed of enabledEmbeds.value) {
         items.push({ key: "embed-" + embed.id, label: embed.label, icon: embed.icon });
       }
-      if (model.value.profile.newsletterEnabled) {
-        items.push({ key: "newsletter", label: model.value.profile.newsletterLabel || "Newsletter", icon: model.value.profile.newsletterIcon || "Mail" });
+      if (model.value.collections.newsletter.enabled) {
+        items.push({ key: "newsletter", label: model.value.collections.newsletter.label || "Newsletter", icon: model.value.collections.newsletter.icon || "Mail" });
       }
       return items;
     });
@@ -1329,7 +1345,7 @@ export default defineComponent({
     });
 
     const showNewsletterSection = computed(() => {
-      if (!model.value.profile.newsletterEnabled) return false;
+      if (!model.value.collections.newsletter.enabled) return false;
       if (activeEmbedItem.value) return false;
       if (showTabs.value) return activeTab.value === "newsletter";
       return true;
@@ -1337,11 +1353,9 @@ export default defineComponent({
 
     // Lightbox state
     const lightboxOpen = ref(false);
-    const lightboxItem = ref<(typeof model.value.gallery.items)[number] | null>(
-      null,
-    );
+    const lightboxItem = ref<any>(null);
 
-    const openLightbox = (item: (typeof model.value.gallery.items)[number]) => {
+    const openLightbox = (item: any) => {
       lightboxItem.value = item;
       lightboxOpen.value = true;
     };
@@ -1364,12 +1378,10 @@ export default defineComponent({
 
     const videoPlayerOpen = ref(false);
     const activeVideoIdx = ref<number | null>(null);
-    const videoPlayerItem = ref<
-      (typeof model.value.gallery.items)[number] | null
-    >(null);
+    const videoPlayerItem = ref<any>(null);
 
     const openVideoPlayer = (
-      item: (typeof model.value.gallery.items)[number],
+      item: any,
     ) => {
       // Find the index in the pre-loaded pool
       const idx = videoGalleryItems.value.findIndex(
@@ -1640,6 +1652,7 @@ export default defineComponent({
       activeTab,
       cmsInitialTab,
       resumeHasContent,
+      resumeDataForDisplay,
       galleryHasContent,
       enabledGalleryItems,
       masonryItems,
