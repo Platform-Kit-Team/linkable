@@ -142,6 +142,20 @@ export interface NewsletterSectionEmits {
 }
 
 /* ------------------------------------------------------------------ */
+/*  NewsletterViewPage                                                 */
+/* ------------------------------------------------------------------ */
+
+export interface NewsletterViewPageProps {
+  sendId: string;
+  subscriberId?: string;
+  token?: string;
+}
+
+export interface NewsletterViewPageEmits {
+  (e: "back"): void;
+}
+
+/* ------------------------------------------------------------------ */
 /*  LightboxOverlay                                                    */
 /* ------------------------------------------------------------------ */
 

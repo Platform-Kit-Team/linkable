@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 23,
+  "schemaVersion": 25,
   "profile": {
     "displayName": "Linkable",
     "tagline": "Design-forward links. Clean, fast, yours.",
@@ -96,6 +96,7 @@
     "bodyEndScript": ""
   },
   "theme": {
+    "layout": "default",
     "preset": "light",
     "colorBrand": "#3b82f6",
     "colorBrandStrong": "#2563eb",
@@ -112,6 +113,7 @@
     "cardBorder": "rgba(255, 255, 255, 0.62)",
     "cardText": "#0b1220",
     "radiusXl": "1.6rem",
-    "radiusLg": "1.2rem"
+    "radiusLg": "1.2rem",
+    "layoutVars": {}
   }
 }

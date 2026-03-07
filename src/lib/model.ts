@@ -103,6 +103,7 @@ export type BioGallery = {
 export type ThemePreset = "light" | "dark" | "custom";
 
 export type BioTheme = {
+  layout: string;
   preset: ThemePreset;
   colorBrand: string;
   colorBrandStrong: string;
@@ -120,6 +121,7 @@ export type BioTheme = {
   cardText: string;
   radiusXl: string;
   radiusLg: string;
+  layoutVars: Record<string, string>;
 };
 
 export type BioBlog = {
@@ -237,6 +239,7 @@ export const defaultBlog = (): BioBlog => ({
 });
 
 export const defaultTheme = (): BioTheme => ({
+  layout: "default",
   preset: "light",
   colorBrand: "#3b82f6",
   colorBrandStrong: "#2563eb",
@@ -254,9 +257,11 @@ export const defaultTheme = (): BioTheme => ({
   cardText: "#0b1220",
   radiusXl: "1.6rem",
   radiusLg: "1.2rem",
+  layoutVars: {},
 });
 
 export const darkTheme = (): BioTheme => ({
+  layout: "default",
   preset: "dark",
   colorBrand: "#60a5fa",
   colorBrandStrong: "#3b82f6",
@@ -274,6 +279,7 @@ export const darkTheme = (): BioTheme => ({
   cardText: "#f1f5f9",
   radiusXl: "1.6rem",
   radiusLg: "1.2rem",
+  layoutVars: {},
 });
 
 export const THEME_PRESETS: Record<string, () => BioTheme> = {
@@ -383,6 +389,17 @@ export const defaultModel = (): BioModel => ({
 
 const asString = (v: unknown) => (typeof v === "string" ? v : "");
 const asBool = (v: unknown) => (typeof v === "boolean" ? v : false);
+
+const sanitizeLayoutVars = (v: unknown): Record<string, string> => {
+  if (!v || typeof v !== "object") return {};
+  const out: Record<string, string> = {};
+  for (const [key, val] of Object.entries(v as Record<string, unknown>)) {
+    if (typeof key === "string" && key.startsWith("--") && typeof val === "string") {
+      out[key.slice(0, 80)] = (val as string).slice(0, 200);
+    }
+  }
+  return out;
+};
 
 const sanitizeUrl = (v: unknown) => {
   const raw = asString(v).trim();
@@ -544,7 +561,9 @@ export const sanitizeModel = (input: unknown): BioModel => {
   const defaults = defaultTheme();
   const presetVal = asString(themeRaw.preset);
   const preset: ThemePreset = (presetVal === "light" || presetVal === "dark" || presetVal === "custom") ? presetVal : "light";
+  const layout = asString(themeRaw.layout).slice(0, 40) || "default";
   const theme: BioTheme = {
+    layout,
     preset,
     colorBrand: asString(themeRaw.colorBrand).slice(0, 40) || defaults.colorBrand,
     colorBrandStrong: asString(themeRaw.colorBrandStrong).slice(0, 40) || defaults.colorBrandStrong,
@@ -562,6 +581,7 @@ export const sanitizeModel = (input: unknown): BioModel => {
     cardText: asString(themeRaw.cardText).slice(0, 40) || defaults.cardText,
     radiusXl: asString(themeRaw.radiusXl).slice(0, 20) || defaults.radiusXl,
     radiusLg: asString(themeRaw.radiusLg).slice(0, 20) || defaults.radiusLg,
+    layoutVars: sanitizeLayoutVars(themeRaw.layoutVars),
   };
 
   const blogRaw = obj.blog && typeof obj.blog === "object" ? obj.blog : {};

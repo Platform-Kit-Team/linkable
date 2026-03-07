@@ -91,17 +91,14 @@
       />
 
       <!-- Newsletter view (full article from /newsletter/:id) -->
-      <section
+      <component
         v-if="newsletterViewId"
-        class="glass overflow-hidden rounded-[var(--radius-xl)] p-3 sm:p-6"
-      >
-        <NewsletterViewPage
-          :send-id="newsletterViewId"
-          :subscriber-id="newsletterViewSid"
-          :token="newsletterViewToken"
-          @back="goBackFromNewsletter"
-        />
-      </section>
+        :is="resolvedNewsletterViewPage"
+        :send-id="newsletterViewId"
+        :subscriber-id="newsletterViewSid"
+        :token="newsletterViewToken"
+        @back="goBackFromNewsletter"
+      />
 
       <!-- Newsletter section -->
       <component
@@ -341,7 +338,7 @@ import { useToast } from "primevue/usetoast";
 
 import CmsDialog from "./components/CmsDialog.vue";
 import GitCommitDialog from "./components/GitCommitDialog.vue";
-import NewsletterViewPage from "./components/NewsletterViewPage.vue";
+import DefaultNewsletterViewPage from "./components/NewsletterViewPage.vue";
 import { resolveEmbedHtml } from "./components/EmbedEditorDrawer.vue";
 import type { MasonryItem } from "./components/MasonryGrid.vue";
 
@@ -408,7 +405,6 @@ export default defineComponent({
     Toast,
     CmsDialog,
     GitCommitDialog,
-    NewsletterViewPage,
     TagFilterDialog,
   },
   setup() {
@@ -418,19 +414,22 @@ export default defineComponent({
     const router = useRouter();
 
     // ── Override-aware component resolution ──────────────────────────
-    const resolvedProfileHeader = useComponent("ProfileHeader", DefaultProfileHeader);
-    const resolvedTabNav = useComponent("TabNav", DefaultTabNav);
-    const resolvedLinksSection = useComponent("LinksSection", DefaultLinksSection);
-    const resolvedResumeSection = useComponent("ResumeSection", DefaultResumeSection);
-    const resolvedGallerySection = useComponent("GallerySection", DefaultGallerySection);
-    const resolvedBlogSection = useComponent("BlogSection", DefaultBlogSection);
-    const resolvedEmbedSection = useComponent("EmbedSection", DefaultEmbedSection);
-    const resolvedNewsletterSection = useComponent("NewsletterSection", DefaultNewsletterSection);
-    const resolvedLightboxOverlay = useComponent("LightboxOverlay", DefaultLightboxOverlay);
-    const resolvedVideoOverlay = useComponent("VideoOverlay", DefaultVideoOverlay);
-    const resolvedPageFooter = useComponent("PageFooter", DefaultPageFooter);
-
     const model = ref<BioModel>(defaultModel());
+    const activeLayout = computed(() => model.value.theme.layout || "default");
+
+    const resolvedProfileHeader = useComponent("ProfileHeader", DefaultProfileHeader, activeLayout);
+    const resolvedTabNav = useComponent("TabNav", DefaultTabNav, activeLayout);
+    const resolvedLinksSection = useComponent("LinksSection", DefaultLinksSection, activeLayout);
+    const resolvedResumeSection = useComponent("ResumeSection", DefaultResumeSection, activeLayout);
+    const resolvedGallerySection = useComponent("GallerySection", DefaultGallerySection, activeLayout);
+    const resolvedBlogSection = useComponent("BlogSection", DefaultBlogSection, activeLayout);
+    const resolvedEmbedSection = useComponent("EmbedSection", DefaultEmbedSection, activeLayout);
+    const resolvedNewsletterSection = useComponent("NewsletterSection", DefaultNewsletterSection, activeLayout);
+    const resolvedNewsletterViewPage = useComponent("NewsletterViewPage", DefaultNewsletterViewPage, activeLayout);
+    const resolvedLightboxOverlay = useComponent("LightboxOverlay", DefaultLightboxOverlay, activeLayout);
+    const resolvedVideoOverlay = useComponent("VideoOverlay", DefaultVideoOverlay, activeLayout);
+    const resolvedPageFooter = useComponent("PageFooter", DefaultPageFooter, activeLayout);
+
     const modelLoaded = ref(false);
     const suppressPersist = ref(true);
     const cmsOpen = ref(false);
@@ -616,12 +615,25 @@ export default defineComponent({
       if (t.radiusXl) root.setProperty("--radius-xl", t.radiusXl);
       if (t.radiusLg) root.setProperty("--radius-lg", t.radiusLg);
 
+      // Apply layout-specific custom variables
+      if (t.layoutVars) {
+        for (const [cssVar, value] of Object.entries(t.layoutVars)) {
+          if (cssVar.startsWith("--") && value) {
+            root.setProperty(cssVar, value);
+          }
+        }
+      }
+
       // Toggle dark-mode attribute for CSS-driven glow effects
       if (t.preset === "dark") {
         document.documentElement.setAttribute("data-dark", "");
       } else {
         document.documentElement.removeAttribute("data-dark");
       }
+
+      // Set layout attribute for layout-specific CSS overrides
+      const layout = t.layout || "default";
+      document.documentElement.setAttribute("data-layout", layout);
     });
 
     // Dynamically inject favicon and OG/social meta tags
@@ -1639,6 +1651,7 @@ export default defineComponent({
       resolvedBlogSection,
       resolvedEmbedSection,
       resolvedNewsletterSection,
+      resolvedNewsletterViewPage,
       resolvedLightboxOverlay,
       resolvedVideoOverlay,
       resolvedPageFooter,

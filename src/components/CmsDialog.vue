@@ -181,6 +181,18 @@
           <Transition name="cms-collapse">
             <div v-if="siteSection.theme" class="cms__accordion-body">
               <div class="cms__form">
+                <div v-if="layoutOptions.length > 1" class="cms__field">
+                  <label class="cms__label">Layout</label>
+                  <Select
+                    v-model="draft.theme.layout"
+                    :options="layoutOptions"
+                    optionLabel="label"
+                    optionValue="value"
+                    class="w-full"
+                  />
+                  <div class="cms__help">Choose a layout style for the public page.</div>
+                </div>
+
                 <div class="cms__field">
                   <label class="cms__label">Preset</label>
                   <Select
@@ -319,6 +331,32 @@
                     </div>
                   </div>
                 </div>
+
+                <!-- Layout-specific variables -->
+                <template v-if="activeManifest && activeManifest.vars.length > 0">
+                  <div class="cms__color-section-label">{{ activeManifest.name }} Layout</div>
+                  <div class="cms__color-grid">
+                    <div v-for="v in activeManifest.vars" :key="v.cssVar" class="cms__color-field">
+                      <label class="cms__label">{{ v.label }}</label>
+                      <div class="cms__color-input-wrap">
+                        <input
+                          v-if="v.type === 'color'"
+                          type="color"
+                          :value="toHex(getLayoutVar(v))"
+                          @input="setLayoutVar(v.cssVar, ($event.target as HTMLInputElement).value)"
+                          class="cms__color-swatch"
+                        />
+                        <InputText
+                          :modelValue="getLayoutVar(v)"
+                          @update:modelValue="setLayoutVar(v.cssVar, $event as string)"
+                          class="cms__color-hex"
+                          :class="{ 'cms__color-hex--full': v.type !== 'color' }"
+                          :placeholder="draft.theme.preset === 'dark' ? v.defaultDark : v.defaultLight"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </template>
 
                 <button
                   type="button"
@@ -1471,6 +1509,8 @@ import EmbedEditorDrawer from "./EmbedEditorDrawer.vue";
 import NewsletterComposeDrawer from "./NewsletterComposeDrawer.vue";
 import AnalyticsPanel from "./AnalyticsPanel.vue";
 import { icons as lucideIcons } from "lucide-vue-next";
+import { getAvailableLayouts, getLayoutManifest } from "../lib/component-resolver";
+import type { LayoutManifest, LayoutVar } from "../lib/layout-manifest";
 import type { BioLink, BioModel, SocialLink, EducationEntry, EmploymentEntry, AchievementEntry, GalleryItem, ThemePreset, EmbedItem } from "../lib/model";
 import {
   defaultModel,
@@ -1654,6 +1694,8 @@ export default defineComponent({
     interface SendRecord {
       id: string;
       subject: string;
+      cover_image: string;
+      tags: string[];
       excerpt_html: string;
       body_html: string;
       status: string;
@@ -1929,6 +1971,28 @@ export default defineComponent({
       { label: "Dark", value: "dark" },
       { label: "Custom", value: "custom" },
     ];
+
+    const layoutOptions = computed(() =>
+      getAvailableLayouts().map((name) => ({
+        label: name.charAt(0).toUpperCase() + name.slice(1),
+        value: name,
+      })),
+    );
+
+    const activeManifest = computed<LayoutManifest | null>(() =>
+      getLayoutManifest(draft.value.theme.layout || "default"),
+    );
+
+    const getLayoutVar = (v: LayoutVar): string => {
+      const stored = draft.value.theme.layoutVars?.[v.cssVar];
+      if (stored) return stored;
+      return draft.value.theme.preset === "dark" ? v.defaultDark : v.defaultLight;
+    };
+
+    const setLayoutVar = (cssVar: string, value: string) => {
+      if (!draft.value.theme.layoutVars) draft.value.theme.layoutVars = {};
+      draft.value.theme.layoutVars[cssVar] = value;
+    };
 
     let applyingPreset = false;
     const applyPreset = (preset: ThemePreset) => {
@@ -2377,6 +2441,10 @@ export default defineComponent({
       resetTheme,
       toHex,
       presetOptions,
+      layoutOptions,
+      activeManifest,
+      getLayoutVar,
+      setLayoutVar,
       applyPreset,
       linkEditorOpen,
       activeLink,

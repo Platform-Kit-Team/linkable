@@ -56,7 +56,6 @@
               v-model="form.subject"
               class="w-full"
               placeholder="Newsletter subject line"
-              :disabled="isSent"
             />
           </div>
         </div>
@@ -69,7 +68,6 @@
               v-model="form.coverImage"
               label="Cover Image"
               description="Optional banner displayed at the top of the email and web page."
-              :disabled="isSent"
             />
           </div>
 
@@ -83,7 +81,6 @@
               :maxSelectedLabels="10"
               class="w-full"
               placeholder="Select or type tags…"
-              :disabled="isSent"
               @filter="onTagFilter"
             >
               <template #footer>
@@ -195,7 +192,7 @@
       <!-- Footer actions -->
       <div class="mt-6 flex items-center gap-2 border-t border-[var(--color-border)] pt-4">
         <Button
-          v-if="!isNew && !isSent"
+          v-if="!isNew"
           text
           rounded
           severity="danger"
@@ -207,7 +204,20 @@
           <span class="ml-2">Delete</span>
         </Button>
         <div class="flex-1" />
-        <template v-if="!isSent">
+        <template v-if="isSent">
+          <Button
+            rounded
+            size="small"
+            class="cmsPrimary"
+            @click="handleUpdate"
+            :loading="saving"
+            :disabled="!form.subject.trim()"
+          >
+            <i class="pi pi-check" />
+            <span class="ml-1">Update</span>
+          </Button>
+        </template>
+        <template v-else>
           <Button
             size="small"
             @click="handleSave"
@@ -632,6 +642,32 @@ export default defineComponent({
       }
     }
 
+    async function handleUpdate() {
+      if (!sendId.value) return;
+      saving.value = true;
+      try {
+        const excerptHtml = markdownToHtml(form.excerptMd);
+        const bodyHtml = markdownToHtml(form.bodyMd);
+        await adminInvoke({
+          action: 'update-send',
+          id: sendId.value,
+          subject: form.subject,
+          cover_image: form.coverImage,
+          excerpt_html: excerptHtml,
+          body_html: bodyHtml,
+          tags: [...form.tags],
+        });
+        toast.add({ severity: 'success', summary: 'Broadcast updated', life: 2000 });
+        emit('saved');
+      } catch (err) {
+        if (err instanceof Error && err.message === REAUTH_SENTINEL) return;
+        console.error('Update error:', err);
+        toast.add({ severity: 'error', summary: 'Update failed', detail: String(err), life: 3000 });
+      } finally {
+        saving.value = false;
+      }
+    }
+
     async function loadAnalytics(id: string) {
       try {
         const data = await adminInvoke({ action: 'get-send', id });
@@ -683,6 +719,7 @@ export default defineComponent({
       handleSave,
       handleSchedule,
       handleSendNow,
+      handleUpdate,
       handleDelete,
       formatClickDate,
     };

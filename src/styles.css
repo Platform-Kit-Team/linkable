@@ -78,6 +78,14 @@ body {
   background-size: 100% 100%;
 }
 
+/* Minimal layout: flat background, no gradients or noise */
+[data-layout="minimal"] body {
+  background-image: none;
+}
+[data-layout="minimal"] body::before {
+  display: none;
+}
+
 /* Super subtle noise */
 body::before {
   content: '';

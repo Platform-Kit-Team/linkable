@@ -1,44 +1,49 @@
 <template>
-  <section class="glass overflow-hidden rounded-[var(--radius-xl)] p-3 sm:p-6">
+  <section class="py-2">
     <!-- Back button -->
     <button
-      class="mb-4 flex items-center gap-1 text-xs font-medium text-[color:var(--color-ink-soft)] transition-colors hover:text-[color:var(--color-ink)]"
+      class="group mb-8 inline-flex items-center gap-1.5 text-sm font-medium text-[color:var(--color-ink-soft)] transition-colors hover:text-[color:var(--color-brand)]"
       @click="$emit('back')"
     >
-      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
-        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24"
+        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+        stroke-linejoin="round" class="transition-transform group-hover:-translate-x-0.5">
         <path d="m15 18-6-6 6-6" />
       </svg>
-      Back
+      Back to newsletters
     </button>
 
     <!-- Loading state -->
-    <div v-if="loading" class="flex items-center justify-center py-16">
-      <div class="h-6 w-6 animate-spin rounded-full border-2 border-[color:var(--color-ink-soft)] border-t-transparent" />
+    <div v-if="loading" class="flex items-center justify-center py-20">
+      <div class="h-5 w-5 animate-spin rounded-full border-2 border-[color:var(--color-ink-soft)] border-t-transparent" />
     </div>
 
     <!-- Error state -->
-    <div v-else-if="error" class="py-16 text-center text-sm text-[color:var(--color-ink-soft)]">
-      {{ error }}
+    <div v-else-if="error" class="py-20 text-center">
+      <p class="text-sm text-[color:var(--color-ink-soft)]">{{ error }}</p>
     </div>
 
     <!-- Newsletter content -->
-    <article v-else-if="newsletter">
+    <article v-else-if="newsletter" class="mx-auto max-w-2xl">
       <img
         v-if="newsletter.cover_image"
         :src="newsletter.cover_image"
         :alt="newsletter.subject"
-        class="mb-4 w-full rounded-2xl border border-[var(--color-border)] object-cover shadow-sm"
-        style="max-height: 320px"
+        class="mb-8 w-full rounded-xl object-cover"
+        style="max-height: 400px"
       />
-      <div v-if="newsletter.sent_at" class="mb-2 text-[11px] font-medium uppercase tracking-widest text-[color:var(--color-ink-soft)]">
-        {{ formatDate(newsletter.sent_at) }}
-      </div>
-      <h1 class="mb-6 text-2xl font-extrabold leading-tight text-[color:var(--color-ink)] sm:text-3xl">
-        {{ newsletter.subject }}
-      </h1>
+
+      <header class="mb-8 border-b border-[var(--color-border2)] pb-8">
+        <div v-if="newsletter.sent_at" class="mb-3 text-[11px] font-semibold uppercase tracking-widest text-[color:var(--color-brand)]">
+          {{ formatDate(newsletter.sent_at) }}
+        </div>
+        <h1 class="text-2xl font-bold leading-tight tracking-tight text-[color:var(--color-ink)] sm:text-3xl">
+          {{ newsletter.subject }}
+        </h1>
+      </header>
+
       <div
-        class="prose-content text-[color:var(--color-ink-body)]"
+        class="prose-minimal text-[color:var(--color-ink-body)]"
         v-html="newsletter.body_html"
       />
     </article>
@@ -47,6 +52,7 @@
 
 <script lang="ts">
 import { defineComponent, ref, onMounted, watch } from "vue";
+export type { NewsletterViewPageProps, NewsletterViewPageEmits } from "../../lib/component-contracts";
 
 interface NewsletterData {
   id: string;
@@ -58,7 +64,7 @@ interface NewsletterData {
 }
 
 export default defineComponent({
-  name: "NewsletterViewPage",
+  name: "MinimalNewsletterViewPage",
   props: {
     sendId: { type: String, required: true },
     subscriberId: { type: String, default: "" },
@@ -122,61 +128,66 @@ export default defineComponent({
 </script>
 
 <style scoped>
-.prose-content :deep(h2) {
+.prose-minimal :deep(h2) {
   font-size: 1.375rem;
-  font-weight: 700;
+  font-weight: 600;
+  margin: 2em 0 0.6em;
+  color: var(--color-ink);
+}
+.prose-minimal :deep(h3) {
+  font-size: 1.125rem;
+  font-weight: 600;
   margin: 1.5em 0 0.5em;
   color: var(--color-ink);
 }
-.prose-content :deep(h3) {
-  font-size: 1.125rem;
-  font-weight: 700;
-  margin: 1.2em 0 0.4em;
-  color: var(--color-ink);
+.prose-minimal :deep(p) {
+  margin: 0.8em 0;
+  line-height: 1.8;
 }
-.prose-content :deep(p) {
-  margin: 0.6em 0;
-  line-height: 1.7;
-}
-.prose-content :deep(ul),
-.prose-content :deep(ol) {
+.prose-minimal :deep(ul),
+.prose-minimal :deep(ol) {
   padding-left: 1.5em;
-  margin: 0.6em 0;
+  margin: 0.8em 0;
+  line-height: 1.8;
 }
-.prose-content :deep(blockquote) {
-  border-left: 3px solid var(--color-accent, #3b82f6);
+.prose-minimal :deep(li) {
+  margin: 0.3em 0;
+}
+.prose-minimal :deep(blockquote) {
+  border-left: 2px solid var(--color-border2);
   padding-left: 1em;
-  margin: 1em 0;
+  margin: 1.2em 0;
   color: var(--color-ink-soft);
   font-style: italic;
 }
-.prose-content :deep(img) {
+.prose-minimal :deep(img) {
   max-width: 100%;
   height: auto;
   border-radius: 8px;
-  margin: 1em 0;
+  margin: 1.2em 0;
 }
-.prose-content :deep(a) {
-  color: var(--color-accent, #3b82f6);
+.prose-minimal :deep(a) {
+  color: var(--color-brand);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
-.prose-content :deep(pre) {
-  background: #1e1e2e;
-  color: #cdd6f4;
+.prose-minimal :deep(pre) {
+  background: var(--glass-2);
+  color: var(--color-ink);
+  border: 1px solid var(--color-border2);
   border-radius: 8px;
   padding: 14px 16px;
   overflow-x: auto;
   font-size: 0.8125rem;
-  margin: 1em 0;
+  margin: 1.2em 0;
 }
-.prose-content :deep(code) {
-  background: rgba(59, 130, 246, 0.08);
+.prose-minimal :deep(code) {
+  background: var(--glass-2);
   border-radius: 4px;
   padding: 0.15em 0.35em;
   font-size: 0.9em;
 }
-.prose-content :deep(pre code) {
+.prose-minimal :deep(pre code) {
   background: none;
   padding: 0;
   font-size: inherit;

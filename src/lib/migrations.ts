@@ -29,7 +29,7 @@
 
 // ── current version ──────────────────────────────────────────────────
 
-export const CURRENT_SCHEMA_VERSION = 23;
+export const CURRENT_SCHEMA_VERSION = 25;
 
 // ── migration registry ──────────────────────────────────────────────
 
@@ -388,6 +388,24 @@ const migrations: Migration[] = [
       data.profile.newsletterLabel ??= "";
       data.profile.newsletterIcon ??= "";
       data.schemaVersion = 23;
+      return data;
+    },
+  },
+  {
+    toVersion: 24,
+    migrate: (data: Record<string, any>) => {
+      if (!data.theme) data.theme = {};
+      data.theme.layout ??= "default";
+      data.schemaVersion = 24;
+      return data;
+    },
+  },
+  {
+    toVersion: 25,
+    migrate: (data: Record<string, any>) => {
+      if (!data.theme) data.theme = {};
+      data.theme.layoutVars ??= {};
+      data.schemaVersion = 25;
       return data;
     },
   },
