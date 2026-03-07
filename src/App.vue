@@ -342,6 +342,7 @@
 import {
   computed,
   defineComponent,
+  nextTick,
   onBeforeUnmount,
   onMounted,
   ref,
@@ -546,6 +547,12 @@ export default defineComponent({
       }
 
       modelLoaded.value = true;
+
+      // Signal pre-renderer that the page content is ready
+      nextTick(() => {
+        (document as any).__APP_RENDERED__ = true;
+        document.dispatchEvent(new Event("app-rendered"));
+      });
 
       // Set default tab from model settings
       const dt = model.value.profile.defaultTab;

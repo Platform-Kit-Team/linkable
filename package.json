@@ -98,10 +98,15 @@
   },
   "devDependencies": {
     "prettier": "^3.8.1",
+    "puppeteer": "^24.38.0",
     "supabase": "^2.76.16"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
+      "supabase"
+    ],
+    "ignoredBuiltDependencies": [
+      "puppeteer",
       "supabase"
     ]
   }

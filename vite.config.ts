@@ -832,123 +832,180 @@ const encryptTokenAtBuild = (token: string, password: string): string => {
 };
 
 /**
- * Build plugin: pre-render static HTML shells for layout routes that have
- * `prerender` set.  Uses the same pattern as blogBuildPlugin's closeBundle.
+ * Build plugin: pre-render pages into fully-rendered static HTML using
+ * Puppeteer.  Renders the main page ("/") plus any layout routes that
+ * have `prerender` set.
  *
- * At build time, reads the active layout from cms-data.json, loads its
- * manifest.ts via esbuild, and generates dist/{path}/index.html with the
- * prerender metadata baked into OG tags.
+ * The plugin starts a lightweight static file server from `dist/`,
+ * launches headless Chrome, navigates to each route, waits for the
+ * Vue app to dispatch the `app-rendered` DOM event, and writes the
+ * captured HTML back to the corresponding `dist/{path}/index.html`.
  */
-const layoutRouteBuildPlugin = () => ({
-  name: "layout-route-prerender",
+const prerenderBuildPlugin = () => ({
+  name: "prerender",
   async closeBundle() {
     const distDir = path.resolve(__dirname, "dist");
     const indexHtmlPath = path.join(distDir, "index.html");
     if (!fs.existsSync(indexHtmlPath)) return;
 
-    // Determine the active layout from CMS data
-    const data = fs.existsSync(dataFilePath)
-      ? JSON.parse(fs.readFileSync(dataFilePath, "utf8"))
-      : null;
-    const layoutName: string = data?.theme?.layout || "default";
+    // ── Collect routes to pre-render ──────────────────────────────────
+    const routes: string[] = ["/"];
 
-    // Find the manifest source file
-    const manifestPath = path.resolve(__dirname, "src", "layouts", layoutName, "manifest.ts");
-    if (!fs.existsSync(manifestPath)) return;
-
-    // Compile the manifest TS → JS using esbuild (available via Vite)
-    let manifestModule: any;
+    // Add layout routes that have `prerender` set
     try {
-      const requireFromVite = createRequire(
-        // @ts-ignore - require.resolve works at config time
-        await import("node:module").then((m) =>
-          m.default.createRequire(import.meta.url).resolve("vite"),
-        ),
-      );
-      const esbuild = requireFromVite("esbuild");
-      const source = fs.readFileSync(manifestPath, "utf8");
-      const result = esbuild.transformSync(source, {
-        loader: "ts",
-        format: "cjs",
-        target: "node18",
+      const data = fs.existsSync(dataFilePath)
+        ? JSON.parse(fs.readFileSync(dataFilePath, "utf8"))
+        : null;
+      const layoutName: string = data?.theme?.layout || "default";
+      const manifestPath = path.resolve(__dirname, "src", "layouts", layoutName, "manifest.ts");
+      if (fs.existsSync(manifestPath)) {
+        const esbuild = createRequire(import.meta.url)("esbuild");
+        const source = fs.readFileSync(manifestPath, "utf8");
+        const result = esbuild.transformSync(source, {
+          loader: "ts",
+          format: "cjs",
+          target: "node18",
+        });
+        const code = result.code
+          .replace(/require\([^)]+\)/g, "undefined")
+          .replace(/exports\.default\s*=/, "module.exports =");
+        const m = { exports: {} as any };
+        new Function("module", "exports", "require", code)(m, m.exports, () => undefined);
+        const manifest = m.exports?.default ?? m.exports;
+        for (const r of manifest?.routes ?? []) {
+          if (r?.prerender && !r.path.includes(":")) routes.push(r.path);
+        }
+      }
+    } catch {
+      // If manifest loading fails, just pre-render "/"
+    }
+
+    // ── Start a static file server from dist/ ─────────────────────────
+    const { createServer } = await import("node:http");
+    const serveFile = (filePath: string, res: import("node:http").ServerResponse) => {
+      if (!fs.existsSync(filePath)) {
+        res.writeHead(404);
+        res.end();
+        return;
+      }
+      const ext = path.extname(filePath).toLowerCase();
+      const mimeTypes: Record<string, string> = {
+        ".html": "text/html",
+        ".js": "application/javascript",
+        ".css": "text/css",
+        ".json": "application/json",
+        ".png": "image/png",
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".svg": "image/svg+xml",
+        ".woff": "font/woff",
+        ".woff2": "font/woff2",
+        ".avif": "image/avif",
+        ".webp": "image/webp",
+        ".ico": "image/x-icon",
+      };
+      res.writeHead(200, { "Content-Type": mimeTypes[ext] || "application/octet-stream" });
+      fs.createReadStream(filePath).pipe(res);
+    };
+
+    const server = createServer((req, res) => {
+      const url = new URL(req.url || "/", "http://localhost");
+      let filePath = path.join(distDir, url.pathname);
+      // Serve index.html for directories (SPA fallback)
+      if (fs.existsSync(filePath) && fs.statSync(filePath).isDirectory()) {
+        filePath = path.join(filePath, "index.html");
+      }
+      if (!fs.existsSync(filePath)) {
+        // SPA fallback: serve root index.html
+        filePath = indexHtmlPath;
+      }
+      serveFile(filePath, res);
+    });
+
+    const port = await new Promise<number>((resolve) => {
+      server.listen(0, "127.0.0.1", () => {
+        const addr = server.address();
+        resolve(typeof addr === "object" && addr ? addr.port : 0);
       });
-      // Strip type-only imports that esbuild leaves as require() calls
-      const code = result.code
-        .replace(/require\([^)]+\)/g, "undefined")
-        .replace(/exports\.default\s*=/, "module.exports =");
-      const m = { exports: {} as any };
-      new Function("module", "exports", "require", code)(m, m.exports, () => undefined);
-      manifestModule = m.exports?.default ?? m.exports;
-    } catch (err) {
-      console.log(`[layout-route-prerender] Could not load manifest for "${layoutName}" — skipping.`);
+    });
+
+    if (!port) {
+      console.log("[prerender] Could not start static server — skipping.");
+      server.close();
       return;
     }
 
-    const routes: { path: string; prerender: { title: string; description?: string; ogImage?: string } }[] =
-      (manifestModule?.routes ?? []).filter((r: any) => r?.prerender);
-
-    if (routes.length === 0) return;
-
-    const siteUrl = resolveSiteUrl();
-    const siteModel = fs.existsSync(dataFilePath)
-      ? sanitizeModel(JSON.parse(fs.readFileSync(dataFilePath, "utf8")))
-      : readDefaultModel();
-
-    const toAbsolute = (url: string) => {
-      if (!url) return "";
-      if (/^https?:\/\//.test(url)) return url;
-      return siteUrl ? `${siteUrl}${url.startsWith("/") ? "" : "/"}${url}` : url;
-    };
-
-    const esc = (s: string) =>
-      s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-
-    const baseHtml = fs.readFileSync(indexHtmlPath, "utf8");
-    let count = 0;
-
-    for (const route of routes) {
-      const { title, description, ogImage } = route.prerender;
-      const image = ogImage || siteModel?.profile?.ogImageUrl || "";
-      const pageUrl = siteUrl ? `${siteUrl}${route.path}` : "";
-
-      const ogTags: string[] = [];
-      ogTags.push(`<meta property="og:title" content="${esc(title)}" />`);
-      if (description) {
-        ogTags.push(`<meta property="og:description" content="${esc(description)}" />`);
-      }
-      if (image) {
-        ogTags.push(`<meta property="og:image" content="${esc(toAbsolute(image))}" />`);
-        ogTags.push(`<meta name="twitter:card" content="summary_large_image" />`);
-      }
-      ogTags.push(`<meta property="og:type" content="website" />`);
-      if (pageUrl) {
-        ogTags.push(`<meta property="og:url" content="${esc(pageUrl)}" />`);
-      }
-
-      let pageHtml = baseHtml;
-      pageHtml = pageHtml.replace(/<meta\s+(?:property="og:|name="twitter:)[^>]*\/>\s*\n?\s*/g, "");
-      pageHtml = pageHtml.replace(/<title>[^<]*<\/title>/, `<title>${esc(title)}</title>`);
-      if (description) {
-        pageHtml = pageHtml.replace(
-          /<meta\s+name="description"\s+content="[^"]*"\s*\/?>/,
-          `<meta name="description" content="${esc(description)}" />`,
-        );
-      }
-      pageHtml = pageHtml.replace("</head>", `    ${ogTags.join("\n    ")}\n  </head>`);
-
-      // Convert path like "/projects" → dist/projects/index.html
-      // Skip paths with dynamic params (e.g. /projects/:slug)
-      if (route.path.includes(":")) continue;
-
-      const segments = route.path.replace(/^\//, "").replace(/\/$/, "");
-      const outDir = path.join(distDir, segments);
-      fs.mkdirSync(outDir, { recursive: true });
-      fs.writeFileSync(path.join(outDir, "index.html"), pageHtml);
-      count++;
+    // ── Launch Puppeteer and render each route ────────────────────────
+    let puppeteer: any;
+    try {
+      puppeteer = await import("puppeteer");
+    } catch {
+      console.log("[prerender] Puppeteer not available — skipping pre-rendering.");
+      server.close();
+      return;
     }
 
-    if (count > 0) {
-      console.log(`[layout-route-prerender] Generated ${count} static HTML shell(s)`);
+    let browser: any;
+    try {
+      browser = await puppeteer.launch({
+        headless: true,
+        args: ["--no-sandbox", "--disable-setuid-sandbox"],
+      });
+
+      const siteUrl = resolveSiteUrl();
+      let count = 0;
+
+      for (const route of routes) {
+        try {
+          const page = await browser.newPage();
+          const pageUrl = `http://127.0.0.1:${port}${route}`;
+          await page.goto(pageUrl, { waitUntil: "networkidle2", timeout: 30000 });
+
+          // Wait for the Vue app to signal it has finished rendering
+          await page.evaluate(() => {
+            return new Promise<void>((resolve) => {
+              if ((document as any).__APP_RENDERED__) {
+                resolve();
+                return;
+              }
+              document.addEventListener("app-rendered", () => resolve(), { once: true });
+              // Safety timeout so build never hangs
+              setTimeout(resolve, 5000);
+            });
+          });
+
+          // Small extra delay for any async component rendering
+          await new Promise((r) => setTimeout(r, 200));
+
+          let html = await page.content();
+
+          // Replace localhost URLs with the real site URL
+          html = html.replace(
+            new RegExp(`http://127\\\\.0\\\\.0\\\\.1:${port}`, "g"),
+            siteUrl || "",
+          );
+
+          // Write to dist/{route}/index.html
+          const segments = route === "/" ? "" : route.replace(/^\//, "").replace(/\/$/, "");
+          const outDir = segments ? path.join(distDir, segments) : distDir;
+          fs.mkdirSync(outDir, { recursive: true });
+          fs.writeFileSync(path.join(outDir, "index.html"), html);
+          count++;
+
+          await page.close();
+        } catch (err: any) {
+          console.log(`[prerender] Failed to render ${route}: ${err?.message || err}`);
+        }
+      }
+
+      if (count > 0) {
+        console.log(`[prerender] Pre-rendered ${count} page(s)`);
+      }
+    } catch (err: any) {
+      console.log(`[prerender] Puppeteer error: ${err?.message || err}`);
+    } finally {
+      if (browser) await browser.close();
+      server.close();
     }
   },
 });
@@ -1022,7 +1079,7 @@ const layoutRouteBuildPlugin = () => ({
           cmsMiddlewarePlugin(),
           blogBuildPlugin(),
           scheduleBuildPlugin(),
-          layoutRouteBuildPlugin(),
+          prerenderBuildPlugin(),
           manifestBuildPlugin(),
           ogMetaPlugin(),
           vue({

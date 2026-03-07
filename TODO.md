@@ -48,6 +48,17 @@ Open-source link-in-bio alternative — feature roadmap and implementation statu
 | 20 | **Multi-language / i18n**       | ⬜      | Interface and content translation support.                                                    |
 | 21 | **Import from Linktree**        | ⬜      | Migration tool to pull existing links and profile data from Linktree export.                  |
 
+## Platform / Framework Gaps
+
+Features needed to make Linkable a fully-fledged static site generation framework.
+
+| #  | Feature                          | Status | Description                                                                                                                                                                                                  |
+| -- | -------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 22 | **Full SSR / Pre-rendering**     | ⬜      | Pages are currently SPA-hydrated. HTML shells have OG tags but no rendered content. Investigate `prerender` or headless Chromium to generate fully rendered static HTML for SEO and initial paint.            |
+| 23 | **File-based Routing**           | ⬜      | Routes are declared in layout manifests. Add optional filesystem-convention routing (e.g. `pages/about.vue` → `/about`) for user layouts.                                                                   |
+| 24 | **Middleware / Per-request Logic**| ⬜      | No per-request server middleware. Supabase edge functions cover API needs but there's no route-level middleware for auth guards, redirects, or headers.                                                       |
+| 25 | **ISR / Incremental Rebuilds**   | ⬜      | Full rebuild required on every deploy. Investigate incremental static regeneration for large sites with many layout routes.                                                                                   |
+
 ---
 
 ## Already Implemented
