@@ -104,6 +104,133 @@ Features needed to make Linkable a full-stack SaaS / e-commerce starter (à la L
 | 45 | **Admin Dashboard**               | ⬜      | CMS tab or standalone route for site owners: subscriber list, revenue overview, recent purchases, permission assignments. Read from Supabase, not Stripe API, for speed.                                     |
 | 46 | **Email Transactional Templates** | ⬜      | Welcome, purchase confirmation, subscription renewal, payment failed, and cancellation emails. Sent via Supabase edge function + Resend/Postmark. Templates editable in CMS.                                |
 
+### Architecture Overview
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  Vue SPA (Linkable)                                          │
+│                                                              │
+│  Composables                        Components               │
+│  ├── useAuth()         ← session    ├── <AuthForm>           │
+│  ├── usePermissions()  ← can()      ├── <PermissionGate>     │
+│  ├── useCheckout()     ← Stripe     ├── <PricingTable>       │
+│  └── useSubscription() ← status     └── <AccountPage>        │
+│                                                              │
+│  Router                                                      │
+│  ├── meta.requiresAuth        → redirect to /login           │
+│  ├── meta.requiresGuest       → redirect to /                │
+│  └── meta.requiresPermission  → redirect or upgrade prompt   │
+├──────────────────────────────────────────────────────────────┤
+│  Supabase Edge Functions                                     │
+│                                                              │
+│  ├── stripe-checkout          → Create Checkout Session      │
+│  ├── stripe-webhook           → Process Stripe events        │
+│  ├── stripe-portal            → Generate Customer Portal URL │
+│  ├── stripe-usage             → Report metered usage         │
+│  └── _shared/permissions.ts   → Verify user entitlements     │
+├──────────────────────────────────────────────────────────────┤
+│  Supabase Postgres (all tables behind RLS)                   │
+│                                                              │
+│  Auth tables (managed by Supabase)                           │
+│  └── auth.users                                              │
+│                                                              │
+│  App tables                                                  │
+│  ├── profiles              ← extends auth.users (name, avatar, stripe_customer_id)  │
+│  ├── products              ← synced from Stripe (name, description, active, metadata)│
+│  ├── prices                ← synced from Stripe (unit_amount, interval, product_id)  │
+│  ├── subscriptions         ← webhook-managed (user_id, price_id, status, period)     │
+│  ├── purchases             ← one-time payments (user_id, product_id, created_at)     │
+│  ├── permissions           ← permission definitions (slug, label, description)       │
+│  ├── product_permissions   ← product → permission mappings                           │
+│  ├── user_permissions      ← granted entitlements (user_id, permission_id, source)   │
+│  └── webhook_events        ← audit log (stripe_event_id, type, processed_at)        │
+├──────────────────────────────────────────────────────────────┤
+│  Stripe (external)                                           │
+│                                                              │
+│  ├── Products & Prices     ← source of truth for catalog     │
+│  ├── Customers             ← linked via stripe_customer_id   │
+│  ├── Checkout Sessions     ← created by edge function        │
+│  ├── Subscriptions         ← managed by Stripe               │
+│  ├── Customer Portal       ← self-service billing            │
+│  └── Webhooks              → edge function endpoint          │
+└──────────────────────────────────────────────────────────────┘
+```
+
+### Data Flow: Purchase → Permission
+
+```
+User clicks "Upgrade"
+  → useCheckout().redirectToCheckout(priceId)
+    → Edge function creates Stripe Checkout Session
+      → User completes payment on Stripe-hosted page
+        → Stripe fires webhook: checkout.session.completed
+          → Edge function: stripe-webhook
+            1. Upsert subscription/purchase record in Supabase
+            2. Look up product_permissions for the purchased product
+            3. Insert rows into user_permissions
+            4. Return 200 to Stripe
+          → User redirected to success URL
+            → useAuth() re-fetches session
+            → usePermissions() sees new permissions
+            → <PermissionGate> reveals gated content
+```
+
+### Data Flow: Cancellation → Permission Revocation
+
+```
+Stripe fires webhook: customer.subscription.deleted
+  → Edge function: stripe-webhook
+    1. Update subscription status to 'canceled' in Supabase
+    2. Look up product_permissions for the canceled product
+    3. Delete matching rows from user_permissions (where source = subscription)
+    4. Return 200 to Stripe
+  → Next time user loads page:
+    → usePermissions() no longer includes revoked permissions
+    → <PermissionGate> shows upgrade prompt instead of gated content
+```
+
+### Implementation Phases
+
+| Phase | Items | Deliverables | Prerequisites |
+|---|---|---|---|
+| **Phase 1: Auth** | 27, 28, 29, 43 (auth tables only) | `useAuth()` composable, login/register/forgot-password components, account settings page, `profiles` table with RLS, Supabase Auth config | Supabase project |
+| **Phase 2: Permissions** | 30, 31, 39, 40, 41 | `usePermissions()` composable, `<PermissionGate>` component, route guard system, `permissions` + `user_permissions` + `product_permissions` tables, RLS policies, edge function permission checker | Phase 1 |
+| **Phase 3: Stripe Core** | 32, 33, 34, 35, 43 (commerce tables), 44 | `useCheckout()` composable, Stripe edge functions (checkout, webhook, portal), `products` + `prices` + `subscriptions` tables, webhook signature verification, entitlement engine (grant/revoke on webhook) | Phase 2 |
+| **Phase 4: Commerce UX** | 36, 37, 42 | `<PricingTable>` component, Customer Portal redirect, digital product purchase + download flow, `purchases` table | Phase 3 |
+| **Phase 5: Polish** | 38, 45, 46 | Metered/usage billing, admin dashboard (subscribers, revenue, permissions), transactional email templates via Resend/Postmark | Phase 4 |
+
+### Extensibility Design Principles
+
+The commerce layer must follow the same principles as the rest of Linkable: **optional, composable, and overridable**.
+
+1. **Auth is opt-in** — `useAuth()` is a composable, not injected globally. Layouts and routes that don't need auth never import it. The link-in-bio page works exactly as before with zero auth overhead.
+
+2. **Permissions are data-driven** — New permissions are rows in a database table, not code changes. Site owners add permissions in the admin UI or directly in Supabase. Layout developers reference permissions by slug string (`can('access:pro')`), not by importing constants.
+
+3. **Stripe products live in Stripe** — The product catalog is managed entirely in the Stripe dashboard. Linkable syncs products to Supabase via webhooks. No hardcoded product IDs, no CMS product editor required (though one can be added later).
+
+4. **Route guards use declarative meta** — Layout manifests declare `meta: { requiresAuth: true }` or `meta: { requiresPermission: 'access:pro' }`. The guard system reads these and handles redirects automatically. No imperative guard code in individual routes.
+
+5. **Components use slots for customization** — `<PermissionGate>` has a default slot (authorized content) and a `#fallback` slot (upgrade prompt). `<AuthForm>` has slots for header, footer, and social login buttons. Layouts control the look and feel without forking components.
+
+6. **Edge functions are modular** — Each Stripe operation is a separate edge function. Developers can replace the checkout flow, add custom webhook handlers, or extend the permission engine without touching unrelated functions.
+
+7. **Everything behind RLS** — Every commerce table has Row Level Security policies. Users can only read their own subscriptions, purchases, and permissions. Admin access is gated by a `role = 'admin'` check on the profile. No client-side-only security.
+
+8. **Env-var toggling** — Commerce features are activated by setting `VITE_STRIPE_PUBLIC_KEY` and `STRIPE_SECRET_KEY`. Without them, all commerce UI is hidden and the edge functions return 501. The app remains a zero-cost static site until the owner decides to monetize.
+
+### Environment Variables (Commerce)
+
+| Variable | Required | Scope | Purpose |
+|---|---|---|---|
+| `VITE_SUPABASE_URL` | For auth/commerce | Client | Supabase project URL |
+| `VITE_SUPABASE_ANON_KEY` | For auth/commerce | Client | Supabase anonymous key (safe for browser) |
+| `SUPABASE_SERVICE_ROLE_KEY` | For edge functions | Server only | Supabase service role key (never in browser) |
+| `VITE_STRIPE_PUBLIC_KEY` | For payments | Client | Stripe publishable key (safe for browser) |
+| `STRIPE_SECRET_KEY` | For edge functions | Server only | Stripe secret key (never in browser) |
+| `STRIPE_WEBHOOK_SECRET` | For webhooks | Server only | Stripe webhook signing secret for signature verification |
+| `VITE_STRIPE_PORTAL_ENABLED` | No | Client | Show "Manage Billing" button in account page (default: true if Stripe is configured) |
+
 ---
 
 ## Already Implemented
