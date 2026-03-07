@@ -17,8 +17,9 @@
  * `layout` is a Ref<string> (e.g. `computed(() => model.theme.layout)`).
  * When the value changes the resolved component updates reactively.
  */
-import { type Component, computed, defineAsyncComponent, type Ref } from "vue";
-import type { LayoutManifest } from "./layout-manifest";
+import { type Component, computed, defineAsyncComponent, type Ref, ref, watch, onScopeDispose, type ShallowRef, shallowRef } from "vue";
+import type { LayoutManifest, LayoutRoute } from "./layout-manifest";
+import type { Router } from "vue-router";
 
 const overrideModules = import.meta.glob<{ default: Component }>(
   "../overrides/**/*.vue",
@@ -108,4 +109,75 @@ export function getLayoutManifest(layoutName: string): LayoutManifest | null {
   const key = `../layouts/${layoutName}/manifest.ts`;
   const mod = manifestModules[key];
   return mod?.default ?? null;
+}
+
+/** Internal route-name prefix to identify layout-contributed routes. */
+const LAYOUT_ROUTE_PREFIX = "__layout_route__";
+
+/**
+ * Composable that registers / unregisters layout-contributed routes when
+ * the active layout changes.
+ *
+ * Returns a reactive ref of the currently registered `LayoutRoute[]` entries
+ * (useful for rendering nav links).
+ *
+ * Must be called inside a Vue setup scope.
+ */
+export function useLayoutRoutes(
+  router: Router,
+  layout: Ref<string>,
+): ShallowRef<LayoutRoute[]> {
+  const activeRoutes = shallowRef<LayoutRoute[]>([]);
+  let registeredNames: string[] = [];
+
+  const removeOldRoutes = () => {
+    for (const name of registeredNames) {
+      router.removeRoute(name);
+    }
+    registeredNames = [];
+  };
+
+  const addNewRoutes = (routes: LayoutRoute[]) => {
+    const names: string[] = [];
+    for (let i = 0; i < routes.length; i++) {
+      const r = routes[i];
+      const name = `${LAYOUT_ROUTE_PREFIX}${i}_${r.path}`;
+      router.addRoute({
+        path: r.path,
+        name,
+        component: defineAsyncComponent(r.component),
+        meta: { ...(r.meta ?? {}), layoutRoute: true },
+      });
+      names.push(name);
+    }
+    registeredNames = names;
+  };
+
+  watch(
+    layout,
+    (layoutName) => {
+      removeOldRoutes();
+
+      const manifest = getLayoutManifest(layoutName);
+      const routes = manifest?.routes ?? [];
+      if (routes.length > 0) {
+        addNewRoutes(routes);
+      }
+      activeRoutes.value = routes;
+    },
+    { immediate: true },
+  );
+
+  onScopeDispose(() => {
+    removeOldRoutes();
+  });
+
+  return activeRoutes;
+}
+
+/**
+ * Check whether the current route was contributed by a layout.
+ */
+export function isLayoutRoute(route: { name?: string | symbol | null | undefined }): boolean {
+  return typeof route.name === "string" && route.name.startsWith(LAYOUT_ROUTE_PREFIX);
 }

@@ -631,6 +631,7 @@ export default {
 | Simple theme settings | `schema` | Theme panel (inline) | FormKit JSON schema |
 | Full CMS tab, simple UI | `cmsTabs[].schema` | Own top-level tab | FormKit JSON schema |
 | Full CMS tab, complex UI | `cmsTabs[].component` | Own top-level tab | Custom Vue component |
+| Custom page with URL | `routes[]` | Full page (replaces default content) | Vue component + path |
 
 ### Schema-driven settings (no Vue code required)
 
@@ -684,6 +685,38 @@ cmsTabs: [
 ```
 
 Component-driven tabs receive `modelValue` (`layoutData[tab.key]`) and emit `update:modelValue`.
+
+### Layout routes
+
+Layouts can contribute full pages with their own URL paths. Routes are registered with Vue Router when the layout is active and automatically removed when the user switches to a different layout.
+
+```ts
+// manifest.ts
+export default {
+  name: "Portfolio",
+  vars: [],
+  routes: [
+    {
+      path: "/projects",
+      component: () => import("./ProjectsPage.vue"),
+      label: "Projects",
+      icon: "pi-briefcase",
+    },
+    {
+      path: "/projects/:slug",
+      component: () => import("./ProjectDetail.vue"),
+    },
+  ],
+} satisfies LayoutManifest;
+```
+
+Route components receive two props automatically:
+- `model` — the full `BioModel`
+- `layoutData` — `model.theme.layoutData` (convenience shortcut)
+
+When a layout route is active, the default page content (profile header, tabs, sections) is hidden and the route component renders in its place. Navigation can be wired via standard `<router-link>` or programmatic `router.push()`.
+
+The `label` and `icon` fields are surfaced in `layoutRoutes` (available in the template) so nav components can render links to layout-contributed pages.
 
 ### Zod validation
 
@@ -797,6 +830,72 @@ npx linkable build ./my-content
 ```
 
 The CLI detects `layouts/` and `overrides/` in the content directory and stages them automatically. No extra flags needed.
+
+### Theme dependencies
+
+User-provided themes can depend on npm packages not included in the core app. The content repo ships its own `package.json` and dependencies are resolved through a Vite plugin at build time.
+
+**Content repo structure:**
+
+```
+my-content/
+  data.json
+  package.json          ← declares theme-specific dependencies
+  layouts/
+    bento/
+      manifest.ts
+      BentoGridEditor.vue
+  node_modules/          ← installed automatically during build
+```
+
+**Example package.json:**
+
+```json
+{
+  "name": "my-linkable-content",
+  "private": true,
+  "dependencies": {
+    "chart.js": "^4.0.0",
+    "vue-chartjs": "^5.3.0"
+  }
+}
+```
+
+**How it works:**
+
+1. During `linkable build ./my-content`, the CLI detects `package.json` in the content directory
+2. `npm install --production` runs inside the content directory
+3. A `.user-deps.json` marker file is written to the project root with the path to the content repo's `node_modules`
+4. A Vite plugin (`user-deps`) intercepts bare imports that exist in the content repo's `node_modules` and resolves them from there
+5. `server.fs.allow` is extended so Vite's dev server can serve files from the external `node_modules`
+6. After the build completes, the `.user-deps.json` marker is cleaned up
+
+**Using dependencies in layout components:**
+
+```vue
+<!-- my-content/layouts/bento/StatsCard.vue -->
+<script lang="ts">
+import { Bar } from "vue-chartjs";  // resolved from content's node_modules
+</script>
+```
+
+**Documenting dependencies in the manifest:**
+
+The `peerDependencies` field on the manifest is purely documentary — it tells users which packages the theme needs. The actual install is driven by the content repo's `package.json`.
+
+```ts
+export default {
+  name: "Bento",
+  peerDependencies: {
+    "chart.js": "^4.0.0",
+    "vue-chartjs": "^5.3.0",
+  },
+  vars: [],
+  schema: [],
+} satisfies LayoutManifest;
+```
+
+When running `npm run import`, set `GITHUB_CONTENT_DIR` to the local content checkout path to trigger the same dependency install step.
 
 ***
 

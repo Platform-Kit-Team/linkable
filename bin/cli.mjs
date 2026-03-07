@@ -259,6 +259,26 @@ const runBuild = () => {
     console.log(`  ✔ Staged ${overrideFiles.length} user override(s)`);
   }
 
+  // Install content repo npm dependencies (if package.json exists)
+  const contentPkgJson = path.join(contentDir, "package.json");
+  if (existsSync(contentPkgJson)) {
+    console.log(`\n  📦 Installing user theme dependencies…`);
+    try {
+      execSync("npm install --production", {
+        cwd: contentDir,
+        stdio: "inherit",
+      });
+      const marker = {
+        nodeModulesPath: path.join(contentDir, "node_modules"),
+        installedAt: new Date().toISOString(),
+      };
+      writeFileSync(path.join(packageRoot, ".user-deps.json"), JSON.stringify(marker, null, 2));
+      console.log(`  ✔ User deps installed`);
+    } catch (err) {
+      console.warn(`  ⚠ User dependency install failed — continuing without them.`);
+    }
+  }
+
   // ── 2. Load env vars from content dir's .env file ──────────────────
 
   const contentEnv = loadEnvFile(contentDir);
@@ -313,11 +333,15 @@ const runBuild = () => {
   const cleanupUserStaged = () => {
     const userLayoutsPath = path.join(packageRoot, "src", "layouts", "user");
     const userOverridesPath = path.join(packageRoot, "src", "overrides", "user");
+    const userDepsMarker = path.join(packageRoot, ".user-deps.json");
     if (existsSync(userLayoutsPath)) {
       rmSync(userLayoutsPath, { recursive: true, force: true });
     }
     if (existsSync(userOverridesPath)) {
       rmSync(userOverridesPath, { recursive: true, force: true });
+    }
+    if (existsSync(userDepsMarker)) {
+      rmSync(userDepsMarker, { force: true });
     }
   };
 

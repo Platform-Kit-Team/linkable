@@ -19,6 +19,7 @@
 
 import { existsSync, mkdirSync } from "node:fs";
 import { writeFile } from "node:fs/promises";
+import { execSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -187,6 +188,32 @@ const run = async () => {
   }
 
   console.log(`✅  Import complete.`);
+
+  // ── 4. Install user theme dependencies ─────────────────────────────
+  //   If GITHUB_CONTENT_DIR is set (pointing to the local content checkout),
+  //   check for a package.json with dependencies and install them.
+  //   Write a .user-deps.json marker so Vite can resolve the packages.
+  const contentLocalDir = process.env.GITHUB_CONTENT_DIR?.trim();
+  if (contentLocalDir && existsSync(path.join(contentLocalDir, "package.json"))) {
+    console.log(`\n📦  Installing user theme dependencies…`);
+    try {
+      execSync("npm install --production", {
+        cwd: contentLocalDir,
+        stdio: "inherit",
+      });
+      const marker = {
+        nodeModulesPath: path.join(contentLocalDir, "node_modules"),
+        installedAt: new Date().toISOString(),
+      };
+      await writeFile(
+        path.join(rootDir, ".user-deps.json"),
+        JSON.stringify(marker, null, 2),
+      );
+      console.log(`  ✔ User deps installed — marker written to .user-deps.json`);
+    } catch (err) {
+      console.warn(`  ⚠ User dependency install failed: ${err.message}`);
+    }
+  }
 };
 
 await run().catch((err) => {

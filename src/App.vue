@@ -2,6 +2,7 @@
   <div class="min-h-dvh overflow-x-hidden">
     <component
       :is="resolvedProfileHeader"
+      v-if="!isOnLayoutRoute"
       :display-name="model.profile.displayName"
       :tagline="model.profile.tagline"
       :avatar-src="avatarSrc"
@@ -14,7 +15,13 @@
       @social-click="trackClick"
     />
 
+    <!-- Layout-contributed route page -->
+    <router-view v-if="isOnLayoutRoute" v-slot="{ Component: RouteComponent }">
+      <component :is="RouteComponent" :model="model" :layout-data="model.theme.layoutData" />
+    </router-view>
+
     <main
+      v-if="!isOnLayoutRoute"
       class="mx-auto w-full max-w-[740px] px-3 pb-24 pt-4 sm:px-4 sm:pb-10 sm:pt-6 d-block"
     >
       <component
@@ -370,7 +377,7 @@ import DefaultVideoOverlay from "./components/VideoOverlay.vue";
 import DefaultPageFooter from "./components/PageFooter.vue";
 import TagFilterDialog from "./components/TagFilterDialog.vue";
 
-import { useComponent } from "./lib/component-resolver";
+import { useComponent, useLayoutRoutes, isLayoutRoute } from "./lib/component-resolver";
 import { icons as lucideIcons } from "lucide-vue-next";
 import {
   defaultModel,
@@ -442,6 +449,10 @@ export default defineComponent({
     const resolvedLightboxOverlay = useComponent("LightboxOverlay", DefaultLightboxOverlay, activeLayout);
     const resolvedVideoOverlay = useComponent("VideoOverlay", DefaultVideoOverlay, activeLayout);
     const resolvedPageFooter = useComponent("PageFooter", DefaultPageFooter, activeLayout);
+
+    // ── Layout-contributed routes ────────────────────────────────────
+    const layoutRoutes = useLayoutRoutes(router, activeLayout);
+    const isOnLayoutRoute = computed(() => isLayoutRoute(route));
 
     const modelLoaded = ref(false);
     const suppressPersist = ref(true);
@@ -1701,6 +1712,8 @@ export default defineComponent({
       resolvedLightboxOverlay,
       resolvedVideoOverlay,
       resolvedPageFooter,
+      layoutRoutes,
+      isOnLayoutRoute,
       tabItems,
       handleTabSwitch,
     };

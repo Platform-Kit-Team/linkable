@@ -51,11 +51,38 @@ export interface LayoutCmsTab {
   component?: () => Promise<{ default: Component }>;
 }
 
+/**
+ * A route contributed by a layout.
+ *
+ * Layout routes render a full-page component when the URL matches.
+ * They are registered dynamically via `router.addRoute()` when their
+ * layout is active and removed when the layout changes.
+ */
+export interface LayoutRoute {
+  /** URL path (must start with `/`). Supports Vue Router params like `/projects/:slug`. */
+  path: string;
+  /** Async component factory for the page. */
+  component: () => Promise<{ default: Component }>;
+  /** Human-readable label — surfaced in navigation when provided. */
+  label?: string;
+  /** PrimeIcons class for an optional nav icon (e.g. "pi-briefcase"). */
+  icon?: string;
+  /** Optional Vue Router route meta. */
+  meta?: Record<string, unknown>;
+}
+
 export interface LayoutManifest {
   /** Display name for the layout */
   name: string;
   /** Layout-specific CSS variables */
   vars: LayoutVar[];
+  /**
+   * Optional peer dependencies this layout needs (npm package names → semver).
+   * These are installed from the content repo's package.json at import time.
+   * Purely documentary on the manifest — the actual install is driven by
+   * the content repo's package.json.
+   */
+  peerDependencies?: Record<string, string>;
   /**
    * FormKit schema for layout settings rendered in the Theme panel.
    * Data is stored at the root of `layoutData`.
@@ -70,4 +97,10 @@ export interface LayoutManifest {
    * Each tab stores data at `layoutData[tab.key]`.
    */
   cmsTabs?: LayoutCmsTab[];
+  /**
+   * Optional routes contributed by this layout.
+   * Registered with Vue Router when this layout is active;
+   * removed when the layout changes.
+   */
+  routes?: LayoutRoute[];
 }

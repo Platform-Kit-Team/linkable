@@ -848,12 +848,55 @@ const encryptTokenAtBuild = (token: string, password: string): string => {
     export default defineConfig(({ command }) => {
       ensureSeedData();
 
+      // ── User deps: resolve bare imports from content repo's node_modules ──
+      const userDepsMarker = path.resolve(__dirname, ".user-deps.json");
+      let userNodeModules: string | null = null;
+      if (fs.existsSync(userDepsMarker)) {
+        try {
+          const marker = JSON.parse(fs.readFileSync(userDepsMarker, "utf8"));
+          if (marker.nodeModulesPath && fs.existsSync(marker.nodeModulesPath)) {
+            userNodeModules = marker.nodeModulesPath;
+          }
+        } catch { /* ignore corrupt marker */ }
+      }
+
+      const userDepsPlugin = () => ({
+        name: "user-deps",
+        enforce: "pre" as const,
+        resolveId(source: string) {
+          if (!userNodeModules) return null;
+          // Only handle bare imports (not relative/absolute paths)
+          if (source.startsWith(".") || source.startsWith("/")) return null;
+          // Skip virtual modules and built-in Vite ids
+          if (source.startsWith("\0") || source.startsWith("virtual:")) return null;
+          const pkgName = source.startsWith("@")
+            ? source.split("/").slice(0, 2).join("/")
+            : source.split("/")[0];
+          const pkgDir = path.join(userNodeModules!, pkgName);
+          if (fs.existsSync(pkgDir)) {
+            // Let Vite re-resolve with the user node_modules prepended
+            const requireCJS = createRequire(import.meta.url);
+            try {
+              return requireCJS.resolve(source, { paths: [userNodeModules!] });
+            } catch { return null; }
+          }
+          return null;
+        },
+      });
+
       return {
         server: {
           host: "::",
           port: 8080,
+          fs: {
+            allow: [
+              __dirname,
+              ...(userNodeModules ? [userNodeModules] : []),
+            ],
+          },
         },
         plugins: [
+          userDepsPlugin(),
           cmsMiddlewarePlugin(),
           blogBuildPlugin(),
           scheduleBuildPlugin(),
