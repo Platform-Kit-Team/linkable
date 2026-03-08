@@ -1,5 +1,8 @@
 <template>
-  <section class="bento-all w-full" :style="{ maxWidth: 'none', margin: `-${glpGap}px -${glpGap}px` }">
+  <section
+    class="bento-all mx-auto w-full"
+    :style="{ maxWidth: 'var(--bento-grid-width, 960px)' }"
+  >
     <!-- Edit mode toolbar -->
     <div v-if="editing" class="mb-4 flex items-center justify-between rounded-2xl bg-white/80 px-4 py-2.5 shadow-sm backdrop-blur-sm ring-1 ring-black/5">
       <div class="flex items-center gap-3">
@@ -46,6 +49,7 @@
       :use-css-transforms="true"
       :is-bounded="true"
       :responsive="false"
+      :style="{ margin: `-${glpGap}px` }"
       class="bento-grid"
       :class="{ 'bento-grid--editing': editing }"
       @layout-updated="onLayoutUpdated"
