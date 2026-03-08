@@ -321,7 +321,22 @@ const runBuild = () => {
     }
   }
 
-  // ── 3. Run the real Vite build ─────────────────────────────────────
+  // ── 3. Install layout-specific dependencies ─────────────────────────
+  const installLayoutDeps = path.join(packageRoot, "scripts", "install-layout-deps.mjs");
+  if (existsSync(installLayoutDeps)) {
+    console.log(`\n  📦 Installing layout dependencies…\n`);
+    try {
+      execSync(`node ${JSON.stringify(installLayoutDeps)}`, {
+        cwd: packageRoot,
+        env: mergedEnv,
+        stdio: "inherit",
+      });
+    } catch (err) {
+      console.warn(`  ⚠ Layout dependency install failed — continuing anyway.`);
+    }
+  }
+
+  // ── 4. Run the real Vite build ─────────────────────────────────────
 
   console.log(`\n  ⏳ Running Vite build…\n`);
 

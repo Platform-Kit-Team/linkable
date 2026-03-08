@@ -39,6 +39,17 @@
             <button
               type="button"
               class="cms__tab"
+              :class="{ 'is-active': tab === 'theme' }"
+              @click="tab = 'theme'"
+            >
+              <span class="cms__tab-icon"><i class="pi pi-palette" /></span>
+              <span class="cms__tab-label">Theme</span>
+              <span class="cms__tab-pill cms__tab-pill--ghost" aria-hidden="true">0</span>
+            </button>
+
+            <button
+              type="button"
+              class="cms__tab"
               :class="{ 'is-active': tab === 'content' }"
               @click="tab = 'content'"
             >
@@ -79,7 +90,7 @@
         <section v-if="tab === 'site'" class="cms__panel">
           <div class="cms__panel-head">
             <div class="cms__title">Site</div>
-            <div class="cms__sub">Configure your profile, images, and theme.</div>
+            <div class="cms__sub">Configure your profile, images, and integrations.</div>
           </div>
 
           <!-- Identity -->
@@ -97,42 +108,6 @@
                 <div class="cms__field">
                   <label class="cms__label">Description</label>
                   <Textarea v-model="draft.profile.tagline" autoResize rows="3" class="w-full" />
-                </div>
-              </div>
-            </div>
-          </Transition>
-
-          <!-- Images -->
-          <button type="button" class="cms__accordion-trigger" @click="siteSection.images = !siteSection.images">
-            <span class="cms__accordion-label"><i class="pi pi-image" /> Images</span>
-            <i class="pi" :class="siteSection.images ? 'pi-chevron-up' : 'pi-chevron-down'" />
-          </button>
-          <Transition name="cms-collapse">
-            <div v-if="siteSection.images" class="cms__accordion-body">
-              <div class="cms__form">
-                <div class="cms__field">
-                  <ImageUploadField
-                    v-model="draft.profile.bannerUrl"
-                    label="Banner image"
-                    description="A wide image displayed above your profile card."
-                    targetFilename="banner.jpg"
-                  >
-                    <template #helper>
-                      <div class="cms__help">Recommended: 1480 × 420 px.</div>
-                    </template>
-                  </ImageUploadField>
-                </div>
-                <div class="cms__field">
-                  <ImageUploadField
-                    v-model="draft.profile.avatarUrl"
-                    label="Avatar image"
-                    description="Square image for your profile."
-                    targetFilename="avatar.jpg"
-                  >
-                    <template #helper>
-                      <div class="cms__help">Crisp, square images work best.</div>
-                    </template>
-                  </ImageUploadField>
                 </div>
               </div>
             </div>
@@ -169,241 +144,6 @@
                       <div class="cms__help">Recommended: 1200 × 630 px for social cards.</div>
                     </template>
                   </ImageUploadField>
-                </div>
-              </div>
-            </div>
-          </Transition>
-
-          <!-- Theme -->
-          <button type="button" class="cms__accordion-trigger" @click="siteSection.theme = !siteSection.theme">
-            <span class="cms__accordion-label"><i class="pi pi-palette" /> Theme</span>
-            <i class="pi" :class="siteSection.theme ? 'pi-chevron-up' : 'pi-chevron-down'" />
-          </button>
-          <Transition name="cms-collapse">
-            <div v-if="siteSection.theme" class="cms__accordion-body">
-              <div class="cms__form">
-                <div v-if="layoutOptions.length > 1" class="cms__field">
-                  <label class="cms__label">Layout</label>
-                  <Select
-                    v-model="draft.theme.layout"
-                    :options="layoutOptions"
-                    optionLabel="label"
-                    optionValue="value"
-                    class="w-full"
-                  />
-                  <div class="cms__help">Choose a layout style for the public page.</div>
-                </div>
-
-                <div class="cms__field">
-                  <label class="cms__label">Preset</label>
-                  <Select
-                    :modelValue="draft.theme.preset"
-                    @update:modelValue="applyPreset($event)"
-                    :options="presetOptions"
-                    optionLabel="label"
-                    optionValue="value"
-                    class="w-full"
-                  />
-                  <div class="cms__help">Choose a base theme. You can override individual values below.</div>
-                </div>
-
-                <div v-if="hasAnyOverride" class="cms__field" style="margin-bottom: 4px;">
-                  <button class="cms__reset-all-btn" @click="resetAll">
-                    <i class="pi pi-undo" style="font-size: 12px;" /> Reset all overrides
-                  </button>
-                </div>
-
-                <div class="cms__color-section-label">Colours</div>
-                <div class="cms__color-grid">
-                  <div class="cms__color-field">
-                    <label class="cms__label">Brand <button v-if="isOverridden('colorBrand')" class="cms__reset-btn" @click="resetField('colorBrand')" title="Reset to preset"><i class="pi pi-undo" /></button></label>
-                    <div class="cms__color-input-wrap">
-                      <input type="color" v-model="draft.theme.colorBrand" class="cms__color-swatch" />
-                      <InputText v-model="draft.theme.colorBrand" class="cms__color-hex" />
-                    </div>
-                  </div>
-                  <div class="cms__color-field">
-                    <label class="cms__label">Brand Strong <button v-if="isOverridden('colorBrandStrong')" class="cms__reset-btn" @click="resetField('colorBrandStrong')" title="Reset to preset"><i class="pi pi-undo" /></button></label>
-                    <div class="cms__color-input-wrap">
-                      <input type="color" v-model="draft.theme.colorBrandStrong" class="cms__color-swatch" />
-                      <InputText v-model="draft.theme.colorBrandStrong" class="cms__color-hex" />
-                    </div>
-                  </div>
-                  <div class="cms__color-field">
-                    <label class="cms__label">Accent <button v-if="isOverridden('colorAccent')" class="cms__reset-btn" @click="resetField('colorAccent')" title="Reset to preset"><i class="pi pi-undo" /></button></label>
-                    <div class="cms__color-input-wrap">
-                      <input type="color" v-model="draft.theme.colorAccent" class="cms__color-swatch" />
-                      <InputText v-model="draft.theme.colorAccent" class="cms__color-hex" />
-                    </div>
-                  </div>
-                  <div class="cms__color-field">
-                    <label class="cms__label">Text <button v-if="isOverridden('colorInk')" class="cms__reset-btn" @click="resetField('colorInk')" title="Reset to preset"><i class="pi pi-undo" /></button></label>
-                    <div class="cms__color-input-wrap">
-                      <input type="color" v-model="draft.theme.colorInk" class="cms__color-swatch" />
-                      <InputText v-model="draft.theme.colorInk" class="cms__color-hex" />
-                    </div>
-                  </div>
-                  <div class="cms__color-field">
-                    <label class="cms__label">Text Soft <button v-if="isOverridden('colorInkSoft')" class="cms__reset-btn" @click="resetField('colorInkSoft')" title="Reset to preset"><i class="pi pi-undo" /></button></label>
-                    <div class="cms__color-input-wrap">
-                      <input type="color" v-model="draft.theme.colorInkSoft" class="cms__color-swatch" />
-                      <InputText v-model="draft.theme.colorInkSoft" class="cms__color-hex" />
-                    </div>
-                  </div>
-                  <div class="cms__color-field">
-                    <label class="cms__label">Background <button v-if="isOverridden('bg')" class="cms__reset-btn" @click="resetField('bg')" title="Reset to preset"><i class="pi pi-undo" /></button></label>
-                    <div class="cms__color-input-wrap">
-                      <input type="color" v-model="draft.theme.bg" class="cms__color-swatch" />
-                      <InputText v-model="draft.theme.bg" class="cms__color-hex" />
-                    </div>
-                  </div>
-                </div>
-
-                <div class="cms__color-section-label">Surfaces &amp; Borders</div>
-                <div class="cms__color-grid">
-                  <div class="cms__color-field">
-                    <label class="cms__label">Glass <button v-if="isOverridden('glass')" class="cms__reset-btn" @click="resetField('glass')" title="Reset to preset"><i class="pi pi-undo" /></button></label>
-                    <div class="cms__color-input-wrap">
-                      <input type="color" :value="toHex(draft.theme.glass)" @input="draft.theme.glass = ($event.target as HTMLInputElement).value" class="cms__color-swatch" />
-                      <InputText v-model="draft.theme.glass" class="cms__color-hex" placeholder="rgba(255,255,255,0.66)" />
-                    </div>
-                  </div>
-                  <div class="cms__color-field">
-                    <label class="cms__label">Glass 2 <button v-if="isOverridden('glass2')" class="cms__reset-btn" @click="resetField('glass2')" title="Reset to preset"><i class="pi pi-undo" /></button></label>
-                    <div class="cms__color-input-wrap">
-                      <input type="color" :value="toHex(draft.theme.glass2)" @input="draft.theme.glass2 = ($event.target as HTMLInputElement).value" class="cms__color-swatch" />
-                      <InputText v-model="draft.theme.glass2" class="cms__color-hex" placeholder="rgba(255,255,255,0.52)" />
-                    </div>
-                  </div>
-                  <div class="cms__color-field">
-                    <label class="cms__label">Glass Strong <button v-if="isOverridden('glassStrong')" class="cms__reset-btn" @click="resetField('glassStrong')" title="Reset to preset"><i class="pi pi-undo" /></button></label>
-                    <div class="cms__color-input-wrap">
-                      <input type="color" :value="toHex(draft.theme.glassStrong)" @input="draft.theme.glassStrong = ($event.target as HTMLInputElement).value" class="cms__color-swatch" />
-                      <InputText v-model="draft.theme.glassStrong" class="cms__color-hex" placeholder="rgba(255,255,255,0.82)" />
-                    </div>
-                  </div>
-                  <div class="cms__color-field">
-                    <label class="cms__label">Border <button v-if="isOverridden('colorBorder')" class="cms__reset-btn" @click="resetField('colorBorder')" title="Reset to preset"><i class="pi pi-undo" /></button></label>
-                    <div class="cms__color-input-wrap">
-                      <input type="color" :value="toHex(draft.theme.colorBorder)" @input="draft.theme.colorBorder = ($event.target as HTMLInputElement).value" class="cms__color-swatch" />
-                      <InputText v-model="draft.theme.colorBorder" class="cms__color-hex" placeholder="rgba(255,255,255,0.62)" />
-                    </div>
-                  </div>
-                  <div class="cms__color-field">
-                    <label class="cms__label">Border 2 <button v-if="isOverridden('colorBorder2')" class="cms__reset-btn" @click="resetField('colorBorder2')" title="Reset to preset"><i class="pi pi-undo" /></button></label>
-                    <div class="cms__color-input-wrap">
-                      <input type="color" :value="toHex(draft.theme.colorBorder2)" @input="draft.theme.colorBorder2 = ($event.target as HTMLInputElement).value" class="cms__color-swatch" />
-                      <InputText v-model="draft.theme.colorBorder2" class="cms__color-hex" placeholder="rgba(11,18,32,0.10)" />
-                    </div>
-                  </div>
-                </div>
-
-                <div class="cms__color-section-label">Card Items</div>
-                <div class="cms__color-grid">
-                  <div class="cms__color-field">
-                    <label class="cms__label">Card Background <button v-if="isOverridden('cardBg')" class="cms__reset-btn" @click="resetField('cardBg')" title="Reset to preset"><i class="pi pi-undo" /></button></label>
-                    <div class="cms__color-input-wrap">
-                      <input type="color" :value="toHex(draft.theme.cardBg)" @input="draft.theme.cardBg = ($event.target as HTMLInputElement).value" class="cms__color-swatch" />
-                      <InputText v-model="draft.theme.cardBg" class="cms__color-hex" placeholder="rgba(255,255,255,0.66)" />
-                    </div>
-                  </div>
-                  <div class="cms__color-field">
-                    <label class="cms__label">Card Border <button v-if="isOverridden('cardBorder')" class="cms__reset-btn" @click="resetField('cardBorder')" title="Reset to preset"><i class="pi pi-undo" /></button></label>
-                    <div class="cms__color-input-wrap">
-                      <input type="color" :value="toHex(draft.theme.cardBorder)" @input="draft.theme.cardBorder = ($event.target as HTMLInputElement).value" class="cms__color-swatch" />
-                      <InputText v-model="draft.theme.cardBorder" class="cms__color-hex" placeholder="rgba(255,255,255,0.62)" />
-                    </div>
-                  </div>
-                  <div class="cms__color-field">
-                    <label class="cms__label">Card Text <button v-if="isOverridden('cardText')" class="cms__reset-btn" @click="resetField('cardText')" title="Reset to preset"><i class="pi pi-undo" /></button></label>
-                    <div class="cms__color-input-wrap">
-                      <input type="color" v-model="draft.theme.cardText" class="cms__color-swatch" />
-                      <InputText v-model="draft.theme.cardText" class="cms__color-hex" placeholder="#0b1220" />
-                    </div>
-                  </div>
-                </div>
-
-                <div class="cms__color-section-label">Radius</div>
-                <div class="cms__color-grid">
-                  <div class="cms__color-field">
-                    <label class="cms__label">Card Radius (XL) <button v-if="isOverridden('radiusXl')" class="cms__reset-btn" @click="resetField('radiusXl')" title="Reset to preset"><i class="pi pi-undo" /></button></label>
-                    <div class="cms__color-input-wrap">
-                      <InputText v-model="draft.theme.radiusXl" class="cms__color-hex cms__color-hex--full" placeholder="1.6rem" />
-                    </div>
-                  </div>
-                  <div class="cms__color-field">
-                    <label class="cms__label">Inner Radius (LG) <button v-if="isOverridden('radiusLg')" class="cms__reset-btn" @click="resetField('radiusLg')" title="Reset to preset"><i class="pi pi-undo" /></button></label>
-                    <div class="cms__color-input-wrap">
-                      <InputText v-model="draft.theme.radiusLg" class="cms__color-hex cms__color-hex--full" placeholder="1.2rem" />
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Layout-specific variables -->
-                <template v-if="activeManifest && activeManifest.vars.length > 0">
-                  <div class="cms__color-section-label">{{ activeManifest.name }} Layout</div>
-                  <div class="cms__color-grid">
-                    <div v-for="v in activeManifest.vars" :key="v.cssVar" class="cms__color-field">
-                      <label class="cms__label">{{ v.label }}</label>
-                      <div class="cms__color-input-wrap">
-                        <input
-                          v-if="v.type === 'color'"
-                          type="color"
-                          :value="toHex(getLayoutVar(v))"
-                          @input="setLayoutVar(v.cssVar, ($event.target as HTMLInputElement).value)"
-                          class="cms__color-swatch"
-                        />
-                        <InputText
-                          :modelValue="getLayoutVar(v)"
-                          @update:modelValue="setLayoutVar(v.cssVar, $event as string)"
-                          class="cms__color-hex"
-                          :class="{ 'cms__color-hex--full': v.type !== 'color' }"
-                          :placeholder="draft.theme.preset === 'dark' ? v.defaultDark : v.defaultLight"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </template>
-
-                <!-- Layout-specific schema settings -->
-                <template v-if="activeManifest?.schema?.length">
-                  <div class="cms__color-section-label">{{ activeManifest.name }} Settings</div>
-                  <LayoutSchemaRenderer
-                    :schema="activeManifest.schema"
-                    :modelValue="draft.theme.layoutData"
-                    @update:modelValue="draft.theme.layoutData = $event"
-                  />
-                </template>
-
-                <button
-                  type="button"
-                  class="cms__reset-theme"
-                  @click="resetTheme"
-                >
-                  <i class="pi pi-refresh" /> Reset to defaults
-                </button>
-              </div>
-            </div>
-          </Transition>
-
-          <!-- Navigation -->
-          <button type="button" class="cms__accordion-trigger" @click="siteSection.navigation = !siteSection.navigation">
-            <span class="cms__accordion-label"><i class="pi pi-compass" /> Navigation</span>
-            <i class="pi" :class="siteSection.navigation ? 'pi-chevron-up' : 'pi-chevron-down'" />
-          </button>
-          <Transition name="cms-collapse">
-            <div v-if="siteSection.navigation" class="cms__accordion-body">
-              <div class="cms__form">
-                <div class="cms__field">
-                  <label class="cms__label">Default tab</label>
-                  <Select
-                    v-model="draft.profile.defaultTab"
-                    :options="defaultTabOptions"
-                    optionLabel="label"
-                    optionValue="value"
-                    class="w-full"
-                  />
-                  <div class="cms__help">The tab visitors see first when they land on your page.</div>
                 </div>
               </div>
             </div>
@@ -549,6 +289,302 @@
               </div>
             </Transition>
           </template>
+        </section>
+
+        <section v-else-if="tab === 'theme'" class="cms__panel">
+          <div class="cms__panel-head">
+            <div class="cms__title">Theme</div>
+            <div class="cms__sub">Layout, preset, colours, and layout-specific settings.</div>
+          </div>
+
+          <div class="cms__form">
+            <div v-if="layoutOptions.length > 1" class="cms__field">
+              <label class="cms__label">Layout</label>
+              <Select
+                v-model="draft.theme.layout"
+                :options="layoutOptions"
+                optionLabel="label"
+                optionValue="value"
+                class="w-full"
+              />
+              <div class="cms__help">Choose a layout style for the public page.</div>
+            </div>
+
+            <div class="cms__field">
+              <label class="cms__label">Preset</label>
+              <Select
+                :modelValue="draft.theme.preset"
+                @update:modelValue="applyPreset($event)"
+                :options="presetOptions"
+                optionLabel="label"
+                optionValue="value"
+                class="w-full"
+              />
+              <div class="cms__help">Choose a base theme. You can override individual values below.</div>
+            </div>
+
+            <div v-if="hasAnyOverride" class="cms__field" style="margin-bottom: 4px;">
+              <button class="cms__reset-all-btn" @click="resetAll">
+                <i class="pi pi-undo" style="font-size: 12px;" /> Reset all overrides
+              </button>
+            </div>
+          </div>
+
+          <!-- Images -->
+          <button type="button" class="cms__accordion-trigger" @click="themeSection.images = !themeSection.images">
+            <span class="cms__accordion-label"><i class="pi pi-image" /> Images</span>
+            <i class="pi" :class="themeSection.images ? 'pi-chevron-up' : 'pi-chevron-down'" />
+          </button>
+          <Transition name="cms-collapse">
+            <div v-if="themeSection.images" class="cms__accordion-body">
+              <div class="cms__form">
+                <div class="cms__field">
+                  <ImageUploadField
+                    :modelValue="(draft.theme.layoutData.bannerUrl as string) ?? ''"
+                    @update:modelValue="draft.theme.layoutData = { ...draft.theme.layoutData, bannerUrl: $event }"
+                    label="Banner image"
+                    description="A wide image displayed above your profile card."
+                    targetFilename="banner.jpg"
+                  >
+                    <template #helper>
+                      <div class="cms__help">Recommended: 1480 × 420 px.</div>
+                    </template>
+                  </ImageUploadField>
+                </div>
+                <div class="cms__field">
+                  <ImageUploadField
+                    :modelValue="(draft.theme.layoutData.avatarUrl as string) ?? ''"
+                    @update:modelValue="draft.theme.layoutData = { ...draft.theme.layoutData, avatarUrl: $event }"
+                    label="Avatar image"
+                    description="Square image for your profile."
+                    targetFilename="avatar.jpg"
+                  >
+                    <template #helper>
+                      <div class="cms__help">Crisp, square images work best.</div>
+                    </template>
+                  </ImageUploadField>
+                </div>
+              </div>
+            </div>
+          </Transition>
+
+          <!-- Colours -->
+          <button type="button" class="cms__accordion-trigger" @click="themeSection.colours = !themeSection.colours">
+            <span class="cms__accordion-label"><i class="pi pi-palette" /> Colours</span>
+            <i class="pi" :class="themeSection.colours ? 'pi-chevron-up' : 'pi-chevron-down'" />
+          </button>
+          <Transition name="cms-collapse">
+            <div v-if="themeSection.colours" class="cms__accordion-body">
+              <div class="cms__color-grid">
+                <div class="cms__color-field">
+                  <label class="cms__label">Brand <button v-if="isOverridden('colorBrand')" class="cms__reset-btn" @click="resetField('colorBrand')" title="Reset to preset"><i class="pi pi-undo" /></button></label>
+                  <div class="cms__color-input-wrap">
+                    <input type="color" v-model="draft.theme.colorBrand" class="cms__color-swatch" />
+                    <InputText v-model="draft.theme.colorBrand" class="cms__color-hex" />
+                  </div>
+                </div>
+                <div class="cms__color-field">
+                  <label class="cms__label">Brand Strong <button v-if="isOverridden('colorBrandStrong')" class="cms__reset-btn" @click="resetField('colorBrandStrong')" title="Reset to preset"><i class="pi pi-undo" /></button></label>
+                  <div class="cms__color-input-wrap">
+                    <input type="color" v-model="draft.theme.colorBrandStrong" class="cms__color-swatch" />
+                    <InputText v-model="draft.theme.colorBrandStrong" class="cms__color-hex" />
+                  </div>
+                </div>
+                <div class="cms__color-field">
+                  <label class="cms__label">Accent <button v-if="isOverridden('colorAccent')" class="cms__reset-btn" @click="resetField('colorAccent')" title="Reset to preset"><i class="pi pi-undo" /></button></label>
+                  <div class="cms__color-input-wrap">
+                    <input type="color" v-model="draft.theme.colorAccent" class="cms__color-swatch" />
+                    <InputText v-model="draft.theme.colorAccent" class="cms__color-hex" />
+                  </div>
+                </div>
+                <div class="cms__color-field">
+                  <label class="cms__label">Text <button v-if="isOverridden('colorInk')" class="cms__reset-btn" @click="resetField('colorInk')" title="Reset to preset"><i class="pi pi-undo" /></button></label>
+                  <div class="cms__color-input-wrap">
+                    <input type="color" v-model="draft.theme.colorInk" class="cms__color-swatch" />
+                    <InputText v-model="draft.theme.colorInk" class="cms__color-hex" />
+                  </div>
+                </div>
+                <div class="cms__color-field">
+                  <label class="cms__label">Text Soft <button v-if="isOverridden('colorInkSoft')" class="cms__reset-btn" @click="resetField('colorInkSoft')" title="Reset to preset"><i class="pi pi-undo" /></button></label>
+                  <div class="cms__color-input-wrap">
+                    <input type="color" v-model="draft.theme.colorInkSoft" class="cms__color-swatch" />
+                    <InputText v-model="draft.theme.colorInkSoft" class="cms__color-hex" />
+                  </div>
+                </div>
+                <div class="cms__color-field">
+                  <label class="cms__label">Background <button v-if="isOverridden('bg')" class="cms__reset-btn" @click="resetField('bg')" title="Reset to preset"><i class="pi pi-undo" /></button></label>
+                  <div class="cms__color-input-wrap">
+                    <input type="color" v-model="draft.theme.bg" class="cms__color-swatch" />
+                    <InputText v-model="draft.theme.bg" class="cms__color-hex" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Transition>
+
+          <!-- Surfaces & Borders -->
+          <button type="button" class="cms__accordion-trigger" @click="themeSection.surfaces = !themeSection.surfaces">
+            <span class="cms__accordion-label"><i class="pi pi-stop" /> Surfaces &amp; Borders</span>
+            <i class="pi" :class="themeSection.surfaces ? 'pi-chevron-up' : 'pi-chevron-down'" />
+          </button>
+          <Transition name="cms-collapse">
+            <div v-if="themeSection.surfaces" class="cms__accordion-body">
+              <div class="cms__color-grid">
+                <div class="cms__color-field">
+                  <label class="cms__label">Glass <button v-if="isOverridden('glass')" class="cms__reset-btn" @click="resetField('glass')" title="Reset to preset"><i class="pi pi-undo" /></button></label>
+                  <div class="cms__color-input-wrap">
+                    <input type="color" :value="toHex(draft.theme.glass)" @input="draft.theme.glass = ($event.target as HTMLInputElement).value" class="cms__color-swatch" />
+                    <InputText v-model="draft.theme.glass" class="cms__color-hex" placeholder="rgba(255,255,255,0.66)" />
+                  </div>
+                </div>
+                <div class="cms__color-field">
+                  <label class="cms__label">Glass 2 <button v-if="isOverridden('glass2')" class="cms__reset-btn" @click="resetField('glass2')" title="Reset to preset"><i class="pi pi-undo" /></button></label>
+                  <div class="cms__color-input-wrap">
+                    <input type="color" :value="toHex(draft.theme.glass2)" @input="draft.theme.glass2 = ($event.target as HTMLInputElement).value" class="cms__color-swatch" />
+                    <InputText v-model="draft.theme.glass2" class="cms__color-hex" placeholder="rgba(255,255,255,0.52)" />
+                  </div>
+                </div>
+                <div class="cms__color-field">
+                  <label class="cms__label">Glass Strong <button v-if="isOverridden('glassStrong')" class="cms__reset-btn" @click="resetField('glassStrong')" title="Reset to preset"><i class="pi pi-undo" /></button></label>
+                  <div class="cms__color-input-wrap">
+                    <input type="color" :value="toHex(draft.theme.glassStrong)" @input="draft.theme.glassStrong = ($event.target as HTMLInputElement).value" class="cms__color-swatch" />
+                    <InputText v-model="draft.theme.glassStrong" class="cms__color-hex" placeholder="rgba(255,255,255,0.82)" />
+                  </div>
+                </div>
+                <div class="cms__color-field">
+                  <label class="cms__label">Border <button v-if="isOverridden('colorBorder')" class="cms__reset-btn" @click="resetField('colorBorder')" title="Reset to preset"><i class="pi pi-undo" /></button></label>
+                  <div class="cms__color-input-wrap">
+                    <input type="color" :value="toHex(draft.theme.colorBorder)" @input="draft.theme.colorBorder = ($event.target as HTMLInputElement).value" class="cms__color-swatch" />
+                    <InputText v-model="draft.theme.colorBorder" class="cms__color-hex" placeholder="rgba(255,255,255,0.62)" />
+                  </div>
+                </div>
+                <div class="cms__color-field">
+                  <label class="cms__label">Border 2 <button v-if="isOverridden('colorBorder2')" class="cms__reset-btn" @click="resetField('colorBorder2')" title="Reset to preset"><i class="pi pi-undo" /></button></label>
+                  <div class="cms__color-input-wrap">
+                    <input type="color" :value="toHex(draft.theme.colorBorder2)" @input="draft.theme.colorBorder2 = ($event.target as HTMLInputElement).value" class="cms__color-swatch" />
+                    <InputText v-model="draft.theme.colorBorder2" class="cms__color-hex" placeholder="rgba(11,18,32,0.10)" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Transition>
+
+          <!-- Card Items -->
+          <button type="button" class="cms__accordion-trigger" @click="themeSection.cards = !themeSection.cards">
+            <span class="cms__accordion-label"><i class="pi pi-th-large" /> Card Items</span>
+            <i class="pi" :class="themeSection.cards ? 'pi-chevron-up' : 'pi-chevron-down'" />
+          </button>
+          <Transition name="cms-collapse">
+            <div v-if="themeSection.cards" class="cms__accordion-body">
+              <div class="cms__color-grid">
+                <div class="cms__color-field">
+                  <label class="cms__label">Card Background <button v-if="isOverridden('cardBg')" class="cms__reset-btn" @click="resetField('cardBg')" title="Reset to preset"><i class="pi pi-undo" /></button></label>
+                  <div class="cms__color-input-wrap">
+                    <input type="color" :value="toHex(draft.theme.cardBg)" @input="draft.theme.cardBg = ($event.target as HTMLInputElement).value" class="cms__color-swatch" />
+                    <InputText v-model="draft.theme.cardBg" class="cms__color-hex" placeholder="rgba(255,255,255,0.66)" />
+                  </div>
+                </div>
+                <div class="cms__color-field">
+                  <label class="cms__label">Card Border <button v-if="isOverridden('cardBorder')" class="cms__reset-btn" @click="resetField('cardBorder')" title="Reset to preset"><i class="pi pi-undo" /></button></label>
+                  <div class="cms__color-input-wrap">
+                    <input type="color" :value="toHex(draft.theme.cardBorder)" @input="draft.theme.cardBorder = ($event.target as HTMLInputElement).value" class="cms__color-swatch" />
+                    <InputText v-model="draft.theme.cardBorder" class="cms__color-hex" placeholder="rgba(255,255,255,0.62)" />
+                  </div>
+                </div>
+                <div class="cms__color-field">
+                  <label class="cms__label">Card Text <button v-if="isOverridden('cardText')" class="cms__reset-btn" @click="resetField('cardText')" title="Reset to preset"><i class="pi pi-undo" /></button></label>
+                  <div class="cms__color-input-wrap">
+                    <input type="color" v-model="draft.theme.cardText" class="cms__color-swatch" />
+                    <InputText v-model="draft.theme.cardText" class="cms__color-hex" placeholder="#0b1220" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Transition>
+
+          <!-- Radius -->
+          <button type="button" class="cms__accordion-trigger" @click="themeSection.radius = !themeSection.radius">
+            <span class="cms__accordion-label"><i class="pi pi-circle" /> Radius</span>
+            <i class="pi" :class="themeSection.radius ? 'pi-chevron-up' : 'pi-chevron-down'" />
+          </button>
+          <Transition name="cms-collapse">
+            <div v-if="themeSection.radius" class="cms__accordion-body">
+              <div class="cms__color-grid">
+                <div class="cms__color-field">
+                  <label class="cms__label">Card Radius (XL) <button v-if="isOverridden('radiusXl')" class="cms__reset-btn" @click="resetField('radiusXl')" title="Reset to preset"><i class="pi pi-undo" /></button></label>
+                  <div class="cms__color-input-wrap">
+                    <InputText v-model="draft.theme.radiusXl" class="cms__color-hex cms__color-hex--full" placeholder="1.6rem" />
+                  </div>
+                </div>
+                <div class="cms__color-field">
+                  <label class="cms__label">Inner Radius (LG) <button v-if="isOverridden('radiusLg')" class="cms__reset-btn" @click="resetField('radiusLg')" title="Reset to preset"><i class="pi pi-undo" /></button></label>
+                  <div class="cms__color-input-wrap">
+                    <InputText v-model="draft.theme.radiusLg" class="cms__color-hex cms__color-hex--full" placeholder="1.2rem" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Transition>
+
+          <!-- Layout-specific variables -->
+          <template v-if="activeManifest && activeManifest.vars.length > 0">
+            <button type="button" class="cms__accordion-trigger" @click="themeSection.layoutVars = !themeSection.layoutVars">
+              <span class="cms__accordion-label"><i class="pi pi-sliders-h" /> {{ activeManifest.name }} Layout</span>
+              <i class="pi" :class="themeSection.layoutVars ? 'pi-chevron-up' : 'pi-chevron-down'" />
+            </button>
+            <Transition name="cms-collapse">
+              <div v-if="themeSection.layoutVars" class="cms__accordion-body">
+                <div class="cms__color-grid">
+                  <div v-for="v in activeManifest.vars" :key="v.cssVar" class="cms__color-field">
+                    <label class="cms__label">{{ v.label }}</label>
+                    <div class="cms__color-input-wrap">
+                      <input
+                        v-if="v.type === 'color'"
+                        type="color"
+                        :value="toHex(getLayoutVar(v))"
+                        @input="setLayoutVar(v.cssVar, ($event.target as HTMLInputElement).value)"
+                        class="cms__color-swatch"
+                      />
+                      <InputText
+                        :modelValue="getLayoutVar(v)"
+                        @update:modelValue="setLayoutVar(v.cssVar, $event as string)"
+                        class="cms__color-hex"
+                        :class="{ 'cms__color-hex--full': v.type !== 'color' }"
+                        :placeholder="draft.theme.preset === 'dark' ? v.defaultDark : v.defaultLight"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Transition>
+          </template>
+
+          <!-- Layout-specific schema settings -->
+          <template v-if="activeManifest?.schema?.length">
+            <button type="button" class="cms__accordion-trigger" @click="themeSection.layoutSettings = !themeSection.layoutSettings">
+              <span class="cms__accordion-label"><i class="pi pi-cog" /> {{ activeManifest.name }} Settings</span>
+              <i class="pi" :class="themeSection.layoutSettings ? 'pi-chevron-up' : 'pi-chevron-down'" />
+            </button>
+            <Transition name="cms-collapse">
+              <div v-if="themeSection.layoutSettings" class="cms__accordion-body">
+                <LayoutSchemaRenderer
+                  :schema="activeManifest.schema"
+                  :modelValue="draft.theme.layoutData"
+                  @update:modelValue="draft.theme.layoutData = $event"
+                />
+              </div>
+            </Transition>
+          </template>
+
+          <div class="cms__form">
+            <button
+              type="button"
+              class="cms__reset-theme"
+              @click="resetTheme"
+            >
+              <i class="pi pi-refresh" /> Reset to defaults
+            </button>
+          </div>
         </section>
 
         <section v-else-if="tab === 'content'" class="cms__panel">
@@ -770,13 +806,20 @@ export default defineComponent({
 
     const siteSection = reactive({
       identity: false,
-      images: false,
       favicon: false,
-      theme: false,
       github: false,
-      navigation: false,
       scripts: false,
       supabase: false,
+    });
+
+    const themeSection = reactive({
+      images: false,
+      colours: false,
+      surfaces: false,
+      cards: false,
+      radius: false,
+      layoutVars: false,
+      layoutSettings: false,
     });
 
     const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL as string) || "";
@@ -808,12 +851,6 @@ export default defineComponent({
       visible.value = false;
       emit("lock");
     }
-
-    const defaultTabOptions = computed(() =>
-      (activeManifest.value?.contentSchemas ?? [])
-        .filter((cs) => !cs.singleton && !cs.external && cs.key !== 'socials')
-        .map((cs) => ({ label: cs.label, value: cs.key })),
-    );
 
     // ── Icon autocomplete for tab icons ──
     const FEATURED_TAB_ICONS = [
@@ -1168,6 +1205,7 @@ export default defineComponent({
       tab,
       draft,
       siteSection,
+      themeSection,
       hasChanges,
       discard,
       save,
@@ -1196,7 +1234,6 @@ export default defineComponent({
       envOwner,
       envRepo,
       envBranch,
-      defaultTabOptions,
       filteredTabIcons,
       searchTabIcons,
       getTabIconComponent,
@@ -1249,7 +1286,7 @@ cms__tabBar {
 
 .cms__tabs {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
 }
 

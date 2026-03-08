@@ -45,10 +45,13 @@ export default defineComponent({
     const bentoTabs = computed(() =>
       BENTO_TAB_ORDER
         .filter((key) => props.tabs.some((t) => t.key === key))
-        .map((key) => ({
-          key,
-          label: BENTO_TAB_MAP[key] ?? props.tabs.find((t) => t.key === key)?.label ?? key,
-        })),
+        .map((key) => {
+          const incoming = props.tabs.find((t) => t.key === key);
+          return {
+            key,
+            label: incoming?.label || (BENTO_TAB_MAP[key] ?? key),
+          };
+        }),
     );
 
     return { bentoTabs };

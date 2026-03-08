@@ -46,4 +46,14 @@ if (depsToInstall.length === 0) {
 }
 
 console.log(`[layout-deps] Installing: ${depsToInstall.join(", ")}`);
-execSync(`pnpm add ${depsToInstall.join(" ")}`, { stdio: "inherit" });
+
+// Detect available package manager — prefer pnpm, fall back to npm
+let pkgManager = "npm install";
+try {
+  execSync("pnpm --version", { stdio: "ignore" });
+  pkgManager = "pnpm add";
+} catch {
+  // pnpm not available, use npm
+}
+
+execSync(`${pkgManager} ${depsToInstall.join(" ")}`, { stdio: "inherit" });

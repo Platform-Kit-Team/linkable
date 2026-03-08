@@ -169,8 +169,7 @@ export interface LayoutManifest {
    * in model.collections so it survives layout switches.
    */
   contentSchemas?: ContentSchema[];
-  /** Default tab key when landing on this layout (must match a contentSchema key) */
-  defaultTab?: string;
+
   /**
    * Optional peer dependencies this layout needs (npm package names → semver).
    * These are installed from the content repo's package.json at import time.

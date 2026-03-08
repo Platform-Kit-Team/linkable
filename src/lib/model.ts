@@ -21,11 +21,8 @@ export type SocialLink = {
 export type BioProfile = {
   displayName: string;
   tagline: string;
-  avatarUrl: string;
-  bannerUrl: string;
   faviconUrl: string;
   ogImageUrl: string;
-  defaultTab: string;
 };
 
 export type EducationEntry = {
@@ -318,11 +315,8 @@ export const defaultModel = (): BioModel => ({
   profile: {
     displayName: "Linkable",
     tagline: "Design-forward links. Clean, fast, yours.",
-    avatarUrl: "",
-    bannerUrl: "",
     faviconUrl: "",
     ogImageUrl: "",
-    defaultTab: "links",
   },
   collections: {
     socials: {
@@ -456,7 +450,12 @@ const sanitizeTheme = (raw: unknown, fallback: BioTheme): BioTheme => {
     radiusXl: asString(t.radiusXl).slice(0, 20) || fallback.radiusXl,
     radiusLg: asString(t.radiusLg).slice(0, 20) || fallback.radiusLg,
     layoutVars: sanitizeLayoutVars(t.layoutVars),
-    layoutData: (t.layoutData && typeof t.layoutData === "object" && !Array.isArray(t.layoutData)) ? (t.layoutData as Record<string, unknown>) : {},
+    layoutData: (() => {
+      const ld = (t.layoutData && typeof t.layoutData === "object" && !Array.isArray(t.layoutData)) ? { ...(t.layoutData as Record<string, unknown>) } : {} as Record<string, unknown>;
+      if (ld.avatarUrl !== undefined) ld.avatarUrl = sanitizeUrl(ld.avatarUrl);
+      if (ld.bannerUrl !== undefined) ld.bannerUrl = sanitizeUrl(ld.bannerUrl);
+      return ld;
+    })(),
   };
 };
 
@@ -466,11 +465,8 @@ export const sanitizeModel = (input: unknown): BioModel => {
   const profile: BioProfile = {
     displayName: asString(obj.profile?.displayName).slice(0, 80),
     tagline: asString(obj.profile?.tagline).slice(0, 140),
-    avatarUrl: sanitizeUrl(obj.profile?.avatarUrl),
-    bannerUrl: sanitizeUrl(obj.profile?.bannerUrl),
     faviconUrl: sanitizeUrl(obj.profile?.faviconUrl),
     ogImageUrl: sanitizeUrl(obj.profile?.ogImageUrl),
-    defaultTab: asString(obj.profile?.defaultTab).slice(0, 40) || "links",
   };
 
   // ── Collections ─────────────────────────────────────────────────

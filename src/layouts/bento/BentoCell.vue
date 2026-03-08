@@ -5,8 +5,8 @@
     class="bento-cell relative overflow-hidden"
   >
     <img
-      v-if="model?.profile.avatarUrl"
-      :src="model.profile.avatarUrl"
+      v-if="(model?.theme.layoutData as any)?.avatarUrl"
+      :src="(model!.theme.layoutData as any).avatarUrl"
       alt="Avatar"
       class="absolute rounded-full object-cover"
       style="width: 128px; height: 128px; top: calc(50% - 112px); left: calc(50% - 64px)"

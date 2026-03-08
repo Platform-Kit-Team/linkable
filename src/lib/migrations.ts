@@ -29,7 +29,7 @@
 
 // ── current version ──────────────────────────────────────────────────
 
-export const CURRENT_SCHEMA_VERSION = 29;
+export const CURRENT_SCHEMA_VERSION = 31;
 
 // ── migration registry ──────────────────────────────────────────────
 
@@ -558,6 +558,43 @@ const migrations: Migration[] = [
       };
       delete data.socials;
       data.schemaVersion = 29;
+      return data;
+    },
+  },
+  // ── v30: Move defaultTab from profile into theme.layoutData ──
+  {
+    toVersion: 30,
+    migrate: (data: Record<string, any>) => {
+      const dt = data.profile?.defaultTab;
+      if (dt) {
+        if (!data.theme) data.theme = {};
+        if (!data.theme.layoutData || typeof data.theme.layoutData !== "object") data.theme.layoutData = {};
+        if (!data.theme.layoutData.defaultTab) {
+          data.theme.layoutData.defaultTab = dt;
+        }
+      }
+      if (data.profile) delete data.profile.defaultTab;
+      data.schemaVersion = 30;
+      return data;
+    },
+  },
+  // ── v31: Move avatarUrl/bannerUrl from profile into theme.layoutData ──
+  {
+    toVersion: 31,
+    migrate: (data: Record<string, any>) => {
+      if (!data.theme) data.theme = {};
+      if (!data.theme.layoutData || typeof data.theme.layoutData !== "object") data.theme.layoutData = {};
+      if (data.profile?.avatarUrl && !data.theme.layoutData.avatarUrl) {
+        data.theme.layoutData.avatarUrl = data.profile.avatarUrl;
+      }
+      if (data.profile?.bannerUrl && !data.theme.layoutData.bannerUrl) {
+        data.theme.layoutData.bannerUrl = data.profile.bannerUrl;
+      }
+      if (data.profile) {
+        delete data.profile.avatarUrl;
+        delete data.profile.bannerUrl;
+      }
+      data.schemaVersion = 31;
       return data;
     },
   },

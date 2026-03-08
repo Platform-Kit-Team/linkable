@@ -557,7 +557,7 @@ export default defineComponent({
       });
 
       // Set default tab from model settings
-      const dt = model.value.profile.defaultTab;
+      const dt = (model.value.theme.layoutData as Record<string, unknown>)?.defaultTab as string | undefined;
       if (dt) {
         activeTab.value = dt;
       }
@@ -917,8 +917,8 @@ export default defineComponent({
           });
 
           const usedPaths = [
-            model.value.profile.avatarUrl,
-            model.value.profile.bannerUrl,
+            (model.value.theme.layoutData as Record<string, any>).avatarUrl || "",
+            (model.value.theme.layoutData as Record<string, any>).bannerUrl || "",
           ];
           model.value.collections.links.items.forEach((l: any) => {
             if (l.imageUrl) usedPaths.push(l.imageUrl);
@@ -1430,14 +1430,14 @@ export default defineComponent({
 
     const avatarErrored = ref(false);
     const avatarSrc = computed(() => {
-      const u = (model.value.profile.avatarUrl || "").trim();
+      const u = ((model.value.theme.layoutData as Record<string, any>).avatarUrl || "").trim();
       if (!u) return "";
       if (avatarErrored.value) return "";
       return resolveUploadUrl(u);
     });
 
     watch(
-      () => model.value.profile.avatarUrl,
+      () => (model.value.theme.layoutData as Record<string, any>).avatarUrl,
       () => {
         avatarErrored.value = false;
       },
@@ -1449,14 +1449,14 @@ export default defineComponent({
 
     const bannerErrored = ref(false);
     const bannerSrc = computed(() => {
-      const u = (model.value.profile.bannerUrl || "").trim();
+      const u = ((model.value.theme.layoutData as Record<string, any>).bannerUrl || "").trim();
       if (!u) return "";
       if (bannerErrored.value) return "";
       return resolveUploadUrl(u);
     });
 
     watch(
-      () => model.value.profile.bannerUrl,
+      () => (model.value.theme.layoutData as Record<string, any>).bannerUrl,
       () => {
         bannerErrored.value = false;
       },

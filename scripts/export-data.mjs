@@ -26,7 +26,7 @@ const ensureCmsData = async () => {
 
   const fallback = JSON.stringify(
     {
-      profile: { displayName: "", tagline: "", avatarUrl: "" },
+      profile: { displayName: "", tagline: "" },
       links: [],
       socials: [],
     },

@@ -214,7 +214,19 @@ const manifest: LayoutManifest = {
       editorComponent: () => import("../../components/editors/NewsletterCollectionEditor.vue"),
     },
   ],
-  defaultTab: "links",
+  schema: [
+    {
+      $formkit: "select",
+      name: "defaultTab",
+      label: "Default tab",
+      help: "The tab visitors see first when they land on your page.",
+      options: [
+        { label: "All", value: "links" },
+        { label: "Resume", value: "resume" },
+        { label: "Gallery", value: "gallery" },
+      ],
+    },
+  ],
   cmsTabs: [],
 };
 

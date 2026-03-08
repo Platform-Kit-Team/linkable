@@ -1,13 +1,10 @@
 {
-  "schemaVersion": 29,
+  "schemaVersion": 31,
   "profile": {
     "displayName": "Linkable",
     "tagline": "Design-forward links. Clean, fast, yours.",
-    "avatarUrl": "",
-    "bannerUrl": "",
     "faviconUrl": "",
-    "ogImageUrl": "",
-    "defaultTab": "links"
+    "ogImageUrl": ""
   },
   "collections": {
     "socials": {
@@ -141,7 +138,11 @@
     "radiusXl": "1.6rem",
     "radiusLg": "1.2rem",
     "layoutVars": {},
-    "layoutData": {}
+    "layoutData": {
+      "defaultTab": "links",
+      "avatarUrl": "",
+      "bannerUrl": ""
+    }
   },
   "layoutThemes": {
     "default": {
