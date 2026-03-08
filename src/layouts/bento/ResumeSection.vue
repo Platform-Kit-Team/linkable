@@ -1,7 +1,8 @@
 <template>
   <section
-    class="bento-resume bento-card mx-auto w-full p-6 sm:p-8"
-    style="max-width: var(--bento-grid-width, 960px)"
+    class="bento-resume bento-card mx-auto w-full p-6 sm:p-8"    
+    style="width:calc(100% - 50px);max-width: var(--bento-grid-width, 960px); margin: 44px 25px"
+    
   >
     <!-- Bio -->
     <div v-if="resume.bio" class="mb-6 sm:mb-8">

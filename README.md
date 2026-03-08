@@ -95,11 +95,11 @@ my-linkable-site/
 - Go to [vercel.com/new](https://vercel.com/new) and import your content repo
 - Configure the project settings:
 
-| Setting              | Value                                           |
-| -------------------- | ----------------------------------------------- |
+| Setting              | Value                                      |
+| -------------------- | ------------------------------------------ |
 | **Build Command**    | `npx github:platform-kit/linkable build .` |
-| **Output Directory** | `dist`                                          |
-| **Install Command**  | _(leave blank)_                                 |
+| **Output Directory** | `dist`                                     |
+| **Install Command**  | _(leave blank)_                            |
 
 **3. Deploy**
 
@@ -176,15 +176,15 @@ Options:
 
 ### Content files
 
-| File                | Committed? | Purpose                          |
-| ------------------- | ---------- | -------------------------------- |
-| `default-data.json` | Yes        | Template data for new users      |
-| `cms-data.json`     | No         | Your personal CMS data           |
-| `public/data.json`  | No         | Production build content         |
-| `public/uploads/`   | No         | Uploaded images                  |
-| `public/rss.xml`    | No         | Generated RSS feed               |
-| `public/blog/`      | No         | Static blog JSON (build output)  |
-| `content/blog/`     | No         | Blog post Markdown source files  |
+| File                | Committed? | Purpose                         |
+| ------------------- | ---------- | ------------------------------- |
+| `default-data.json` | Yes        | Template data for new users     |
+| `cms-data.json`     | No         | Your personal CMS data          |
+| `public/data.json`  | No         | Production build content        |
+| `public/uploads/`   | No         | Uploaded images                 |
+| `public/rss.xml`    | No         | Generated RSS feed              |
+| `public/blog/`      | No         | Static blog JSON (build output) |
+| `content/blog/`     | No         | Blog post Markdown source files |
 
 On first run, `default-data.json` is automatically copied to `cms-data.json` and `public/data.json` if they don't exist.
 
@@ -288,13 +288,13 @@ A masonry grid supporting images and video:
 
 A structured resume section with:
 
-| Section | Fields |
-|---|---|
-| **Bio** | Free-text biography (up to 2000 chars) |
-| **Employment** | Company, role, description, start/end year |
-| **Education** | Institution, degree, field, start/end year |
-| **Skills** | Free-form skill tags (up to 50) |
-| **Achievements** | Title, issuer, year, description |
+| Section          | Fields                                     |
+| ---------------- | ------------------------------------------ |
+| **Bio**          | Free-text biography (up to 2000 chars)     |
+| **Employment**   | Company, role, description, start/end year |
+| **Education**    | Institution, degree, field, start/end year |
+| **Skills**       | Free-form skill tags (up to 50)            |
+| **Achievements** | Title, issuer, year, description           |
 
 All sections support drag-and-drop reordering.
 
@@ -316,24 +316,24 @@ Each embed has:
 
 Customize your page appearance with 20+ CSS variables through the CMS:
 
-| Variable | Purpose |
-|---|---|
-| `--color-brand` | Primary brand color |
-| `--color-brand-strong` | Hover/strong variant |
-| `--color-accent` | Secondary accent color |
-| `--color-ink` | Main text color |
-| `--color-ink-soft` | Muted text |
-| `--bg` | Page background |
-| `--glass` | Primary frosted-glass surface |
-| `--glass-2` | Secondary glass |
-| `--glass-strong` | High-opacity glass |
-| `--color-border` | Glass borders |
-| `--color-border-2` | Subtle dividers |
-| `--card-bg` | Card background |
-| `--card-border` | Card border |
-| `--card-text` | Card text |
-| `--radius-xl` | Large border radius |
-| `--radius-lg` | Standard border radius |
+| Variable               | Purpose                       |
+| ---------------------- | ----------------------------- |
+| `--color-brand`        | Primary brand color           |
+| `--color-brand-strong` | Hover/strong variant          |
+| `--color-accent`       | Secondary accent color        |
+| `--color-ink`          | Main text color               |
+| `--color-ink-soft`     | Muted text                    |
+| `--bg`                 | Page background               |
+| `--glass`              | Primary frosted-glass surface |
+| `--glass-2`            | Secondary glass               |
+| `--glass-strong`       | High-opacity glass            |
+| `--color-border`       | Glass borders                 |
+| `--color-border-2`     | Subtle dividers               |
+| `--card-bg`            | Card background               |
+| `--card-border`        | Card border                   |
+| `--card-text`          | Card text                     |
+| `--radius-xl`          | Large border radius           |
+| `--radius-lg`          | Standard border radius        |
 
 Three presets are available: **light**, **dark**, and **custom** (fully manual).
 
@@ -381,18 +381,18 @@ Inject custom JavaScript or HTML into your page via the CMS:
 
 ## Environment Variables
 
-| Variable | Required | Purpose |
-|---|---|---|
-| `VITE_SITE_URL` | For SEO | Base URL for RSS feeds, OG meta, and absolute URLs |
-| `VITE_SCHEDULE_EXCLUDE_BUILD` | No | Strip expired/future scheduled content at build time |
-| `VITE_PRERENDER` | No | Enable Puppeteer pre-rendering at build time (off by default) |
-| `GITHUB_OWNER` | For sync | GitHub repo owner |
-| `GITHUB_REPO` | For sync | GitHub repo name |
-| `GITHUB_BRANCH` | No | GitHub branch (default: `main`) |
-| `GITHUB_TOKEN` | For sync | GitHub personal access token |
-| `CMS_PASSWORD` | For CMS lock | Password for encrypting the GitHub token in the build |
-| `SUPABASE_ACCESS_TOKEN` | For deploy | Supabase personal access token (for `linkable deploy` in CI) |
-| `SUPABASE_PROJECT_REF` | For deploy | Supabase project ref ID (for `linkable deploy` in CI) |
+| Variable                      | Required     | Purpose                                                       |
+| ----------------------------- | ------------ | ------------------------------------------------------------- |
+| `VITE_SITE_URL`               | For SEO      | Base URL for RSS feeds, OG meta, and absolute URLs            |
+| `VITE_SCHEDULE_EXCLUDE_BUILD` | No           | Strip expired/future scheduled content at build time          |
+| `VITE_PRERENDER`              | No           | Enable Puppeteer pre-rendering at build time (off by default) |
+| `GITHUB_OWNER`                | For sync     | GitHub repo owner                                             |
+| `GITHUB_REPO`                 | For sync     | GitHub repo name                                              |
+| `GITHUB_BRANCH`               | No           | GitHub branch (default: `main`)                               |
+| `GITHUB_TOKEN`                | For sync     | GitHub personal access token                                  |
+| `CMS_PASSWORD`                | For CMS lock | Password for encrypting the GitHub token in the build         |
+| `SUPABASE_ACCESS_TOKEN`       | For deploy   | Supabase personal access token (for `linkable deploy` in CI)  |
+| `SUPABASE_PROJECT_REF`        | For deploy   | Supabase project ref ID (for `linkable deploy` in CI)         |
 
 ***
 
@@ -408,25 +408,25 @@ The CMS and GitHub sync features are protected by a password-based encryption sy
 
 ### Encryption details
 
-| Parameter        | Value           |
-| ---------------- | --------------- |
-| Algorithm        | AES-256-GCM     |
-| Key derivation   | PBKDF2          |
-| Hash             | SHA-256         |
-| Iterations       | 600,000         |
-| Salt             | 16 bytes random |
-| IV               | 12 bytes random |
+| Parameter      | Value           |
+| -------------- | --------------- |
+| Algorithm      | AES-256-GCM     |
+| Key derivation | PBKDF2          |
+| Hash           | SHA-256         |
+| Iterations     | 600,000         |
+| Salt           | 16 bytes random |
+| IV             | 12 bytes random |
 
 ### Environment variables
 
-| Variable             | Purpose                                              | Exposed to browser? |
-| -------------------- | ---------------------------------------------------- | ------------------- |
-| `GITHUB_TOKEN`       | Your GitHub PAT for content sync                     | **No** — encrypted at build time, never in plaintext |
-| `CMS_PASSWORD`       | Password used to encrypt/decrypt the token           | **No** — used only at build time for key derivation; not prefixed with `VITE_` to prevent accidental client exposure  |
-| `GITHUB_OWNER`       | GitHub repo owner                                    | Yes (non-secret)    |
-| `GITHUB_REPO`        | GitHub repo name                                     | Yes (non-secret)    |
-| `GITHUB_BRANCH`      | GitHub branch                                        | Yes (non-secret)    |
-| `VITE_SITE_URL`      | Your production domain (for RSS, OG tags)            | Yes (non-secret)    |
+| Variable        | Purpose                                    | Exposed to browser?                                                                                                  |
+| --------------- | ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| `GITHUB_TOKEN`  | Your GitHub PAT for content sync           | **No** — encrypted at build time, never in plaintext                                                                 |
+| `CMS_PASSWORD`  | Password used to encrypt/decrypt the token | **No** — used only at build time for key derivation; not prefixed with `VITE_` to prevent accidental client exposure |
+| `GITHUB_OWNER`  | GitHub repo owner                          | Yes (non-secret)                                                                                                     |
+| `GITHUB_REPO`   | GitHub repo name                           | Yes (non-secret)                                                                                                     |
+| `GITHUB_BRANCH` | GitHub branch                              | Yes (non-secret)                                                                                                     |
+| `VITE_SITE_URL` | Your production domain (for RSS, OG tags)  | Yes (non-secret)                                                                                                     |
 
 ### CMS password gate
 
@@ -643,12 +643,12 @@ export default {
 
 ### Three levels of extensibility
 
-| Need | Manifest field | Renders in | Author writes |
-|---|---|---|---|
-| Simple theme settings | `schema` | Theme panel (inline) | FormKit JSON schema |
-| Full CMS tab, simple UI | `cmsTabs[].schema` | Own top-level tab | FormKit JSON schema |
-| Full CMS tab, complex UI | `cmsTabs[].component` | Own top-level tab | Custom Vue component |
-| Custom page with URL | `routes[]` | Full page (replaces default content) | Vue component + path |
+| Need                     | Manifest field        | Renders in                           | Author writes        |
+| ------------------------ | --------------------- | ------------------------------------ | -------------------- |
+| Simple theme settings    | `schema`              | Theme panel (inline)                 | FormKit JSON schema  |
+| Full CMS tab, simple UI  | `cmsTabs[].schema`    | Own top-level tab                    | FormKit JSON schema  |
+| Full CMS tab, complex UI | `cmsTabs[].component` | Own top-level tab                    | Custom Vue component |
+| Custom page with URL     | `routes[]`            | Full page (replaces default content) | Vue component + path |
 
 ### Schema-driven settings (no Vue code required)
 

@@ -88,7 +88,7 @@ export type BioGallery = {
   items: GalleryItem[];
 };
 
-export type ThemePreset = "light" | "dark" | "custom";
+export type ThemePreset = string;
 
 export type BioTheme = {
   layout: string;
@@ -138,13 +138,12 @@ export type ContentCollection = {
   label: string;
   icon: string;
   searchEnabled: boolean;
-  items: unknown[];
+  items: Record<string, unknown>[];
 };
 
 export type BioModel = {
   schemaVersion: number;
   profile: BioProfile;
-  socials: SocialLink[];
   collections: Record<string, ContentCollection>;
   theme: BioTheme;
   layoutThemes: Record<string, BioTheme>;
@@ -294,107 +293,9 @@ export const darkTheme = (): BioTheme => ({
   layoutData: {},
 });
 
-export const minimalLightTheme = (): BioTheme => ({
-  layout: "minimal",
-  preset: "light",
-  colorBrand: "#3b82f6",
-  colorBrandStrong: "#2563eb",
-  colorAccent: "#ff5a7a",
-  colorInk: "#0b1220",
-  colorInkSoft: "rgba(11, 18, 32, 0.62)",
-  bg: "#f5f7fb",
-  glass: "rgba(255, 255, 255, 0.9)",
-  glass2: "rgba(255, 255, 255, 0.6)",
-  glassStrong: "rgba(255, 255, 255, 0.82)",
-  colorBorder: "rgba(11, 18, 32, 0.08)",
-  colorBorder2: "rgba(11, 18, 32, 0.08)",
-  cardBg: "transparent",
-  cardBorder: "rgba(11, 18, 32, 0.08)",
-  cardText: "#0b1220",
-  radiusXl: "1.6rem",
-  radiusLg: "1.2rem",
-  layoutVars: {},
-  layoutData: {},
-});
-
-export const minimalDarkTheme = (): BioTheme => ({
-  layout: "minimal",
-  preset: "dark",
-  colorBrand: "#60a5fa",
-  colorBrandStrong: "#3b82f6",
-  colorAccent: "#f472b6",
-  colorInk: "#f1f5f9",
-  colorInkSoft: "rgba(241, 245, 249, 0.55)",
-  bg: "#000000",
-  glass: "rgba(255, 255, 255, 0.06)",
-  glass2: "rgba(255, 255, 255, 0.04)",
-  glassStrong: "rgba(50, 62, 82, 0.92)",
-  colorBorder: "rgba(148, 163, 184, 0.18)",
-  colorBorder2: "rgba(148, 163, 184, 0.18)",
-  cardBg: "transparent",
-  cardBorder: "rgba(148, 163, 184, 0.18)",
-  cardText: "#f1f5f9",
-  radiusXl: "1.6rem",
-  radiusLg: "1.2rem",
-  layoutVars: {},
-  layoutData: {},
-});
-
-export const bentoLightTheme = (): BioTheme => ({
-  layout: "bento",
-  preset: "light",
-  colorBrand: "#6366f1",
-  colorBrandStrong: "#4f46e5",
-  colorAccent: "#f59e0b",
-  colorInk: "#1a1a2e",
-  colorInkSoft: "rgba(26, 26, 46, 0.5)",
-  bg: "#f5f5f7",
-  glass: "rgba(255, 255, 255, 0.95)",
-  glass2: "rgba(255, 255, 255, 0.7)",
-  glassStrong: "#ffffff",
-  colorBorder: "rgba(0, 0, 0, 0.04)",
-  colorBorder2: "rgba(0, 0, 0, 0.04)",
-  cardBg: "#ffffff",
-  cardBorder: "transparent",
-  cardText: "#1a1a2e",
-  radiusXl: "1.5rem",
-  radiusLg: "1.25rem",
-  layoutVars: {},
-  layoutData: {},
-});
-
-export const bentoDarkTheme = (): BioTheme => ({
-  layout: "bento",
-  preset: "dark",
-  colorBrand: "#818cf8",
-  colorBrandStrong: "#6366f1",
-  colorAccent: "#fbbf24",
-  colorInk: "#f1f5f9",
-  colorInkSoft: "rgba(241, 245, 249, 0.5)",
-  bg: "#0a0a0f",
-  glass: "rgba(255, 255, 255, 0.06)",
-  glass2: "rgba(255, 255, 255, 0.03)",
-  glassStrong: "rgba(30, 30, 50, 0.9)",
-  colorBorder: "rgba(255, 255, 255, 0.08)",
-  colorBorder2: "rgba(255, 255, 255, 0.05)",
-  cardBg: "rgba(255, 255, 255, 0.06)",
-  cardBorder: "rgba(255, 255, 255, 0.08)",
-  cardText: "#f1f5f9",
-  radiusXl: "1.6rem",
-  radiusLg: "1.25rem",
-  layoutVars: {},
-  layoutData: {},
-});
-
 export const THEME_PRESETS: Record<string, () => BioTheme> = {
   light: defaultTheme,
   dark: darkTheme,
-};
-
-export const LAYOUT_PRESETS: Record<string, Record<string, () => BioTheme>> = {
-  default: { light: defaultTheme, dark: darkTheme },
-  minimal: { light: minimalLightTheme, dark: minimalDarkTheme },
-  bento: { light: bentoLightTheme, dark: bentoDarkTheme },
 };
 
 export const newEmbed = (): EmbedItem => ({
@@ -423,23 +324,14 @@ export const defaultModel = (): BioModel => ({
     ogImageUrl: "",
     defaultTab: "links",
   },
-  socials: [
-    {
-      id: newId(),
-      icon: "instagram",
-      label: "Instagram",
-      url: "https://instagram.com",
-      enabled: true,
-    },
-    {
-      id: newId(),
-      icon: "github",
-      label: "Github",
-      url: "https://github.com",
-      enabled: false,
-    },
-  ],
   collections: {
+    socials: {
+      ...defaultCollection(true),
+      items: [
+        { id: newId(), icon: "Instagram", label: "Instagram", url: "https://instagram.com", enabled: true },
+        { id: newId(), icon: "Github", label: "Github", url: "https://github.com", enabled: false },
+      ],
+    },
     links: {
       ...defaultCollection(true),
       items: [
@@ -490,7 +382,6 @@ export const defaultModel = (): BioModel => ({
   theme: defaultTheme(),
   layoutThemes: {
     default: defaultTheme(),
-    minimal: minimalLightTheme(),
   },
   scripts: defaultScripts(),
 });
@@ -543,7 +434,7 @@ import { migrateToLatest, CURRENT_SCHEMA_VERSION } from "./migrations";
 const sanitizeTheme = (raw: unknown, fallback: BioTheme): BioTheme => {
   const t = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
   const presetVal = asString(t.preset);
-  const preset: ThemePreset = (presetVal === "light" || presetVal === "dark" || presetVal === "custom") ? presetVal : fallback.preset;
+  const preset: ThemePreset = presetVal || fallback.preset;
   const layout = asString(t.layout).slice(0, 40) || fallback.layout;
   return {
     layout,
@@ -581,18 +472,6 @@ export const sanitizeModel = (input: unknown): BioModel => {
     ogImageUrl: sanitizeUrl(obj.profile?.ogImageUrl),
     defaultTab: asString(obj.profile?.defaultTab).slice(0, 40) || "links",
   };
-
-  const socialsRaw = Array.isArray(obj.socials) ? obj.socials : [];
-  const socials: SocialLink[] = socialsRaw
-    .map((s: any) => ({
-      id: asString(s?.id) || newId(),
-      icon: asString(s?.icon).slice(0, 60) || "Globe",
-      label: asString(s?.label).slice(0, 60),
-      url: sanitizeUrl(s?.url),
-      enabled: asBool(s?.enabled),
-    }))
-    .filter((s: SocialLink) => !!s.id)
-    .slice(0, 24);
 
   // ── Collections ─────────────────────────────────────────────────
   const rawCollections = obj.collections && typeof obj.collections === "object" ? obj.collections : {};
@@ -720,7 +599,11 @@ export const sanitizeModel = (input: unknown): BioModel => {
   const newsletterCol = sanitizeCollectionMeta(rawCollections.newsletter, defaultCollection());
   newsletterCol.items = [];
 
+  // Socials (layout-provided collection)
+  const socialsCol = sanitizeCollectionMeta(rawCollections.socials, defaultCollection(true));
+
   const collections: Record<string, ContentCollection> = {
+    socials: socialsCol,
     links: linksCol,
     gallery: galleryCol,
     resume: resumeCol,
@@ -740,7 +623,7 @@ export const sanitizeModel = (input: unknown): BioModel => {
 
   // Sanitize per-layout theme storage
   const layoutThemesRaw = obj.layoutThemes && typeof obj.layoutThemes === "object" ? obj.layoutThemes : {};
-  const layoutDefaults: Record<string, () => BioTheme> = { default: defaultTheme, minimal: minimalLightTheme };
+  const layoutDefaults: Record<string, () => BioTheme> = { default: defaultTheme };
   const layoutThemes: Record<string, BioTheme> = {};
   for (const [key, factory] of Object.entries(layoutDefaults)) {
     layoutThemes[key] = sanitizeTheme((layoutThemesRaw as any)[key], factory());
@@ -757,7 +640,7 @@ export const sanitizeModel = (input: unknown): BioModel => {
     bodyEndScript: asString(scriptsRaw.bodyEndScript).slice(0, 10000),
   };
 
-  return { schemaVersion: CURRENT_SCHEMA_VERSION, profile, socials, collections, theme, layoutThemes, scripts };
+  return { schemaVersion: CURRENT_SCHEMA_VERSION, profile, collections, theme, layoutThemes, scripts };
 };
 
 export const stableStringify = (model: BioModel) => JSON.stringify(model, null, 2);

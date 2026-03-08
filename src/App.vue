@@ -972,7 +972,7 @@ export default defineComponent({
       (model.value.collections.links.items as any[]).filter((l) => l.enabled && isScheduleVisible(l)),
     );
     const enabledSocials = computed(() =>
-      model.value.socials.filter((s) => s.enabled && s.url),
+      (model.value.collections.socials?.items as any[] ?? []).filter((s: any) => s.enabled && s.url),
     );
 
     // ── Search state ─────────────────────────────────────────────────

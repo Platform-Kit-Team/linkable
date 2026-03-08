@@ -44,19 +44,7 @@
             >
               <span class="cms__tab-icon"><i class="pi pi-th-large" /></span>
               <span class="cms__tab-label">Content</span>
-              <span class="cms__tab-pill">{{ draftLinks.length + draftEmbedItems.length + draftGalleryItems.length }}</span>
-            </button>
-
-            <button
-              v-if="supabaseUrl"
-              type="button"
-              class="cms__tab"
-              :class="{ 'is-active': tab === 'newsletter' }"
-              @click="tab = 'newsletter'; if (subscribers.length === 0) { loadSubscribers(); loadSends(); }"
-            >
-              <span class="cms__tab-icon"><i class="pi pi-envelope" /></span>
-              <span class="cms__tab-label">Newsletter</span>
-              <span class="cms__tab-pill" :class="{ 'cms__tab-pill--ghost': subscriberCounts.total === 0 }">{{ subscriberCounts.confirmed }}</span>
+              <span class="cms__tab-pill cms__tab-pill--ghost" aria-hidden="true">0</span>
             </button>
 
             <button
@@ -398,35 +386,6 @@
             </div>
           </Transition>
 
-          <!-- Search -->
-          <button type="button" class="cms__accordion-trigger" @click="siteSection.search = !siteSection.search">
-            <span class="cms__accordion-label"><i class="pi pi-search" /> Search</span>
-            <i class="pi" :class="siteSection.search ? 'pi-chevron-up' : 'pi-chevron-down'" />
-          </button>
-          <Transition name="cms-collapse">
-            <div v-if="siteSection.search" class="cms__accordion-body">
-              <div class="cms__form">
-                <div class="cms__help" style="margin-bottom: 8px">Enable search bars for visitors to filter content in each section.</div>
-                <div class="cms__field" style="display: flex; align-items: center; gap: 12px">
-                  <ToggleSwitch v-model="draft.collections.links.searchEnabled" />
-                  <label class="cms__label" style="margin: 0">Links search</label>
-                </div>
-                <div class="cms__field" style="display: flex; align-items: center; gap: 12px">
-                  <ToggleSwitch v-model="draft.collections.gallery.searchEnabled" />
-                  <label class="cms__label" style="margin: 0">Gallery search</label>
-                </div>
-                <div class="cms__field" style="display: flex; align-items: center; gap: 12px">
-                  <ToggleSwitch v-model="draft.collections.blog.searchEnabled" />
-                  <label class="cms__label" style="margin: 0">Blog search</label>
-                </div>
-                <div v-if="supabaseUrl" class="cms__field" style="display: flex; align-items: center; gap: 12px">
-                  <ToggleSwitch v-model="draft.collections.newsletter.searchEnabled" />
-                  <label class="cms__label" style="margin: 0">Newsletter search</label>
-                </div>
-              </div>
-            </div>
-          </Transition>
-
           <!-- Navigation -->
           <button type="button" class="cms__accordion-trigger" @click="siteSection.navigation = !siteSection.navigation">
             <span class="cms__accordion-label"><i class="pi pi-compass" /> Navigation</span>
@@ -446,71 +405,6 @@
                   />
                   <div class="cms__help">The tab visitors see first when they land on your page.</div>
                 </div>
-              </div>
-            </div>
-          </Transition>
-
-          <!-- Socials -->
-          <button type="button" class="cms__accordion-trigger" @click="siteSection.socials = !siteSection.socials">
-            <span class="cms__accordion-label"><i class="pi pi-share-alt" /> Socials</span>
-            <i class="pi" :class="siteSection.socials ? 'pi-chevron-up' : 'pi-chevron-down'" />
-          </button>
-          <Transition name="cms-collapse">
-            <div v-if="siteSection.socials" class="cms__accordion-body">
-              <div class="cms__form">
-                <div class="cms__help" style="margin-bottom: 8px">
-                  Add social links that show under your name.
-                </div>
-
-                <div class="flex justify-end" style="margin-bottom: 8px">
-                  <Button rounded class="cms__primary cms__primary--addon" @click="createAndEditSocial">
-                    <i class="pi pi-plus" />
-                    <span class="cms__btn-label">Add social</span>
-                  </Button>
-                </div>
-
-                <div v-if="draft.socials.length === 0" class="cms__empty">
-                  <div class="cms__empty-title">No socials yet</div>
-                  <div class="cms__empty-sub">
-                    Add GitHub, Instagram, X, YouTube, TikTok, or Website.
-                  </div>
-                </div>
-
-                <draggable
-                  v-else
-                  v-model="draft.socials"
-                  item-key="id"
-                  handle=".drag"
-                  :animation="160"
-                  class="cms__socialList"
-                >
-                  <template #item="{ element: s }">
-                    <button
-                      type="button"
-                      class="cms__row"
-                      @click="openSocialEditor(s.id)"
-                    >
-                      <span class="cms__row-drag drag" aria-label="Drag">
-                        <i class="pi pi-bars" />
-                      </span>
-
-                      <span class="cms__row-thumb">
-                        <component :is="resolveLucideIcon(s.icon)" :size="16" />
-                      </span>
-
-                      <span class="cms__row-text">
-                        <span class="cms__row-title">{{ s.label || s.icon || 'Social' }}</span>
-                        <span class="cms__row-sub">{{ s.url || "(no url)" }}</span>
-                      </span>
-
-                      <span class="cms__row-meta">
-                        <Tag v-if="!s.enabled" severity="warning" value="Hidden" class="!rounded-full" />
-                        <i v-else class="pi pi-check-circle cms__ok" />
-                        <i class="pi pi-angle-right text-[color:var(--color-ink-soft)]" />
-                      </span>
-                    </button>
-                  </template>
-                </draggable>
               </div>
             </div>
           </Transition>
@@ -660,20 +554,15 @@
         <section v-else-if="tab === 'content'" class="cms__panel">
           <!-- Content sub-tabs (desktop) -->
           <div class="cms__subTabBar cms__subTabBar--desktop">
-            <button type="button" class="cms__subTab" :class="{ 'is-active': contentSubTab === 'links' }" @click="contentSubTab = 'links'">
-              <i class="pi pi-link" /> Links
-            </button>
-            <button type="button" class="cms__subTab" :class="{ 'is-active': contentSubTab === 'gallery' }" @click="contentSubTab = 'gallery'">
-              <i class="pi pi-images" /> Gallery
-            </button>
-            <button type="button" class="cms__subTab" :class="{ 'is-active': contentSubTab === 'blog' }" @click="contentSubTab = 'blog'">
-              <i class="pi pi-pencil" /> Blog
-            </button>
-            <button type="button" class="cms__subTab" :class="{ 'is-active': contentSubTab === 'resume' }" @click="contentSubTab = 'resume'">
-              <i class="pi pi-file" /> Resume
-            </button>
-            <button type="button" class="cms__subTab" :class="{ 'is-active': contentSubTab === 'embeds' }" @click="contentSubTab = 'embeds'">
-              <i class="pi pi-code" /> Embeds
+            <button
+              v-for="cs in (activeManifest?.contentSchemas ?? [])"
+              :key="cs.key"
+              type="button"
+              class="cms__subTab"
+              :class="{ 'is-active': contentSubTab === cs.key }"
+              @click="contentSubTab = cs.key"
+            >
+              <component :is="getTabIconComponent(cs.icon)" :size="14" /> {{ cs.label }}
             </button>
           </div>
           <!-- Content sub-tabs (mobile) -->
@@ -688,748 +577,29 @@
             />
           </div>
 
-          <div v-if="contentSubTab === 'links'" class="cms__subPanel">
-          <div class="cms__panel-head cms__panel-head--row">
-            <div>
-              <div class="cms__title">Links</div>
-              <div class="cms__sub">Add, edit, and reorder your buttons.</div>
+          <!-- Dynamic content schema panels -->
+          <template v-for="cs in (activeManifest?.contentSchemas ?? [])" :key="cs.key">
+            <div v-if="contentSubTab === cs.key" class="cms__subPanel">
+              <!-- Custom editor component (resume, blog, newsletter, etc.) -->
+              <component
+                v-if="resolvedEditorComponents[cs.key]"
+                :is="resolvedEditorComponents[cs.key]"
+                :collection="draft.collections[cs.key]"
+                :model="draft"
+                @reauth="$emit('reauth')"
+                @blog-posts-updated="$emit('blog-posts-updated')"
+              />
+              <!-- Schema-driven list editor (links, gallery, embeds, etc.) -->
+              <CollectionListEditor
+                v-else-if="cs.itemSchema && draft.collections[cs.key]"
+                :schema="cs"
+                :collection="draft.collections[cs.key]"
+                :items="draft.collections[cs.key]?.items ?? []"
+                @update:items="updateCollectionItems(cs.key, $event)"
+                @update:collection="updateCollectionMeta(cs.key, $event)"
+              />
             </div>
-
-            <Button rounded class="cms__primary cms__primary--addon" @click="createAndEditLink">
-              <i class="pi pi-plus" />
-              <span class="cms__btn-label">Add link</span>
-              <span class="cms__btn-label--compact">Add</span>
-            </Button>
-          </div>
-
-          <div class="cms__card" style="margin-bottom: 10px">
-            <div class="cms__form">
-              <div class="cms__field">
-                <label class="cms__label">Tab label</label>
-                <InputText v-model="draft.collections.links.label" class="w-full" placeholder="Links" />
-                <div class="cms__help">Customise the tab name shown on the public page.</div>
-              </div>
-              <div class="cms__field">
-                <label class="cms__label">Tab icon</label>
-                <AutoComplete
-                  v-model="draft.collections.links.icon"
-                  :suggestions="filteredTabIcons"
-                  @complete="searchTabIcons"
-                  placeholder="Search icons… e.g. Link"
-                  class="w-full"
-                  :inputClass="'w-full'"
-                  forceSelection
-                >
-                  <template #option="{ option }">
-                    <div class="flex items-center gap-2.5 py-0.5">
-                      <component :is="getTabIconComponent(option)" :size="18" class="shrink-0 text-[color:var(--color-ink-soft)]" />
-                      <span class="text-sm font-medium">{{ option }}</span>
-                    </div>
-                  </template>
-                  <template #value="{ value }">
-                    <div v-if="value" class="flex items-center gap-2">
-                      <component :is="getTabIconComponent(value)" :size="16" class="shrink-0 text-[color:var(--color-ink-soft)]" />
-                      <span>{{ value }}</span>
-                    </div>
-                  </template>
-                </AutoComplete>
-                <div class="cms__help">Choose from <a href="https://lucide.dev/icons" target="_blank" rel="noreferrer" class="underline">Lucide icons</a>. Leave empty for default.</div>
-              </div>
-            </div>
-          </div>
-
-          <div class="cms__card">
-            <div v-if="draftLinks.length === 0" class="cms__empty">
-              <div class="cms__empty-title">No links yet</div>
-              <div class="cms__empty-sub">Click “Add link” to create your first one.</div>
-            </div>
-
-            <draggable
-              v-else
-              v-model="draftLinks"
-              item-key="id"
-              handle=".drag"
-              :animation="160"
-              class="cms__list"
-            >
-              <template #item="{ element }">
-                <button type="button" class="cms__row" @click="openLinkEditor(element.id)">
-                  <span class="cms__row-drag drag" aria-label="Drag">
-                    <i class="pi pi-bars" />
-                  </span>
-
-                  <span class="cms__row-thumb">
-                    <img
-                      v-if="element.imageUrl"
-                      :src="element.imageUrl"
-                      alt=""
-                      class="h-full w-full object-cover"
-                    />
-                    <i v-else class="pi pi-link text-[color:var(--color-ink-soft)]" />
-                  </span>
-
-                  <span class="cms__row-text">
-                    <span class="cms__row-title">{{ element.title || "Untitled" }}</span>
-                    <span class="cms__row-sub">{{ element.url || "(no url)" }}</span>
-                  </span>
-
-                  <span class="cms__row-meta">
-                    <Tag v-if="!element.enabled" severity="warning" value="Hidden" class="!rounded-full" />
-                    <i v-else class="pi pi-check-circle cms__ok" />
-                    <i class="pi pi-angle-right text-[color:var(--color-ink-soft)]" />
-                  </span>
-                </button>
-              </template>
-            </draggable>
-          </div>
-          </div>
-
-          <div v-else-if="contentSubTab === 'gallery'" class="cms__subPanel">
-          <div class="cms__panel-head cms__panel-head--row">
-            <div>
-              <div class="cms__title">Gallery</div>
-              <div class="cms__sub">Manage images and videos for your gallery.</div>
-            </div>
-
-            <Button rounded class="cms__primary cms__primary--addon" @click="createAndEditGalleryItem">
-              <i class="pi pi-plus" />
-              <span class="cms__btn-label">Add item</span>
-              <span class="cms__btn-label--compact">Add</span>
-            </Button>
-          </div>
-
-          <div class="cms__card" style="margin-bottom: 10px">
-            <div class="cms__form">
-              <div class="cms__field">
-                <label class="cms__label">Tab label</label>
-                <InputText v-model="draft.collections.gallery.label" class="w-full" placeholder="Gallery" />
-                <div class="cms__help">Customise the tab name shown on the public page.</div>
-              </div>
-              <div class="cms__field">
-                <label class="cms__label">Tab icon</label>
-                <AutoComplete
-                  v-model="draft.collections.gallery.icon"
-                  :suggestions="filteredTabIcons"
-                  @complete="searchTabIcons"
-                  placeholder="Search icons… e.g. Images"
-                  class="w-full"
-                  :inputClass="'w-full'"
-                  forceSelection
-                >
-                  <template #option="{ option }">
-                    <div class="flex items-center gap-2.5 py-0.5">
-                      <component :is="getTabIconComponent(option)" :size="18" class="shrink-0 text-[color:var(--color-ink-soft)]" />
-                      <span class="text-sm font-medium">{{ option }}</span>
-                    </div>
-                  </template>
-                  <template #value="{ value }">
-                    <div v-if="value" class="flex items-center gap-2">
-                      <component :is="getTabIconComponent(value)" :size="16" class="shrink-0 text-[color:var(--color-ink-soft)]" />
-                      <span>{{ value }}</span>
-                    </div>
-                  </template>
-                </AutoComplete>
-                <div class="cms__help">Choose from <a href="https://lucide.dev/icons" target="_blank" rel="noreferrer" class="underline">Lucide icons</a>. Leave empty for default.</div>
-              </div>
-            </div>
-          </div>
-
-          <div class="cms__card">
-            <div class="cms__form">
-              <!-- Enable / disable gallery -->
-              <div class="flex items-center justify-between gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--glass-2)] p-3">
-                <div>
-                  <div class="text-xs font-extrabold text-[color:var(--color-ink)]">Enable gallery</div>
-                  <div class="mt-0.5 text-xs font-semibold text-[color:var(--color-ink-soft)]">
-                    When disabled, the gallery tab will not appear on the public page.
-                  </div>
-                </div>
-                <ToggleSwitch v-model="draft.collections.gallery.enabled" />
-              </div>
-            </div>
-
-            <div v-if="draftGalleryItems.length === 0" class="cms__empty mt-3">
-              <div class="cms__empty-title">No gallery items yet</div>
-              <div class="cms__empty-sub">Click "Add item" to upload an image or add a video.</div>
-            </div>
-
-            <draggable
-              v-else
-              v-model="draftGalleryItems"
-              item-key="id"
-              handle=".drag"
-              :animation="160"
-              class="cms__list mt-3"
-            >
-              <template #item="{ element }">
-                <button type="button" class="cms__row" @click="openGalleryEditor(element.id)">
-                  <span class="cms__row-drag drag" aria-label="Drag">
-                    <i class="pi pi-bars" />
-                  </span>
-
-                  <span class="cms__row-thumb">
-                    <img
-                      v-if="element.type === 'image' && element.src"
-                      :src="element.src"
-                      alt=""
-                      class="h-full w-full object-cover"
-                    />
-                    <img
-                      v-else-if="element.type === 'video' && element.coverUrl"
-                      :src="element.coverUrl"
-                      alt=""
-                      class="h-full w-full object-cover"
-                    />
-                    <i v-else-if="element.type === 'video'" class="pi pi-video text-[color:var(--color-ink-soft)]" />
-                    <i v-else class="pi pi-image text-[color:var(--color-ink-soft)]" />
-                  </span>
-
-                  <span class="cms__row-text">
-                    <span class="cms__row-title">{{ element.title || 'Untitled' }}</span>
-                    <span class="cms__row-sub">{{ element.type === 'video' ? (element.src || '(no source)') : (element.src ? 'Image' : '(no image)') }}</span>
-                  </span>
-
-                  <span class="cms__row-meta">
-                    <Tag v-if="!element.enabled" severity="warning" value="Hidden" class="!rounded-full" />
-                    <i v-else class="pi pi-check-circle cms__ok" />
-                    <i class="pi pi-angle-right text-[color:var(--color-ink-soft)]" />
-                  </span>
-                </button>
-              </template>
-            </draggable>
-          </div>
-          </div>
-
-          <div v-else-if="contentSubTab === 'blog'" class="cms__subPanel">
-          <div class="cms__panel-head cms__panel-head--row">
-            <div>
-              <div class="cms__title">Blog</div>
-              <div class="cms__sub">Create and manage blog posts (stored as Markdown files).</div>
-            </div>
-
-            <Button rounded class="cms__primary cms__primary--addon" @click="openBlogEditorNew">
-              <i class="pi pi-plus" />
-              <span class="cms__btn-label">New post</span>
-              <span class="cms__btn-label--compact">New</span>
-            </Button>
-          </div>
-
-          <div class="cms__card" style="margin-bottom: 10px">
-            <div class="cms__form">
-              <div class="cms__field">
-                <label class="cms__label">Tab label</label>
-                <InputText v-model="draft.collections.blog.label" class="w-full" placeholder="Blog" />
-                <div class="cms__help">Customise the tab name shown on the public page.</div>
-              </div>
-              <div class="cms__field">
-                <label class="cms__label">Tab icon</label>
-                <AutoComplete
-                  v-model="draft.collections.blog.icon"
-                  :suggestions="filteredTabIcons"
-                  @complete="searchTabIcons"
-                  placeholder="Search icons… e.g. Pencil"
-                  class="w-full"
-                  :inputClass="'w-full'"
-                  forceSelection
-                >
-                  <template #option="{ option }">
-                    <div class="flex items-center gap-2.5 py-0.5">
-                      <component :is="getTabIconComponent(option)" :size="18" class="shrink-0 text-[color:var(--color-ink-soft)]" />
-                      <span class="text-sm font-medium">{{ option }}</span>
-                    </div>
-                  </template>
-                  <template #value="{ value }">
-                    <div v-if="value" class="flex items-center gap-2">
-                      <component :is="getTabIconComponent(value)" :size="16" class="shrink-0 text-[color:var(--color-ink-soft)]" />
-                      <span>{{ value }}</span>
-                    </div>
-                  </template>
-                </AutoComplete>
-                <div class="cms__help">Choose from <a href="https://lucide.dev/icons" target="_blank" rel="noreferrer" class="underline">Lucide icons</a>. Leave empty for default.</div>
-              </div>
-            </div>
-          </div>
-
-          <div class="cms__card">
-            <div class="cms__form">
-              <div class="flex items-center justify-between gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--glass-2)] p-3">
-                <div>
-                  <div class="text-xs font-extrabold text-[color:var(--color-ink)]">Enable blog</div>
-                  <div class="mt-0.5 text-xs font-semibold text-[color:var(--color-ink-soft)]">
-                    When disabled, the blog tab will not appear on the public page.
-                  </div>
-                </div>
-                <ToggleSwitch v-model="draft.collections.blog.enabled" />
-              </div>
-            </div>
-
-            <div v-if="blogPosts.length === 0" class="cms__empty mt-3">
-              <div class="cms__empty-title">No blog posts yet</div>
-              <div class="cms__empty-sub">Click "New post" to create your first article.</div>
-            </div>
-
-            <div v-else class="cms__blogList cms__list mt-3">
-              <button
-                v-for="post in blogPosts"
-                :key="post.slug"
-                type="button"
-                class="cms__row"
-                @click="openBlogEditorExisting(post.slug)"
-              >
-                <span class="cms__row-thumb">
-                  <i class="pi pi-file-edit text-[color:var(--color-ink-soft)]" />
-                </span>
-
-                <span class="cms__row-text">
-                  <span class="cms__row-title">{{ post.title }}</span>
-                  <span class="cms__row-sub">{{ post.date }}{{ post.tags.length ? ' · ' + post.tags.join(', ') : '' }}</span>
-                </span>
-
-                <span class="cms__row-meta">
-                  <Tag v-if="!post.published" severity="warning" value="Draft" class="!rounded-full" />
-                  <i v-else class="pi pi-check-circle cms__ok" />
-                  <i class="pi pi-angle-right text-[color:var(--color-ink-soft)]" />
-                </span>
-              </button>
-            </div>
-          </div>
-          </div>
-
-          <div v-else-if="contentSubTab === 'resume'" class="cms__subPanel">
-          <div class="cms__panel-head cms__panel-head--row">
-            <div>
-              <div class="cms__title">Resume</div>
-              <div class="cms__sub">Add your bio, education, experience, and skills.</div>
-            </div>
-          </div>
-
-          <div class="cms__card" style="margin-bottom: 10px">
-            <div class="cms__form">
-              <div class="cms__field">
-                <label class="cms__label">Tab label</label>
-                <InputText v-model="draft.collections.resume.label" class="w-full" placeholder="Resume" />
-                <div class="cms__help">Customise the tab name shown on the public page.</div>
-              </div>
-              <div class="cms__field">
-                <label class="cms__label">Tab icon</label>
-                <AutoComplete
-                  v-model="draft.collections.resume.icon"
-                  :suggestions="filteredTabIcons"
-                  @complete="searchTabIcons"
-                  placeholder="Search icons… e.g. FileText"
-                  class="w-full"
-                  :inputClass="'w-full'"
-                  forceSelection
-                >
-                  <template #option="{ option }">
-                    <div class="flex items-center gap-2.5 py-0.5">
-                      <component :is="getTabIconComponent(option)" :size="18" class="shrink-0 text-[color:var(--color-ink-soft)]" />
-                      <span class="text-sm font-medium">{{ option }}</span>
-                    </div>
-                  </template>
-                  <template #value="{ value }">
-                    <div v-if="value" class="flex items-center gap-2">
-                      <component :is="getTabIconComponent(value)" :size="16" class="shrink-0 text-[color:var(--color-ink-soft)]" />
-                      <span>{{ value }}</span>
-                    </div>
-                  </template>
-                </AutoComplete>
-                <div class="cms__help">Choose from <a href="https://lucide.dev/icons" target="_blank" rel="noreferrer" class="underline">Lucide icons</a>. Leave empty for default.</div>
-              </div>
-            </div>
-          </div>
-
-          <div class="cms__card">
-            <div class="cms__form">
-              <!-- Enable / disable resume -->
-              <div class="flex items-center justify-between gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--glass-2)] p-3">
-                <div>
-                  <div class="text-xs font-extrabold text-[color:var(--color-ink)]">Enable resume</div>
-                  <div class="mt-0.5 text-xs font-semibold text-[color:var(--color-ink-soft)]">
-                    When disabled, the resume tab will not appear on the public page.
-                  </div>
-                </div>
-                <ToggleSwitch v-model="draft.collections.resume.enabled" />
-              </div>
-
-              <!-- Bio -->
-              <div class="cms__field">
-                <label class="cms__label">Bio</label>
-                <Textarea v-model="resumeData.bio" autoResize rows="4" class="w-full" placeholder="A brief professional summary…" />
-              </div>
-
-              <!-- Education -->
-              <div class="cms__field">
-                <div class="flex items-center justify-between mb-2">
-                  <label class="cms__label">Education</label>
-                  <Button rounded size="small" class="cms__primary !py-1 !px-3 !text-xs" @click="addEducation">
-                    <i class="pi pi-plus mr-1" />
-                    Add
-                  </Button>
-                </div>
-
-                <div v-if="resumeData.education.length === 0" class="cms__empty">
-                  <div class="cms__empty-sub">No education entries yet.</div>
-                </div>
-                <draggable
-                  v-else
-                  v-model="resumeData.education"
-                  item-key="id"
-                  handle=".drag"
-                  :animation="160"
-                  class="grid gap-2"
-                >
-                  <template #item="{ element: edu }">
-                    <button
-                      type="button"
-                      class="cms__row"
-                      style="grid-template-columns: 44px 1fr auto;"
-                      @click="openEducationEditor(edu.id)"
-                    >
-                      <span class="cms__row-drag drag" aria-label="Drag">
-                        <i class="pi pi-bars" />
-                      </span>
-                      <span class="cms__row-text">
-                        <span class="cms__row-title">{{ edu.institution || 'Untitled' }}</span>
-                        <span class="cms__row-sub">{{ [edu.degree, edu.field].filter(Boolean).join(' · ') || '(no details)' }}</span>
-                      </span>
-                      <span class="cms__row-meta">
-                        <span v-if="edu.startYear || edu.endYear" class="text-xs text-[color:var(--color-ink-soft)]">{{ edu.startYear }}–{{ edu.endYear }}</span>
-                        <i class="pi pi-angle-right text-[color:var(--color-ink-soft)]" />
-                      </span>
-                    </button>
-                  </template>
-                </draggable>
-              </div>
-
-              <!-- Employment -->
-              <div class="cms__field">
-                <div class="flex items-center justify-between mb-2">
-                  <label class="cms__label">Employment</label>
-                  <Button rounded size="small" class="cms__primary !py-1 !px-3 !text-xs" @click="addEmployment">
-                    <i class="pi pi-plus mr-1" />
-                    Add
-                  </Button>
-                </div>
-
-                <div v-if="resumeData.employment.length === 0" class="cms__empty">
-                  <div class="cms__empty-sub">No employment entries yet.</div>
-                </div>
-                <draggable
-                  v-else
-                  v-model="resumeData.employment"
-                  item-key="id"
-                  handle=".drag"
-                  :animation="160"
-                  class="grid gap-2"
-                >
-                  <template #item="{ element: job }">
-                    <button
-                      type="button"
-                      class="cms__row"
-                      style="grid-template-columns: 44px 1fr auto;"
-                      @click="openEmploymentEditor(job.id)"
-                    >
-                      <span class="cms__row-drag drag" aria-label="Drag">
-                        <i class="pi pi-bars" />
-                      </span>
-                      <span class="cms__row-text">
-                        <span class="cms__row-title">{{ job.company || 'Untitled' }}</span>
-                        <span class="cms__row-sub">{{ job.role || '(no role)' }}</span>
-                      </span>
-                      <span class="cms__row-meta">
-                        <span v-if="job.startYear || job.endYear" class="text-xs text-[color:var(--color-ink-soft)]">{{ job.startYear }}–{{ job.endYear }}</span>
-                        <i class="pi pi-angle-right text-[color:var(--color-ink-soft)]" />
-                      </span>
-                    </button>
-                  </template>
-                </draggable>
-              </div>
-
-              <!-- Skills -->
-              <div class="cms__field">
-                <label class="cms__label">Skills</label>
-                <div class="flex flex-wrap gap-2">
-                  <span
-                    v-for="(skill, i) in resumeData.skills"
-                    :key="i"
-                    class="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-border)] bg-[var(--glass)] px-3 py-1 text-xs font-semibold text-[color:var(--color-ink)] shadow-sm"
-                  >
-                    {{ skill }}
-                    <button type="button" class="hover:text-red-500 transition" @click="removeSkill(i)">
-                      <i class="pi pi-times text-[10px]" />
-                    </button>
-                  </span>
-                </div>
-                <div class="flex gap-2 mt-1">
-                  <InputText
-                    v-model="newSkillText"
-                    class="w-full"
-                    placeholder="Type a skill and press Add…"
-                    @keydown.enter.prevent="addSkill"
-                  />
-                  <Button rounded size="small" severity="secondary" @click="addSkill" :disabled="!newSkillText.trim()">
-                    Add
-                  </Button>
-                </div>
-              </div>
-
-              <!-- Achievements -->
-              <div class="cms__field">
-                <div class="flex items-center justify-between mb-2">
-                  <label class="cms__label">Achievements</label>
-                  <Button rounded size="small" class="cms__primary !py-1 !px-3 !text-xs" @click="addAchievementEntry">
-                    <i class="pi pi-plus mr-1" />
-                    Add
-                  </Button>
-                </div>
-
-                <div v-if="resumeData.achievements.length === 0" class="cms__empty">
-                  <div class="cms__empty-sub">No achievements yet.</div>
-                </div>
-                <draggable
-                  v-else
-                  v-model="resumeData.achievements"
-                  item-key="id"
-                  handle=".drag"
-                  :animation="160"
-                  class="grid gap-2"
-                >
-                  <template #item="{ element: ach }">
-                    <button
-                      type="button"
-                      class="cms__row"
-                      style="grid-template-columns: 44px 1fr auto;"
-                      @click="openAchievementEditor(ach.id)"
-                    >
-                      <span class="cms__row-drag drag" aria-label="Drag">
-                        <i class="pi pi-bars" />
-                      </span>
-                      <span class="cms__row-text">
-                        <span class="cms__row-title">{{ ach.title || 'Untitled' }}</span>
-                        <span class="cms__row-sub">{{ ach.issuer || '(no issuer)' }}</span>
-                      </span>
-                      <span class="cms__row-meta">
-                        <span v-if="ach.year" class="text-xs text-[color:var(--color-ink-soft)]">{{ ach.year }}</span>
-                        <i class="pi pi-angle-right text-[color:var(--color-ink-soft)]" />
-                      </span>
-                    </button>
-                  </template>
-                </draggable>
-              </div>
-            </div>
-          </div>
-          </div>
-
-          <div v-else-if="contentSubTab === 'embeds'" class="cms__subPanel">
-          <div class="cms__panel-head cms__panel-head--row">
-            <div>
-              <div class="cms__title">Embeds</div>
-              <div class="cms__sub">Add HTML embeds (Cal.com, Zoom, YouTube, etc.) that appear as separate tabs.</div>
-            </div>
-
-            <Button rounded class="cms__primary cms__primary--addon" @click="createAndEditEmbed">
-              <i class="pi pi-plus" />
-              <span class="cms__btn-label">Add embed</span>
-              <span class="cms__btn-label--compact">Add</span>
-            </Button>
-          </div>
-
-          <div class="cms__card">
-            <div v-if="draftEmbedItems.length === 0" class="cms__empty">
-              <div class="cms__empty-title">No embeds yet</div>
-              <div class="cms__empty-sub">Click "Add embed" to create your first embedded tab.</div>
-            </div>
-
-            <draggable
-              v-else
-              v-model="draftEmbedItems"
-              item-key="id"
-              handle=".drag"
-              :animation="160"
-              class="cms__list"
-            >
-              <template #item="{ element }">
-                <button type="button" class="cms__row" @click="openEmbedEditor(element.id)">
-                  <span class="cms__row-drag drag" aria-label="Drag">
-                    <i class="pi pi-bars" />
-                  </span>
-
-                  <span class="cms__row-thumb">
-                    <component :is="resolveLucideIcon(element.icon)" :size="18" class="text-[color:var(--color-ink-soft)]" />
-                  </span>
-
-                  <span class="cms__row-text">
-                    <span class="cms__row-title">{{ element.label || "Untitled" }}</span>
-                    <span class="cms__row-sub">{{ element.html ? 'Has embed code' : '(no embed code)' }}</span>
-                  </span>
-
-                  <span class="cms__row-meta">
-                    <Tag v-if="!element.enabled" severity="warning" value="Hidden" class="!rounded-full" />
-                    <i v-else class="pi pi-check-circle cms__ok" />
-                    <i class="pi pi-angle-right text-[color:var(--color-ink-soft)]" />
-                  </span>
-                </button>
-              </template>
-            </draggable>
-          </div>
-          </div>
-        </section>
-
-        <!-- Newsletter tab -->
-        <section v-else-if="tab === 'newsletter'" class="cms__panel">
-          <div class="cms__panel-head">
-            <div class="cms__title">Newsletter</div>
-            <div class="cms__sub">Manage subscribers and send broadcasts.</div>
-          </div>
-
-          <div class="cms__card" style="margin-bottom: 10px">
-            <div class="cms__form">
-              <div class="cms__help" style="margin-bottom: 8px">Show an email signup form on your page so visitors can subscribe to your newsletter.</div>
-              <div class="cms__field" style="display: flex; align-items: center; gap: 12px">
-                <ToggleSwitch v-model="draft.collections.newsletter.enabled" />
-                <label class="cms__label" style="margin: 0">Enable newsletter signup</label>
-              </div>
-            </div>
-          </div>
-
-          <div class="cms__card" style="margin-bottom: 10px">
-            <div class="cms__form">
-              <div class="cms__field">
-                <label class="cms__label">Tab label</label>
-                <InputText v-model="draft.collections.newsletter.label" class="w-full" placeholder="Newsletter" />
-                <div class="cms__help">Customise the tab name shown on the public page.</div>
-              </div>
-              <div class="cms__field">
-                <label class="cms__label">Tab icon</label>
-                <AutoComplete
-                  v-model="draft.collections.newsletter.icon"
-                  :suggestions="filteredTabIcons"
-                  @complete="searchTabIcons"
-                  placeholder="Search icons… e.g. Mail"
-                  class="w-full"
-                  :inputClass="'w-full'"
-                  forceSelection
-                >
-                  <template #option="{ option }">
-                    <div class="flex items-center gap-2.5 py-0.5">
-                      <component :is="getTabIconComponent(option)" :size="18" class="shrink-0 text-[color:var(--color-ink-soft)]" />
-                      <span class="text-sm font-medium">{{ option }}</span>
-                    </div>
-                  </template>
-                  <template #value="{ value }">
-                    <div v-if="value" class="flex items-center gap-2">
-                      <component :is="getTabIconComponent(value)" :size="16" class="shrink-0 text-[color:var(--color-ink-soft)]" />
-                      <span>{{ value }}</span>
-                    </div>
-                  </template>
-                </AutoComplete>
-                <div class="cms__help">Choose from <a href="https://lucide.dev/icons" target="_blank" rel="noreferrer" class="underline">Lucide icons</a>. Leave empty for default.</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Subscriber stats -->
-          <div class="cms__card" style="margin-bottom: 10px">
-            <div class="flex items-center justify-between mb-3">
-              <span class="text-sm font-extrabold text-[color:var(--color-ink)]">Subscribers</span>
-              <Button
-                text
-                rounded
-                size="small"
-                :loading="subscribersLoading"
-                @click="loadSubscribers"
-              >
-                <i class="pi pi-refresh" />
-              </Button>
-            </div>
-            <div class="flex gap-3 text-xs font-semibold text-[color:var(--color-ink-soft)]">
-              <span class="flex items-center gap-1"><span class="inline-block w-2 h-2 rounded-full bg-green-500" /> {{ subscriberCounts.confirmed }} confirmed</span>
-              <span class="flex items-center gap-1"><span class="inline-block w-2 h-2 rounded-full bg-yellow-500" /> {{ subscriberCounts.pending }} pending</span>
-              <span class="flex items-center gap-1"><span class="inline-block w-2 h-2 rounded-full bg-gray-400" /> {{ subscriberCounts.unsubscribed }} unsubbed</span>
-            </div>
-
-            <!-- Subscriber list -->
-            <div v-if="subscribersLoading" class="mt-3 text-xs text-[color:var(--color-ink-soft)] text-center py-4">Loading…</div>
-            <div v-else-if="subscribersError" class="mt-3 text-xs text-red-500 text-center py-4">{{ subscribersError }}</div>
-            <div v-else-if="subscribers.length === 0" class="mt-3 text-xs text-[color:var(--color-ink-soft)] text-center py-4">No subscribers yet.</div>
-            <div v-else class="mt-3 max-h-[240px] overflow-y-auto space-y-1">
-              <div
-                v-for="sub in subscribers"
-                :key="sub.id"
-                class="flex items-center justify-between rounded-lg px-3 py-2 text-xs hover:bg-[var(--glass)]"
-              >
-                <div class="flex items-center gap-2 min-w-0">
-                  <span
-                    class="inline-block w-2 h-2 rounded-full shrink-0"
-                    :class="sub.unsubscribed_at ? 'bg-gray-400' : sub.confirmed_at ? 'bg-green-500' : 'bg-yellow-500'"
-                  />
-                  <span class="truncate font-medium text-[color:var(--color-ink)]">{{ sub.email }}</span>
-                </div>
-                <Button
-                  text
-                  rounded
-                  severity="danger"
-                  size="small"
-                  class="!p-1"
-                  @click="deleteSubscriber(sub.id)"
-                >
-                  <i class="pi pi-trash text-[10px]" />
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Broadcasts / Send History -->
-          <div class="cms__card">
-            <div class="flex items-center justify-between mb-3">
-              <span class="text-sm font-extrabold text-[color:var(--color-ink)]">Broadcasts</span>
-              <div class="flex items-center gap-1">
-                <Button text rounded size="small" :loading="sendsLoading" @click="loadSends">
-                  <i class="pi pi-refresh" />
-                </Button>
-                <Button rounded size="small" class="cms__primary" @click="openComposeNew">
-                  <i class="pi pi-plus" />
-                  <span class="ml-1">New</span>
-                </Button>
-              </div>
-            </div>
-
-            <div v-if="sendsLoading" class="text-xs text-[color:var(--color-ink-soft)] text-center py-4">Loading…</div>
-            <div v-else-if="newsletterSends.length === 0" class="text-xs text-[color:var(--color-ink-soft)] text-center py-4">No broadcasts yet. Create your first one!</div>
-            <div v-else class="max-h-[300px] overflow-y-auto space-y-1.5">
-              <button
-                v-for="send in newsletterSends"
-                :key="send.id"
-                type="button"
-                class="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-[var(--glass)] transition-colors"
-                @click="openComposeEdit(send)"
-              >
-                <div class="min-w-0 flex-1">
-                  <div class="text-xs font-bold text-[color:var(--color-ink)] truncate">{{ send.subject || '(no subject)' }}</div>
-                  <div class="text-[10px] text-[color:var(--color-ink-soft)] mt-0.5">
-                    <template v-if="send.status === 'sent'">
-                      Sent {{ formatSendDate(send.sent_at) }} · {{ send.recipient_count }} recipients · {{ send.click_count || 0 }} clicks
-                    </template>
-                    <template v-else-if="send.status === 'scheduled'">
-                      Scheduled for {{ formatSendDate(send.scheduled_at) }}
-                    </template>
-                    <template v-else-if="send.status === 'sending'">
-                      Sending…
-                    </template>
-                    <template v-else>
-                      Draft · Updated {{ formatSendDate(send.updated_at) }}
-                    </template>
-                  </div>
-                </div>
-                <Tag
-                  :value="send.status === 'sent' ? 'Sent' : send.status === 'scheduled' ? 'Scheduled' : send.status === 'sending' ? 'Sending' : 'Draft'"
-                  :severity="send.status === 'sent' ? 'success' : send.status === 'scheduled' ? 'warn' : send.status === 'sending' ? 'info' : 'secondary'"
-                  class="!rounded-full !text-[10px] shrink-0"
-                />
-              </button>
-            </div>
-          </div>
+          </template>
         </section>
 
         <AnalyticsPanel
@@ -1481,67 +651,11 @@
         </div>
       </div>
     </template>
-
-    <LinkEditorDrawer
-      v-if="activeLink"
-      v-model:open="linkEditorOpen"
-      v-model="activeLinkProxy"
-      :allTags="allLinkTags"
-      @delete="deleteActiveLink"
-    />
-    <SocialEditorDrawer
-      v-if="activeSocial"
-      v-model:open="socialEditorOpen"
-      v-model="activeSocialProxy"
-      @delete="deleteActiveSocial"
-    />
-    <ResumeEditorDrawer
-      v-if="activeEducation || activeEmployment || activeAchievement"
-      v-model:open="resumeEditorOpen"
-      :editMode="resumeEditMode"
-      :education="activeEducation"
-      :employment="activeEmployment"
-      :achievement="activeAchievement"
-      @update:education="updateEducation"
-      @update:employment="updateEmployment"
-      @update:achievement="updateAchievement"
-      @delete="deleteResumeEntry"
-    />
-    <GalleryEditorDrawer
-      v-if="activeGalleryItem"
-      v-model:open="galleryEditorOpen"
-      :item="activeGalleryItem"
-      :allTags="allGalleryTags"
-      @update:item="updateGalleryItem"
-      @delete="deleteActiveGalleryItem"
-    />
-    <BlogEditorDrawer
-      v-model:open="blogEditorOpen"
-      :post="blogEditorPost"
-      :originalSlug="blogEditorOriginalSlug"
-      :allTags="allBlogTags"
-      @saved="refreshBlogPosts"
-      @deleted="refreshBlogPosts"
-    />
-    <EmbedEditorDrawer
-      v-if="activeEmbed"
-      v-model:open="embedEditorOpen"
-      v-model="activeEmbedProxy"
-      @delete="deleteActiveEmbed"
-    />
-    <NewsletterComposeDrawer
-      v-model:open="composeOpen"
-      :sendRecord="composeRecord"
-      @saved="onComposeSaved"
-      @deleted="onComposeDeleted"
-      @sent="onComposeSent"
-      @reauth="$emit('reauth')"
-    />
   </Dialog>
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, onMounted, reactive, ref, shallowRef, watch, watchEffect, type Component, markRaw } from "vue";
+import { computed, defineComponent, reactive, ref, shallowRef, watch, watchEffect, type Component, markRaw } from "vue";
 import draggable from "vuedraggable";
 
 import Button from "primevue/button";
@@ -1556,40 +670,19 @@ import { useToast } from "primevue/usetoast";
 import LayoutSchemaRenderer from "./LayoutSchemaRenderer.vue";
 
 import ImageUploadField from "./ImageUploadField.vue";
-import LinkEditorDrawer from "./LinkEditorDrawer.vue";
-import SocialEditorDrawer from "./SocialEditorDrawer.vue";
-import ResumeEditorDrawer from "./ResumeEditorDrawer.vue";
-import GalleryEditorDrawer from "./GalleryEditorDrawer.vue";
-import BlogEditorDrawer from "./BlogEditorDrawer.vue";
-import EmbedEditorDrawer from "./EmbedEditorDrawer.vue";
-import NewsletterComposeDrawer from "./NewsletterComposeDrawer.vue";
+import CollectionListEditor from "./CollectionListEditor.vue";
 import AnalyticsPanel from "./AnalyticsPanel.vue";
 import { icons as lucideIcons } from "lucide-vue-next";
-import { getAvailableLayouts, getLayoutManifest } from "../lib/component-resolver";
+import { getAvailableLayouts, getLayoutManifest, getLayoutPresets } from "../lib/component-resolver";
 import type { LayoutManifest, LayoutVar } from "../lib/layout-manifest";
-import type { BioLink, BioModel, SocialLink, EducationEntry, EmploymentEntry, AchievementEntry, GalleryItem, ThemePreset, EmbedItem, ResumeData } from "../lib/model";
+import type { BioModel, ThemePreset } from "../lib/model";
 import {
   defaultModel,
   defaultTheme,
-  darkTheme,
   THEME_PRESETS,
-  LAYOUT_PRESETS,
-  newLink,
-  newSocial,
-  newEducation,
-  newEmployment,
-  newAchievement,
-  newGalleryItem,
-  newEmbed,
   sanitizeModel,
   stableStringify,
 } from "../lib/model";
-import {
-  fetchBlogPosts,
-  fetchBlogPost,
-  type BlogPostMeta,
-  type BlogPost,
-} from "../lib/blog";
 import {
   loadGithubSettings,
   saveGithubSettings,
@@ -1598,8 +691,6 @@ import {
   testGithubConnection,
   type GithubSettings,
 } from "../lib/github";
-import { encryptPayload } from "../lib/admin-crypto";
-import { getCmsPassword } from "../lib/cms-auth";
 
 export default defineComponent({
   name: "CmsDialog",
@@ -1612,14 +703,8 @@ export default defineComponent({
     Textarea,
     Tag,
     draggable,
-    LinkEditorDrawer,
-    SocialEditorDrawer,
     ImageUploadField,
-    ResumeEditorDrawer,
-    GalleryEditorDrawer,
-    BlogEditorDrawer,
-    EmbedEditorDrawer,
-    NewsletterComposeDrawer,
+    CollectionListEditor,
     AnalyticsPanel,
     ToggleSwitch,
     LayoutSchemaRenderer,
@@ -1637,27 +722,51 @@ export default defineComponent({
 
     const visible = ref(props.open);
 
-    const contentSubTabs = ["links", "gallery", "blog", "resume", "embeds"] as const;
-    type ContentSubTab = typeof contentSubTabs[number];
+    const draft = ref<BioModel>(sanitizeModel(props.model));
 
-    const contentSubTabOptions = [
-      { label: "Links", value: "links" },
-      { label: "Gallery", value: "gallery" },
-      { label: "Blog", value: "blog" },
-      { label: "Resume", value: "resume" },
-      { label: "Embeds", value: "embeds" },
-    ];
+    const activeManifest = computed<LayoutManifest | null>(() =>
+      getLayoutManifest(draft.value.theme.layout || "default"),
+    );
 
-    function resolveInitialTab(val: string): { main: "site" | "content" | "newsletter" | "analytics"; sub: ContentSubTab } {
-      if (contentSubTabs.includes(val as ContentSubTab)) return { main: "content", sub: val as ContentSubTab };
-      if (val === "newsletter") return { main: "newsletter", sub: "links" };
-      if (val === "analytics") return { main: "analytics", sub: "links" };
-      return { main: "site", sub: "links" };
+    const contentSubTabs = computed(() =>
+      (activeManifest.value?.contentSchemas ?? []).map((s) => s.key),
+    );
+
+    const contentSubTabOptions = computed(() =>
+      (activeManifest.value?.contentSchemas ?? []).map((s) => ({
+        label: s.label,
+        value: s.key,
+      })),
+    );
+
+    // Resolve editorComponents from contentSchemas
+    const resolvedEditorComponents = shallowRef<Record<string, Component>>({});
+    watchEffect(async () => {
+      const manifest = activeManifest.value;
+      const schemas = manifest?.contentSchemas ?? [];
+      const resolved: Record<string, Component> = {};
+      await Promise.all(
+        schemas.map(async (s) => {
+          if (s.editorComponent) {
+            const mod = await s.editorComponent();
+            resolved[s.key] = markRaw(mod.default);
+          }
+        }),
+      );
+      resolvedEditorComponents.value = resolved;
+    });
+
+    function resolveInitialTab(val: string): { main: string; sub: string } {
+      const schemas = activeManifest.value?.contentSchemas ?? [];
+      const keys = schemas.map((s) => s.key);
+      if (keys.includes(val)) return { main: "content", sub: val };
+      if (val === "analytics") return { main: "analytics", sub: keys[0] || "links" };
+      return { main: "site", sub: keys[0] || "links" };
     }
 
     const initialResolved = resolveInitialTab(props.initialTab);
     const tab = ref<string>(initialResolved.main);
-    const contentSubTab = ref<ContentSubTab>(initialResolved.sub);
+    const contentSubTab = ref<string>(initialResolved.sub);
 
     const siteSection = reactive({
       identity: false,
@@ -1665,183 +774,30 @@ export default defineComponent({
       favicon: false,
       theme: false,
       github: false,
-      search: false,
       navigation: false,
-      socials: false,
       scripts: false,
       supabase: false,
     });
 
     const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL as string) || "";
 
-    // ── Newsletter subscriber management ──────────────────────────
-    interface Subscriber {
-      id: string;
-      email: string;
-      created_at: string;
-      confirmed_at: string | null;
-      unsubscribed_at: string | null;
-    }
-    const subscribers = ref<Subscriber[]>([]);
-    const subscribersLoading = ref(false);
-    const subscribersError = ref("");
-    const subscriberCounts = computed(() => {
-      const confirmed = subscribers.value.filter((s) => s.confirmed_at && !s.unsubscribed_at).length;
-      const pending = subscribers.value.filter((s) => !s.confirmed_at && !s.unsubscribed_at).length;
-      const unsubscribed = subscribers.value.filter((s) => s.unsubscribed_at).length;
-      return { confirmed, pending, unsubscribed, total: subscribers.value.length };
-    });
-
-    async function invokeAdmin(body: Record<string, unknown>): Promise<{ data: Record<string, unknown> | null; error: string | null }> {
-      const pw = getCmsPassword();
-      const anonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY as string) || "";
-      if (!pw || !anonKey || !supabaseUrl) {
-        emit("reauth");
-        return { data: null, error: "__reauth__" };
-      }
-      const token = await encryptPayload(
-        JSON.stringify({ password: pw, ts: Date.now() }),
-        anonKey,
-      );
-      const res = await fetch(`${supabaseUrl}/functions/v1/newsletter-admin`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${anonKey}`,
-          "x-admin-token": token,
-        },
-        body: JSON.stringify(body),
-      });
-      if (!res.ok) {
-        const text = await res.text();
-        return { data: null, error: text || `HTTP ${res.status}` };
-      }
-      const data = await res.json();
-      return { data, error: null };
-    }
-
-    async function loadSubscribers() {
-      subscribersLoading.value = true;
-      subscribersError.value = "";
-      try {
-        const { data, error } = await invokeAdmin({ action: "list" });
-        if (error === "__reauth__") return;
-        if (error) {
-          subscribersError.value = error;
-          return;
-        }
-        if (data?.subscribers) {
-          subscribers.value = data.subscribers as Subscriber[];
-        }
-      } catch (e) {
-        subscribersError.value = String(e);
-      } finally {
-        subscribersLoading.value = false;
-      }
-    }
-
-    async function deleteSubscriber(id: string) {
-      const { error } = await invokeAdmin({ action: "delete", id });
-      if (error) return;
-      subscribers.value = subscribers.value.filter((s) => s.id !== id);
-    }
-
-    // ── Newsletter sends (broadcasts) management ──────────────────
-    interface SendRecord {
-      id: string;
-      subject: string;
-      cover_image: string;
-      tags: string[];
-      excerpt_html: string;
-      body_html: string;
-      status: string;
-      scheduled_at: string | null;
-      sent_at: string | null;
-      recipient_count: number;
-      created_at: string;
-      updated_at: string;
-      click_count?: number;
-    }
-    const newsletterSends = ref<SendRecord[]>([]);
-    const sendsLoading = ref(false);
-    const composeOpen = ref(false);
-    const composeRecord = ref<SendRecord | null>(null);
-
-    async function loadSends() {
-      sendsLoading.value = true;
-      try {
-        const { data, error } = await invokeAdmin({ action: "list-sends" });
-        if (!error && data?.sends) {
-          newsletterSends.value = data.sends as SendRecord[];
-        }
-      } catch (e) {
-        console.error("[newsletter] loadSends error:", e);
-      } finally {
-        sendsLoading.value = false;
-      }
-    }
-
-    function openComposeNew() {
-      composeRecord.value = null;
-      composeOpen.value = true;
-    }
-
-    function openComposeEdit(send: SendRecord) {
-      composeRecord.value = send;
-      composeOpen.value = true;
-    }
-
-    function onComposeSaved() {
-      loadSends();
-    }
-
-    function onComposeDeleted() {
-      composeOpen.value = false;
-      loadSends();
-    }
-
-    function onComposeSent() {
-      loadSends();
-    }
-
-    function formatSendDate(d: string | null): string {
-      if (!d) return "";
-      return new Date(d).toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-        hour: "numeric",
-        minute: "2-digit",
-      });
-    }
-
     watch(
       () => props.open,
       (v) => {
         visible.value = v;
         if (v) {
-          // Close all editor sidebars before switching tabs
-          linkEditorOpen.value = false;
-          socialEditorOpen.value = false;
-          resumeEditorOpen.value = false;
-          galleryEditorOpen.value = false;
-          blogEditorOpen.value = false;
-          embedEditorOpen.value = false;
-
           const resolved = resolveInitialTab(props.initialTab);
           tab.value = resolved.main;
           contentSubTab.value = resolved.sub;
-          // If an embed ID is provided, auto-open the embed editor for that embed
+          // If an embed ID is provided, navigate to embeds sub-tab
           if (props.initialEmbedId) {
             tab.value = 'content';
             contentSubTab.value = 'embeds';
-            openEmbedEditor(props.initialEmbedId);
           }
-          // If a blog slug is provided, auto-open the blog editor for that post
+          // If a blog slug is provided, navigate to blog sub-tab
           if (props.initialBlogSlug) {
             tab.value = 'content';
             contentSubTab.value = 'blog';
-            openBlogEditorExisting(props.initialBlogSlug);
           }
         }
       },
@@ -1853,12 +809,11 @@ export default defineComponent({
       emit("lock");
     }
 
-    const defaultTabOptions = [
-      { label: "Links", value: "links" },
-      { label: "Resume", value: "resume" },
-      { label: "Gallery", value: "gallery" },
-      { label: "Blog", value: "blog" },
-    ];
+    const defaultTabOptions = computed(() =>
+      (activeManifest.value?.contentSchemas ?? [])
+        .filter((cs) => !cs.singleton && !cs.external && cs.key !== 'socials')
+        .map((cs) => ({ label: cs.label, value: cs.key })),
+    );
 
     // ── Icon autocomplete for tab icons ──
     const FEATURED_TAB_ICONS = [
@@ -1886,23 +841,6 @@ export default defineComponent({
       return table[name] ?? table["Globe"];
     };
 
-    const draft = ref<BioModel>(sanitizeModel(props.model));
-
-    // ── Writable computed aliases for collection items ────────────
-    const draftLinks = computed({
-      get: () => draft.value.collections.links.items as BioLink[],
-      set: (v: BioLink[]) => { draft.value.collections.links.items = v; },
-    });
-    const draftGalleryItems = computed({
-      get: () => draft.value.collections.gallery.items as GalleryItem[],
-      set: (v: GalleryItem[]) => { draft.value.collections.gallery.items = v; },
-    });
-    const draftEmbedItems = computed({
-      get: () => draft.value.collections.embeds.items as EmbedItem[],
-      set: (v: EmbedItem[]) => { draft.value.collections.embeds.items = v; },
-    });
-    const resumeData = computed(() => draft.value.collections.resume.items[0] as ResumeData);
-
     // Cache the serialised saved-model so hasChanges doesn't re-stringify it on every access
     const savedSnapshot = ref(stableStringify(sanitizeModel(props.model)));
 
@@ -1918,100 +856,6 @@ export default defineComponent({
       () =>
         stableStringify(draft.value) !== savedSnapshot.value,
     );
-
-    const linkEditorOpen = ref(false);
-    const activeLinkId = ref("");
-
-    const activeLink = computed<BioLink | null>(() => {
-      const id = activeLinkId.value;
-      if (!id) return null;
-      return draftLinks.value.find((l) => l.id === id) ?? null;
-    });
-
-    const activeLinkProxy = computed<BioLink>({
-      get() {
-        return activeLink.value ?? newLink();
-      },
-      set(v) {
-        const idx = draftLinks.value.findIndex((l) => l.id === v.id);
-        if (idx >= 0) draftLinks.value[idx] = v;
-      },
-    });
-
-    const openLinkEditor = (id: string) => {
-      activeLinkId.value = id;
-      linkEditorOpen.value = true;
-    };
-
-    const createAndEditLink = () => {
-      const l = newLink();
-      l.subtitle = "";
-      draftLinks.value.unshift(l);
-      activeLinkId.value = l.id;
-      tab.value = "links";
-      linkEditorOpen.value = true;
-      toast.add({ severity: "success", summary: "Added", detail: "Link created.", life: 1600 });
-    };
-
-    const deleteActiveLink = () => {
-      const l = activeLink.value;
-      if (!l) return;
-      draftLinks.value = draftLinks.value.filter((x) => x.id !== l.id);
-      linkEditorOpen.value = false;
-      activeLinkId.value = "";
-      toast.add({ severity: "warn", summary: "Deleted", detail: "Link removed.", life: 1600 });
-    };
-
-    watch(linkEditorOpen, (open) => {
-      if (!open) activeLinkId.value = "";
-    });
-
-    const socialEditorOpen = ref(false);
-    const activeSocialId = ref("");
-
-    const activeSocial = computed<SocialLink | null>(() => {
-      const id = activeSocialId.value;
-      if (!id) return null;
-      return draft.value.socials.find((s) => s.id === id) ?? null;
-    });
-
-    const activeSocialProxy = computed<SocialLink>({
-      get() {
-        return activeSocial.value ?? newSocial();
-      },
-      set(v) {
-        const idx = draft.value.socials.findIndex((s) => s.id === v.id);
-        if (idx >= 0) draft.value.socials[idx] = v;
-      },
-    });
-
-    const openSocialEditor = (id: string) => {
-      activeSocialId.value = id;
-      socialEditorOpen.value = true;
-    };
-
-    const createAndEditSocial = () => {
-      const s = newSocial();
-      s.enabled = true;
-      draft.value.socials.unshift(s);
-      activeSocialId.value = s.id;
-      tab.value = "socials";
-      socialEditorOpen.value = true;
-      toast.add({ severity: "success", summary: "Added", detail: "Social created.", life: 1600 });
-    };
-
-    const deleteActiveSocial = () => {
-      const s = activeSocial.value;
-      if (!s) return;
-      draft.value.socials = draft.value.socials.filter((x) => x.id !== s.id);
-      socialEditorOpen.value = false;
-      activeSocialId.value = "";
-      toast.add({ severity: "warn", summary: "Deleted", detail: "Social removed.", life: 1600 });
-    };
-
-    watch(socialEditorOpen, (open) => {
-      if (!open) activeSocialId.value = "";
-    });
 
     const resolveLucideIcon = (name: string) => {
       return (lucideIcons as Record<string, any>)[name] ?? (lucideIcons as Record<string, any>)["Globe"];
@@ -2036,28 +880,28 @@ export default defineComponent({
     const resetTheme = () => {
       const layout = draft.value.theme.layout || "default";
       const preset = draft.value.theme.preset === "dark" ? "dark" : "light";
-      const layoutPresets = LAYOUT_PRESETS[layout] || LAYOUT_PRESETS.default;
-      const factory = layoutPresets[preset] || THEME_PRESETS[preset];
+      const presets = getLayoutPresets(layout);
+      const factory = presets[preset] || THEME_PRESETS[preset];
       const base = factory ? factory() : defaultTheme();
-      const { layoutVars } = draft.value.theme;
-      draft.value.theme = { ...base, preset: draft.value.theme.preset, layout, layoutVars };
+      const { layoutVars, layoutData } = draft.value.theme;
+      draft.value.theme = { ...base, preset: draft.value.theme.preset, layout, layoutVars, layoutData };
       toast.add({ severity: "info", summary: "Theme reset", detail: "Colours restored to defaults.", life: 1600 });
     };
 
-    const presetOptions = [
-      { label: "Light", value: "light" },
-      { label: "Dark", value: "dark" },
-    ];
+    const presetOptions = computed(() => {
+      const layout = draft.value.theme.layout || "default";
+      const presets = getLayoutPresets(layout);
+      return Object.keys(presets).map((key) => ({
+        label: key.charAt(0).toUpperCase() + key.slice(1),
+        value: key,
+      }));
+    });
 
     const layoutOptions = computed(() =>
       getAvailableLayouts().map((name) => ({
         label: name.charAt(0).toUpperCase() + name.slice(1),
         value: name,
       })),
-    );
-
-    const activeManifest = computed<LayoutManifest | null>(() =>
-      getLayoutManifest(draft.value.theme.layout || "default"),
     );
 
     const layoutCmsTabs = shallowRef<Array<{ key: string; label: string; icon: string; component?: Component; schema?: import('@formkit/core').FormKitSchemaNode[] }>>([]);
@@ -2111,8 +955,8 @@ export default defineComponent({
     const getPresetDefaults = () => {
       const layout = draft.value.theme.layout || "default";
       const preset = draft.value.theme.preset === "dark" ? "dark" : "light";
-      const layoutPresets = LAYOUT_PRESETS[layout] || LAYOUT_PRESETS.default;
-      const factory = layoutPresets[preset] || THEME_PRESETS[preset];
+      const presets = getLayoutPresets(layout);
+      const factory = presets[preset] || THEME_PRESETS[preset];
       return factory ? factory() : defaultTheme();
     };
 
@@ -2145,12 +989,12 @@ export default defineComponent({
 
     const applyPreset = (preset: ThemePreset) => {
       const layout = draft.value.theme.layout || "default";
-      const layoutPresets = LAYOUT_PRESETS[layout] || LAYOUT_PRESETS.default;
-      const factory = layoutPresets[preset] || THEME_PRESETS[preset];
+      const presets = getLayoutPresets(layout);
+      const factory = presets[preset] || THEME_PRESETS[preset];
       if (factory) {
         const presetTheme = factory();
-        const { layoutVars } = draft.value.theme;
-        draft.value.theme = { ...presetTheme, preset, layout, layoutVars };
+        const { layoutVars, layoutData } = draft.value.theme;
+        draft.value.theme = { ...presetTheme, preset, layout, layoutVars, layoutData };
       } else {
         draft.value.theme.preset = preset;
       }
@@ -2169,8 +1013,9 @@ export default defineComponent({
         if (saved && saved.preset) {
           draft.value.theme = { ...saved, layout: newLayout };
         } else {
-          const presets = LAYOUT_PRESETS[newLayout] || LAYOUT_PRESETS.default;
-          draft.value.theme = { ...presets.light(), layout: newLayout };
+          const presets = getLayoutPresets(newLayout);
+          const firstFactory = presets.light || Object.values(presets)[0];
+          draft.value.theme = { ...firstFactory(), layout: newLayout };
         }
         previousLayout = newLayout;
       },
@@ -2198,212 +1043,21 @@ export default defineComponent({
 
     if (!draft.value) draft.value = defaultModel();
 
-    // Resume editor state
-    const resumeEditorOpen = ref(false);
-    const resumeEditMode = ref<"education" | "employment" | "achievement">("education");
-    const activeEducationId = ref("");
-    const activeEmploymentId = ref("");
-    const activeAchievementId = ref("");
-    const newSkillText = ref("");
+    // ── Collection update helpers (used by dynamic content tab) ──
+    const getContentSchema = (key: string) =>
+      (activeManifest.value?.contentSchemas ?? []).find((s) => s.key === key);
 
-    const activeEducation = computed<EducationEntry | null>(() => {
-      const id = activeEducationId.value;
-      if (!id) return null;
-      return resumeData.value.education.find((e) => e.id === id) ?? null;
-    });
-
-    const activeEmployment = computed<EmploymentEntry | null>(() => {
-      const id = activeEmploymentId.value;
-      if (!id) return null;
-      return resumeData.value.employment.find((e) => e.id === id) ?? null;
-    });
-
-    const activeAchievement = computed<AchievementEntry | null>(() => {
-      const id = activeAchievementId.value;
-      if (!id) return null;
-      return resumeData.value.achievements.find((a) => a.id === id) ?? null;
-    });
-
-    const openEducationEditor = (id: string) => {
-      activeEducationId.value = id;
-      resumeEditMode.value = "education";
-      resumeEditorOpen.value = true;
-    };
-
-    const openEmploymentEditor = (id: string) => {
-      activeEmploymentId.value = id;
-      resumeEditMode.value = "employment";
-      resumeEditorOpen.value = true;
-    };
-
-    const openAchievementEditor = (id: string) => {
-      activeAchievementId.value = id;
-      resumeEditMode.value = "achievement";
-      resumeEditorOpen.value = true;
-    };
-
-    const addEducation = () => {
-      const e = newEducation();
-      resumeData.value.education.push(e);
-      openEducationEditor(e.id);
-      toast.add({ severity: "success", summary: "Added", detail: "Education entry created.", life: 1600 });
-    };
-
-    const addEmployment = () => {
-      const e = newEmployment();
-      resumeData.value.employment.push(e);
-      openEmploymentEditor(e.id);
-      toast.add({ severity: "success", summary: "Added", detail: "Employment entry created.", life: 1600 });
-    };
-
-    const addAchievementEntry = () => {
-      const a = newAchievement();
-      resumeData.value.achievements.push(a);
-      openAchievementEditor(a.id);
-      toast.add({ severity: "success", summary: "Added", detail: "Achievement entry created.", life: 1600 });
-    };
-
-    const updateEducation = (updated: EducationEntry) => {
-      const idx = resumeData.value.education.findIndex((e) => e.id === updated.id);
-      if (idx >= 0) resumeData.value.education[idx] = { ...updated };
-    };
-
-    const updateEmployment = (updated: EmploymentEntry) => {
-      const idx = resumeData.value.employment.findIndex((e) => e.id === updated.id);
-      if (idx >= 0) resumeData.value.employment[idx] = { ...updated };
-    };
-
-    const updateAchievement = (updated: AchievementEntry) => {
-      const idx = resumeData.value.achievements.findIndex((a) => a.id === updated.id);
-      if (idx >= 0) resumeData.value.achievements[idx] = { ...updated };
-    };
-
-    const deleteResumeEntry = () => {
-      if (resumeEditMode.value === "education" && activeEducationId.value) {
-        resumeData.value.education = resumeData.value.education.filter(
-          (e) => e.id !== activeEducationId.value
-        );
-        activeEducationId.value = "";
-      } else if (resumeEditMode.value === "employment" && activeEmploymentId.value) {
-        resumeData.value.employment = resumeData.value.employment.filter(
-          (e) => e.id !== activeEmploymentId.value
-        );
-        activeEmploymentId.value = "";
-      } else if (resumeEditMode.value === "achievement" && activeAchievementId.value) {
-        resumeData.value.achievements = resumeData.value.achievements.filter(
-          (a) => a.id !== activeAchievementId.value
-        );
-        activeAchievementId.value = "";
+    const updateCollectionItems = (key: string, items: Record<string, unknown>[]) => {
+      if (draft.value.collections[key]) {
+        draft.value.collections[key].items = items;
       }
-      resumeEditorOpen.value = false;
-      toast.add({ severity: "warn", summary: "Deleted", detail: "Entry removed.", life: 1600 });
     };
 
-    const addSkill = () => {
-      const skill = newSkillText.value.trim();
-      if (!skill) return;
-      if (resumeData.value.skills.includes(skill)) return;
-      resumeData.value.skills.push(skill);
-      newSkillText.value = "";
-    };
-
-    const removeSkill = (index: number) => {
-      resumeData.value.skills.splice(index, 1);
-    };
-
-    watch(resumeEditorOpen, (open) => {
-      if (!open) {
-        activeEducationId.value = "";
-        activeEmploymentId.value = "";
+    const updateCollectionMeta = (key: string, patch: Record<string, unknown>) => {
+      if (draft.value.collections[key]) {
+        draft.value.collections[key] = { ...draft.value.collections[key], ...patch };
       }
-    });
-
-    // Gallery editor state
-    const galleryEditorOpen = ref(false);
-    const activeGalleryItemId = ref("");
-
-    const activeGalleryItem = computed<GalleryItem | null>(() => {
-      const id = activeGalleryItemId.value;
-      if (!id) return null;
-      return draftGalleryItems.value.find((g) => g.id === id) ?? null;
-    });
-
-    const openGalleryEditor = (id: string) => {
-      activeGalleryItemId.value = id;
-      galleryEditorOpen.value = true;
     };
-
-    const createAndEditGalleryItem = () => {
-      const item = newGalleryItem();
-      draftGalleryItems.value.unshift(item);
-      activeGalleryItemId.value = item.id;
-      galleryEditorOpen.value = true;
-      toast.add({ severity: "success", summary: "Added", detail: "Gallery item created.", life: 1600 });
-    };
-
-    const updateGalleryItem = (updated: GalleryItem) => {
-      const idx = draftGalleryItems.value.findIndex((g) => g.id === updated.id);
-      if (idx >= 0) draftGalleryItems.value[idx] = { ...updated };
-    };
-
-    const deleteActiveGalleryItem = () => {
-      const id = activeGalleryItemId.value;
-      if (!id) return;
-      draftGalleryItems.value = draftGalleryItems.value.filter((g) => g.id !== id);
-      galleryEditorOpen.value = false;
-      activeGalleryItemId.value = "";
-      toast.add({ severity: "warn", summary: "Deleted", detail: "Gallery item removed.", life: 1600 });
-    };
-
-    watch(galleryEditorOpen, (open) => {
-      if (!open) activeGalleryItemId.value = "";
-    });
-
-    // ── Embed editor ─────────────────────────────────────────────────
-    const embedEditorOpen = ref(false);
-    const activeEmbedId = ref("");
-
-    const activeEmbed = computed<EmbedItem | null>(() => {
-      const id = activeEmbedId.value;
-      if (!id) return null;
-      return draftEmbedItems.value.find((e) => e.id === id) ?? null;
-    });
-
-    const activeEmbedProxy = computed<EmbedItem>({
-      get() {
-        return activeEmbed.value ?? newEmbed();
-      },
-      set(v) {
-        const idx = draftEmbedItems.value.findIndex((e) => e.id === v.id);
-        if (idx >= 0) draftEmbedItems.value[idx] = v;
-      },
-    });
-
-    const openEmbedEditor = (id: string) => {
-      activeEmbedId.value = id;
-      embedEditorOpen.value = true;
-    };
-
-    const createAndEditEmbed = () => {
-      const item = newEmbed();
-      draftEmbedItems.value.unshift(item);
-      activeEmbedId.value = item.id;
-      embedEditorOpen.value = true;
-      toast.add({ severity: "success", summary: "Added", detail: "Embed created.", life: 1600 });
-    };
-
-    const deleteActiveEmbed = () => {
-      const id = activeEmbedId.value;
-      if (!id) return;
-      draftEmbedItems.value = draftEmbedItems.value.filter((e) => e.id !== id);
-      embedEditorOpen.value = false;
-      activeEmbedId.value = "";
-      toast.add({ severity: "warn", summary: "Deleted", detail: "Embed removed.", life: 1600 });
-    };
-
-    watch(embedEditorOpen, (open) => {
-      if (!open) activeEmbedId.value = "";
-    });
 
     // GitHub Settings
     const envOwner = import.meta.env.VITE_GITHUB_OWNER || "";
@@ -2509,82 +1163,10 @@ export default defineComponent({
 
 
 
-    // ── Blog ─────────────────────────────────────────────────────────
-    const blogPosts = ref<BlogPostMeta[]>([]);
-    const blogPostCount = computed(() => blogPosts.value.length);
-    const blogEditorOpen = ref(false);
-    const blogEditorPost = ref<BlogPost | null>(null);
-    const blogEditorOriginalSlug = ref("");
-
-    const refreshBlogPosts = async () => {
-      try {
-        blogPosts.value = await fetchBlogPosts();
-      } catch {
-        blogPosts.value = [];
-      }
-      emit("blog-posts-updated");
-    };
-
-    // Load blog posts when tab becomes 'blog'
-    watch(tab, (t) => {
-      if (t === "blog") refreshBlogPosts();
-    });
-
-    // Also load on mount
-    onMounted(() => {
-      refreshBlogPosts();
-    });
-
-    const openBlogEditorNew = () => {
-      blogEditorPost.value = null;
-      blogEditorOriginalSlug.value = "";
-      blogEditorOpen.value = true;
-    };
-
-    const openBlogEditorExisting = async (slug: string) => {
-      try {
-        const post = await fetchBlogPost(slug);
-        blogEditorPost.value = post;
-        blogEditorOriginalSlug.value = slug;
-        blogEditorOpen.value = true;
-      } catch {
-        toast.add({ severity: "error", summary: "Error", detail: "Could not load blog post.", life: 2600 });
-      }
-    };
-
-    // ── Tag collections for editor drawers ───────────────────────
-    const allLinkTags = computed(() => {
-      const tagSet = new Set<string>();
-      for (const l of draftLinks.value) {
-        if (l.tags) l.tags.forEach((t: string) => tagSet.add(t));
-      }
-      return [...tagSet].sort();
-    });
-
-    const allGalleryTags = computed(() => {
-      const tagSet = new Set<string>();
-      for (const item of draftGalleryItems.value) {
-        if (item.tags) item.tags.forEach((t: string) => tagSet.add(t));
-      }
-      return [...tagSet].sort();
-    });
-
-    const allBlogTags = computed(() => {
-      const tagSet = new Set<string>();
-      for (const p of blogPosts.value) {
-        if (p.tags) p.tags.forEach((t: string) => tagSet.add(t));
-      }
-      return [...tagSet].sort();
-    });
-
     return {
       visible,
       tab,
       draft,
-      draftLinks,
-      draftGalleryItems,
-      draftEmbedItems,
-      resumeData,
       siteSection,
       hasChanges,
       discard,
@@ -2604,18 +1186,6 @@ export default defineComponent({
       resetField,
       hasAnyOverride,
       resetAll,
-      linkEditorOpen,
-      activeLink,
-      activeLinkProxy,
-      openLinkEditor,
-      createAndEditLink,
-      deleteActiveLink,
-      socialEditorOpen,
-      activeSocial,
-      activeSocialProxy,
-      openSocialEditor,
-      createAndEditSocial,
-      deleteActiveSocial,
       resolveLucideIcon,
       githubForm,
       githubSaving,
@@ -2626,72 +1196,19 @@ export default defineComponent({
       envOwner,
       envRepo,
       envBranch,
-      resumeEditorOpen,
-      resumeEditMode,
-      activeEducation,
-      activeEmployment,
-      activeAchievement,
-      openEducationEditor,
-      openEmploymentEditor,
-      openAchievementEditor,
-      addEducation,
-      addEmployment,
-      addAchievementEntry,
-      updateEducation,
-      updateEmployment,
-      updateAchievement,
-      deleteResumeEntry,
-      newSkillText,
-      addSkill,
-      removeSkill,
-      galleryEditorOpen,
-      activeGalleryItem,
-      openGalleryEditor,
-      createAndEditGalleryItem,
-      updateGalleryItem,
-      deleteActiveGalleryItem,
-      embedEditorOpen,
-      activeEmbed,
-      activeEmbedProxy,
-      openEmbedEditor,
-      createAndEditEmbed,
-      deleteActiveEmbed,
-      blogPosts,
-      blogPostCount,
-      blogEditorOpen,
-      blogEditorPost,
-      blogEditorOriginalSlug,
-      openBlogEditorNew,
-      openBlogEditorExisting,
-      refreshBlogPosts,
-      allLinkTags,
-      allGalleryTags,
-      allBlogTags,
       defaultTabOptions,
       filteredTabIcons,
       searchTabIcons,
       getTabIconComponent,
       supabaseUrl,
-      subscribers,
-      subscribersLoading,
-      subscriberCounts,
-      loadSubscribers,
-      deleteSubscriber,
-      newsletterSends,
-      sendsLoading,
-      composeOpen,
-      composeRecord,
-      loadSends,
-      openComposeNew,
-      openComposeEdit,
-      onComposeSaved,
-      onComposeDeleted,
-      onComposeSent,
-      formatSendDate,
       lockCms,
-      subscribersError,
       contentSubTab,
       contentSubTabOptions,
+      contentSubTabs,
+      resolvedEditorComponents,
+      getContentSchema,
+      updateCollectionItems,
+      updateCollectionMeta,
     };
   },
 });
@@ -3569,5 +2086,155 @@ cms__footer-right {
 
 .cms__reset-all-btn:hover {
   background: rgba(59, 130, 246, 0.16);
+}
+</style>
+
+<!-- Shared styles that flow into child editor components (CollectionListEditor, ResumeCollectionEditor, etc.) -->
+<style>
+.cms__panel-head {
+  margin-bottom: 12px;
+}
+.cms__panel-head--row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+.cms__title {
+  font-size: 16px;
+  font-weight: 950;
+  letter-spacing: -0.02em;
+  color: var(--color-ink);
+}
+.cms__sub {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--color-ink-soft);
+  font-weight: 700;
+}
+.cms__card {
+  border-radius: 22px;
+  border: 1px solid var(--color-border-2);
+  background: var(--glass-2);
+  overflow: hidden;
+  padding: 12px;
+}
+.cms__form {
+  display: grid;
+  gap: 12px;
+}
+.cms__field {
+  display: grid;
+  gap: 6px;
+}
+.cms__label {
+  font-size: 12px;
+  font-weight: 950;
+  color: var(--color-ink-soft);
+}
+.cms__help {
+  font-size: 12px;
+  color: var(--color-ink-soft);
+  font-weight: 650;
+}
+.cms__primary {
+  border: 0 !important;
+  background: var(--color-brand) !important;
+  box-shadow: 0 16px 44px rgba(37, 99, 235, 0.22) !important;
+}
+.cms__primary--addon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-width: 136px;
+}
+.cms__list {
+  display: grid;
+  gap: 8px;
+}
+.cms__row {
+  width: 100%;
+  text-align: left;
+  display: grid;
+  grid-template-columns: 34px 44px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+  border-radius: 18px;
+  border: 1px solid var(--color-border-2, rgba(11, 18, 32, 0.06));
+  background: var(--glass, rgba(255, 255, 255, 0.62));
+  cursor: pointer;
+  transition: background 140ms ease, border-color 140ms ease;
+}
+.cms__row:hover {
+  background: var(--glass-strong, rgba(255, 255, 255, 0.76));
+  border-color: var(--color-border, rgba(11, 18, 32, 0.1));
+}
+.cms__row-drag {
+  height: 34px;
+  width: 34px;
+  border-radius: 14px;
+  border: 1px solid var(--color-border-2, rgba(255, 255, 255, 0.7));
+  background: var(--glass-2, rgba(255, 255, 255, 0.58));
+  display: grid;
+  place-items: center;
+  color: var(--color-ink-soft, rgba(11, 18, 32, 0.55));
+}
+.cms__row-thumb {
+  height: 44px;
+  width: 44px;
+  border-radius: 16px;
+  border: 1px solid var(--color-border-2, rgba(255, 255, 255, 0.7));
+  background: var(--glass-2, rgba(255, 255, 255, 0.58));
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.cms__row-text {
+  min-width: 0;
+}
+.cms__row-title {
+  display: block;
+  font-size: 13px;
+  font-weight: 950;
+  letter-spacing: -0.02em;
+  color: var(--color-ink, rgba(11, 18, 32, 0.92));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cms__row-sub {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--color-ink-soft, rgba(11, 18, 32, 0.62));
+  font-weight: 650;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cms__row-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.cms__ok {
+  color: #10b981;
+}
+.cms__empty {
+  padding: 16px 12px;
+  text-align: center;
+}
+.cms__empty-title {
+  font-weight: 950;
+  letter-spacing: -0.02em;
+}
+.cms__empty-sub {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--color-ink-soft, rgba(11, 18, 32, 0.62));
+  font-weight: 650;
 }
 </style>

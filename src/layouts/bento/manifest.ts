@@ -1,4 +1,80 @@
 import type { LayoutManifest } from "../../lib/layout-manifest";
+import type { FormKitSchemaNode } from "@formkit/core";
+import type { BioTheme } from "../../lib/model";
+import { newLink, newGalleryItem, newEmbed, newSocial } from "../../lib/model";
+
+/* ── Theme presets ──────────────────────────────────────────────── */
+
+const bentoLightTheme = (): BioTheme => ({
+  layout: "bento",
+  preset: "light",
+  colorBrand: "#6366f1",
+  colorBrandStrong: "#4f46e5",
+  colorAccent: "#f59e0b",
+  colorInk: "#1a1a2e",
+  colorInkSoft: "rgba(26, 26, 46, 0.5)",
+  bg: "#f5f5f7",
+  glass: "rgba(255, 255, 255, 0.95)",
+  glass2: "rgba(255, 255, 255, 0.7)",
+  glassStrong: "#ffffff",
+  colorBorder: "rgba(0, 0, 0, 0.04)",
+  colorBorder2: "rgba(0, 0, 0, 0.04)",
+  cardBg: "#ffffff",
+  cardBorder: "transparent",
+  cardText: "#1a1a2e",
+  radiusXl: "1.5rem",
+  radiusLg: "1.25rem",
+  layoutVars: {},
+  layoutData: {},
+});
+
+
+
+/* ── FormKit schemas for item editing ───────────────────────────── */
+
+const linkItemSchema: FormKitSchemaNode[] = [
+  { $formkit: "text", name: "title", label: "Title", placeholder: "Link title" },
+  { $formkit: "text", name: "subtitle", label: "Description", placeholder: "Short helper text…" },
+  { $formkit: "url", name: "url", label: "URL", placeholder: "https://…" },
+  { $formkit: "imageUpload", name: "imageUrl", label: "Image" },
+  { $formkit: "tagList", name: "tags", label: "Tags" },
+  { $formkit: "date", name: "publishDate", label: "Publish date" },
+  { $formkit: "date", name: "expirationDate", label: "Expiration date" },
+];
+
+function galleryItemSchema(item: Record<string, unknown>): FormKitSchemaNode[] {
+  const isVideo = item.type === "video";
+  return [
+    { $formkit: "select", name: "type", label: "Type", options: [
+      { label: "Image", value: "image" },
+      { label: "Video", value: "video" },
+    ]},
+    { $formkit: "text", name: "title", label: "Title", placeholder: "Give it a name…" },
+    { $formkit: "textarea", name: "description", label: "Description", placeholder: "Optional caption…" },
+    ...(isVideo
+      ? [{ $formkit: "url", name: "src", label: "Source URL", placeholder: "https://youtube.com/…" }]
+      : [{ $formkit: "imageUpload", name: "src", label: "Source" }]
+    ),
+    { $formkit: "imageUpload", name: "coverUrl", label: "Cover image" },
+    { $formkit: "tagList", name: "tags", label: "Tags" },
+    { $formkit: "date", name: "publishDate", label: "Publish date" },
+    { $formkit: "date", name: "expirationDate", label: "Expiration date" },
+  ] as FormKitSchemaNode[];
+}
+
+const socialItemSchema: FormKitSchemaNode[] = [
+  { $formkit: "iconSelect", name: "icon", label: "Icon" },
+  { $formkit: "text", name: "label", label: "Label", placeholder: "e.g. @yourname" },
+  { $formkit: "url", name: "url", label: "URL", placeholder: "https://…" },
+];
+
+const embedItemSchema: FormKitSchemaNode[] = [
+  { $formkit: "text", name: "label", label: "Tab label", placeholder: "e.g. Book a Call" },
+  { $formkit: "iconSelect", name: "icon", label: "Icon" },
+  { $formkit: "textarea", name: "html", label: "Embed HTML or URL", placeholder: "Paste embed code or a URL…" },
+  { $formkit: "date", name: "publishDate", label: "Publish date" },
+  { $formkit: "date", name: "expirationDate", label: "Expiration date" },
+];
 
 /**
  * A single cell on the bento grid.
@@ -33,6 +109,9 @@ export interface BentoGridData {
 
 const manifest: LayoutManifest = {
   name: "Bento",
+  presets: {
+    light: bentoLightTheme,
+  },
   vars: [
     {
       cssVar: "--bento-grid-width",
@@ -85,12 +164,55 @@ const manifest: LayoutManifest = {
     },
   ],
   contentSchemas: [
-    { key: "links",      label: "Links",      icon: "Link",          defaultEnabled: true,  searchable: true },
-    { key: "gallery",    label: "Gallery",    icon: "Image",         defaultEnabled: false, searchable: true },
-    { key: "resume",     label: "Resume",     icon: "FileText",      defaultEnabled: false, searchable: false, singleton: true },
-    { key: "blog",       label: "Blog",       icon: "BookOpen",      defaultEnabled: false, searchable: true,  external: true },
-    { key: "embeds",     label: "Embeds",     icon: "Code",          defaultEnabled: true,  searchable: false },
-    { key: "newsletter", label: "Newsletter", icon: "Newspaper",     defaultEnabled: false, searchable: true,  external: true },
+    {
+      key: "socials", label: "Socials", icon: "Share2",
+      defaultEnabled: true, searchable: false,
+      itemSchema: socialItemSchema,
+      newItem: () => ({ ...newSocial(), enabled: true }) as unknown as Record<string, unknown>,
+      itemLabel: (i: any) => i.label || i.icon || "Social",
+      itemSublabel: (i: any) => i.url || "(no url)",
+    },
+    {
+      key: "links", label: "Links", icon: "Link",
+      defaultEnabled: true, searchable: true,
+      itemSchema: linkItemSchema,
+      newItem: () => newLink() as unknown as Record<string, unknown>,
+      itemLabel: (i: any) => i.title || i.url || "Untitled",
+      itemSublabel: (i: any) => i.url || "(no url)",
+      itemThumbnail: (i: any) => i.imageUrl || undefined,
+    },
+    {
+      key: "gallery", label: "Gallery", icon: "Image",
+      defaultEnabled: false, searchable: true,
+      itemSchema: galleryItemSchema,
+      newItem: () => newGalleryItem() as unknown as Record<string, unknown>,
+      itemLabel: (i: any) => i.title || "Untitled",
+      itemSublabel: (i: any) => i.type === "video" ? (i.src || "(no source)") : (i.src ? "Image" : "(no image)"),
+      itemThumbnail: (i: any) => i.type === "image" ? i.src : i.coverUrl,
+    },
+    {
+      key: "resume", label: "Resume", icon: "FileText",
+      defaultEnabled: false, searchable: false, singleton: true,
+      editorComponent: () => import("../../components/editors/ResumeCollectionEditor.vue"),
+    },
+    {
+      key: "blog", label: "Blog", icon: "BookOpen",
+      defaultEnabled: false, searchable: true, external: true,
+      editorComponent: () => import("../../components/editors/BlogCollectionEditor.vue"),
+    },
+    {
+      key: "embeds", label: "Embeds", icon: "Code",
+      defaultEnabled: true, searchable: false,
+      itemSchema: embedItemSchema,
+      newItem: () => newEmbed() as unknown as Record<string, unknown>,
+      itemLabel: (i: any) => i.label || "Untitled",
+      itemSublabel: (i: any) => i.html ? "Has embed code" : "(no embed code)",
+    },
+    {
+      key: "newsletter", label: "Newsletter", icon: "Newspaper",
+      defaultEnabled: false, searchable: true, external: true,
+      editorComponent: () => import("../../components/editors/NewsletterCollectionEditor.vue"),
+    },
   ],
   defaultTab: "links",
   cmsTabs: [],

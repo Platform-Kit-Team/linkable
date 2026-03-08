@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 28,
+  "schemaVersion": 29,
   "profile": {
     "displayName": "Linkable",
     "tagline": "Design-forward links. Clean, fast, yours.",
@@ -9,23 +9,29 @@
     "ogImageUrl": "",
     "defaultTab": "links"
   },
-  "socials": [
-    {
-      "id": "social-instagram",
-      "icon": "Instagram",
-      "label": "@linkable",
-      "url": "https://instagram.com",
-      "enabled": true
-    },
-    {
-      "id": "social-github",
-      "icon": "Github",
-      "label": "github.com/linkable",
-      "url": "https://github.com",
-      "enabled": false
-    }
-  ],
   "collections": {
+    "socials": {
+      "enabled": true,
+      "label": "",
+      "icon": "",
+      "searchEnabled": false,
+      "items": [
+        {
+          "id": "social-instagram",
+          "icon": "Instagram",
+          "label": "@linkable",
+          "url": "https://instagram.com",
+          "enabled": true
+        },
+        {
+          "id": "social-github",
+          "icon": "Github",
+          "label": "github.com/linkable",
+          "url": "https://github.com",
+          "enabled": false
+        }
+      ]
+    },
     "links": {
       "enabled": true,
       "label": "",

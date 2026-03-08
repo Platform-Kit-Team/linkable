@@ -29,7 +29,7 @@
 
 // ── current version ──────────────────────────────────────────────────
 
-export const CURRENT_SCHEMA_VERSION = 28;
+export const CURRENT_SCHEMA_VERSION = 29;
 
 // ── migration registry ──────────────────────────────────────────────
 
@@ -539,6 +539,25 @@ const migrations: Migration[] = [
       delete data.embeds;
 
       data.schemaVersion = 28;
+      return data;
+    },
+  },
+  // ── v29: Move socials from top-level array into collections.socials ──
+  {
+    toVersion: 29,
+    migrate: (data: Record<string, any>) => {
+      if (!data.collections) data.collections = {};
+      const existing = data.collections.socials;
+      const items = Array.isArray(data.socials) ? data.socials : [];
+      data.collections.socials = {
+        enabled: existing?.enabled ?? true,
+        label: existing?.label ?? "",
+        icon: existing?.icon ?? "",
+        searchEnabled: false,
+        items,
+      };
+      delete data.socials;
+      data.schemaVersion = 29;
       return data;
     },
   },

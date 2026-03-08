@@ -1,21 +1,27 @@
 <template>
-  <section class="bento-gallery mx-auto w-full" style="max-width: var(--bento-grid-width, 960px)">
+  <section
+    class="bento-gallery mx-auto w-full"
+    style="width:calc(100% - 50px);max-width: var(--bento-grid-width, 960px); margin: 44px 25px"
+  >
     <!-- Search/filter bar -->
-    <div v-if="searchEnabled && availableTags.length" class="mb-4 flex items-center justify-between px-1 w-full block">
-      
-      <button
-        style="position:relative;top:0px;right:0px;z-index:9;"
-        class="text-xs bg-white  py-3 px-5 rounded-full font-medium text-[color:var(--color-brand)] "
+    <div
+      v-if="searchEnabled && availableTags.length"
+      style="width:100%;background:none;border-radius:50px;"
+      class="mb-4 flex items-center justify-between px-1 w-full block"
+    >
+      <button        
+        class="text-sm bg-white py-3 px-5 rounded-full font-medium  text-gray-500"
         @click="$emit('filter-click')"
       >
-        Filter
+        Filter 
+        <i class="pi pi-cog" />
       </button>
     </div>
 
     <!-- Auto-layout bento grid -->
     <div
       v-if="items.length"
-      class="grid gap-[var(--bento-gap)]" 
+      class="grid gap-[var(--bento-gap)]"
       :style="{
         gridTemplateColumns: `repeat(${gridCols}, 1fr)`,
         gridAutoRows: 'minmax(240px, auto)',
@@ -41,7 +47,9 @@
           v-if="item.type === 'video'"
           class="absolute inset-0 z-10 flex items-center justify-center opacity-0 transition-opacity group-hover:opacity-100"
         >
-          <div class="flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm">
+          <div
+            class="flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm"
+          >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
               <path d="M8 5v14l11-7z" />
             </svg>
@@ -65,19 +73,19 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, computed, type PropType } from "vue";
-import type { MasonryItem } from "../../components/MasonryGrid.vue";
-export type { GallerySectionProps, GallerySectionEmits } from "../../lib/component-contracts";
+import { defineComponent, computed, type PropType } from 'vue';
+import type { MasonryItem } from '../../components/MasonryGrid.vue';
+export type { GallerySectionProps, GallerySectionEmits } from '../../lib/component-contracts';
 
 export default defineComponent({
-  name: "BentoGallerySection",
+  name: 'BentoGallerySection',
   props: {
     items: { type: Array as PropType<MasonryItem[]>, required: true },
     searchEnabled: { type: Boolean, default: false },
     availableTags: { type: Array as PropType<string[]>, default: () => [] },
     selectedTags: { type: Array as PropType<string[]>, default: () => [] },
   },
-  emits: ["open-lightbox", "open-video", "filter-click"],
+  emits: ['open-lightbox', 'open-video', 'filter-click'],
   setup(props) {
     const gridCols = computed(() => (props.items.length <= 2 ? 2 : 3));
 
@@ -115,7 +123,10 @@ export default defineComponent({
           let extra = cols % remaining;
           for (let i = 0; i < remaining; i++) {
             let s = perItem;
-            if (extra > 0) { s++; extra--; }
+            if (extra > 0) {
+              s++;
+              extra--;
+            }
             spans.push(s);
           }
           idx += remaining;
@@ -125,7 +136,7 @@ export default defineComponent({
 
       return spans.map((s) => ({
         gridColumn: `span ${s}`,
-        gridRow: "span 1",
+        gridRow: 'span 1',
       }));
     });
 
@@ -142,8 +153,8 @@ export default defineComponent({
   background: var(--bento-card-bg, #fff);
   border: 1px solid var(--bento-card-border, transparent);
   border-radius: var(--bento-card-radius, 1.5rem);
-  box-shadow: var(--bento-card-shadow, 0 1px 2px rgba(0,0,0,0.04));
-  transition: transform 0.25s cubic-bezier(.4,0,.2,1);
+  box-shadow: var(--bento-card-shadow, 0 1px 2px rgba(0, 0, 0, 0.04));
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
   min-height: 0;
 }

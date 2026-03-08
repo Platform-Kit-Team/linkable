@@ -71,6 +71,7 @@ Each layout in `src/layouts/` may have its own `package.json` declaring layout-s
 - The install script handles installation — no pnpm workspaces or manual install steps needed.
 - If you create a new layout that needs extra packages, create a `package.json` in its directory (e.g. `src/layouts/newlayout/package.json`) with the dependencies. The script will discover and install them automatically.
 - Example (`src/layouts/bento/package.json`):
+
   ```json
   {
     "name": "@layouts/bento",

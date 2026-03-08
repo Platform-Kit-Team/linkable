@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-2">
     <div class="flex flex-wrap items-center justify-between gap-2">
-      <label class="text-xs font-extrabold text-[color:var(--color-ink-soft)]">
+      <label v-if="label" class="text-xs font-extrabold text-[color:var(--color-ink-soft)]">
         {{ label }}
       </label>
       <div class="flex items-center gap-2">

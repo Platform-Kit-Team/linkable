@@ -19,6 +19,8 @@
  */
 import { type Component, computed, defineAsyncComponent, type Ref, ref, watch, onScopeDispose, type ShallowRef, shallowRef } from "vue";
 import type { LayoutManifest, LayoutRoute } from "./layout-manifest";
+import type { BioTheme } from "./model";
+import { THEME_PRESETS } from "./model";
 import type { Router } from "vue-router";
 
 const overrideModules = import.meta.glob<{ default: Component }>(
@@ -39,7 +41,7 @@ const manifestModules = import.meta.glob<{ default: LayoutManifest }>(
  * Always includes "default" even if no files exist under `src/layouts/default/`.
  */
 export function getAvailableLayouts(): string[] {
-  const names = new Set<string>(["default"]);
+  const names = new Set<string>();
   for (const key of Object.keys(layoutModules)) {
     // Matches both "../layouts/minimal/X.vue" and "../layouts/user/bento/X.vue"
     const match = key.match(/^\.\.\/layouts\/((?:user\/)?[^/]+)\//);
@@ -109,6 +111,21 @@ export function getLayoutManifest(layoutName: string): LayoutManifest | null {
   const key = `../layouts/${layoutName}/manifest.ts`;
   const mod = manifestModules[key];
   return mod?.default ?? null;
+}
+
+/**
+ * Get the theme presets for a layout.
+ *
+ * Returns the preset record from the layout's manifest, falling back
+ * to THEME_PRESETS (generic light/dark) if the layout has no manifest
+ * or declares no presets.
+ */
+export function getLayoutPresets(layoutName: string): Record<string, () => BioTheme> {
+  const manifest = getLayoutManifest(layoutName);
+  if (manifest?.presets && Object.keys(manifest.presets).length > 0) {
+    return manifest.presets;
+  }
+  return THEME_PRESETS;
 }
 
 /** Internal route-name prefix to identify layout-contributed routes. */

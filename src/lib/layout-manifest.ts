@@ -11,6 +11,7 @@
 import type { FormKitSchemaNode } from "@formkit/core";
 import type { Component } from "vue";
 import type { ZodSchema } from "zod";
+import type { BioTheme } from "./model";
 
 export type LayoutVarType = "color" | "text";
 
@@ -113,11 +114,53 @@ export interface ContentSchema {
    * and items[] stays empty.
    */
   external?: boolean;
+  /**
+   * FormKit schema for editing a single item (or the singleton object).
+   * When provided, the CMS auto-renders this form in a drawer (list mode)
+   * or inline (singleton mode).
+   *
+   * Can be a static array or a function that receives the current item
+   * and returns the schema — useful for conditional fields.
+   */
+  itemSchema?: FormKitSchemaNode[] | ((item: Record<string, unknown>) => FormKitSchemaNode[]);
+  /**
+   * Custom Vue editor component — replaces auto-generated UI entirely.
+   * Receives props: modelValue (collection data), model (full draft BioModel).
+   * Emits: update:modelValue.
+   */
+  editorComponent?: () => Promise<{ default: Component }>;
+  /**
+   * Factory function that returns a new blank item with default field values.
+   * Required for list collections that use itemSchema (so "Add" works).
+   */
+  newItem?: () => Record<string, unknown>;
+  /**
+   * Extract a short display label from an item for the list view.
+   * Falls back to item.title or item.label or "Untitled".
+   */
+  itemLabel?: (item: any) => string;
+  /**
+   * Extract a subtitle / secondary text from an item for the list view.
+   */
+  itemSublabel?: (item: any) => string;
+  /**
+   * Extract a thumbnail URL from an item for the list view.
+   */
+  itemThumbnail?: (item: any) => string | undefined;
 }
 
 export interface LayoutManifest {
   /** Display name for the layout */
   name: string;
+  /**
+   * Theme presets this layout provides (e.g. "light", "dark").
+   * Each entry is a factory that returns a fresh BioTheme with the
+   * layout's preferred colours, radii, etc.
+   *
+   * The CMS preset selector is built dynamically from these keys,
+   * so a layout can offer arbitrary presets beyond light/dark.
+   */
+  presets: Record<string, () => BioTheme>;
   /** Layout-specific CSS variables */
   vars: LayoutVar[];
   /**

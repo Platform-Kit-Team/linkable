@@ -230,7 +230,7 @@ export default defineComponent({
     );
 
     const enabledSocials = computed<SocialLink[]>(() =>
-      (model?.value?.socials ?? []).filter((s) => s.enabled && s.url),
+      ((model?.value?.collections?.socials?.items ?? []) as any[]).filter((s) => s.enabled && s.url),
     );
 
     const getIcon = (name: string) =>
