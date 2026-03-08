@@ -213,23 +213,37 @@
     </button>
 
     <!-- Embed overlay -->
-    <div
-      v-if="activeEmbed"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-      @click.self="activeEmbed = null"
-    >
-      <div class="bento-card relative mx-4 max-h-[90vh] w-full max-w-3xl overflow-auto p-6">
+    <Teleport to="body">
+      <div
+        v-if="activeEmbed"
+        class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
+        @click.self="activeEmbed = null"
+      >
         <button
-          class="absolute top-3 right-3 text-[color:var(--color-ink-soft)] hover:text-[color:var(--color-ink)]"
+          type="button"
+          class="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-white transition hover:bg-white/30"
           @click="activeEmbed = null"
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-          </svg>
+          <i class="pi pi-times text-lg" />
         </button>
-        <div class="embed-content" v-html="activeEmbed.html" />
+        <div class="relative max-h-[90vh] max-w-[90vw] w-full h-full flex items-center justify-center">
+          <div class="embed-content flex-1 overflow-auto w-full h-full bg-white rounded-2xl shadow-xl p-6">
+            <template v-if="isUrlOrUrlString(activeEmbed.html)">
+              <iframe
+                :src="extractUrl(activeEmbed.html)"
+                class="w-full h-full border-0 rounded-xl"
+                allowfullscreen
+                loading="lazy"
+                style="max-width:90vw; max-height:90vh;"
+              />
+            </template>
+            <template v-else>
+              <div v-html="activeEmbed.html" class="w-full h-full" style="max-width:90vw; max-height:90vh;" />
+            </template>
+          </div>
+        </div>
       </div>
-    </div>
+    </Teleport>
   </section>
 </template>
 
@@ -330,6 +344,33 @@ export default defineComponent({
           buttonText: "",
         });
       }
+    }
+
+      function isUrl(str: string) {
+        try {
+          const url = new URL(str);
+          return url.protocol === "http:" || url.protocol === "https:";
+        } catch {
+          return false;
+        }
+      }
+
+    function isUrlOrUrlString(str: string) {
+      // True if it's a URL or only a URL with whitespace
+      if (isUrl(str)) return true;
+      const trimmed = str.trim();
+      // If it's just a URL (no HTML tags)
+      if (/^https?:\/\/.+$/.test(trimmed) && trimmed.indexOf('<') === -1 && trimmed.indexOf('>') === -1) return true;
+      return false;
+    }
+
+    function extractUrl(str: string) {
+      // If it's a URL, return as is
+      if (isUrl(str)) return str.trim();
+      // If it's just a URL with whitespace, extract
+      const trimmed = str.trim();
+      if (/^https?:\/\/.+$/.test(trimmed)) return trimmed;
+      return '';
     }
 
     // Track effective column count — mobile caps at 2
@@ -612,6 +653,8 @@ export default defineComponent({
       openVideo,
       loadPost,
       openEmbed,
+      isUrlOrUrlString,
+      extractUrl,
     };
   },
 });

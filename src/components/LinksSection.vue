@@ -27,6 +27,31 @@
       <slot name="empty-action" />
     </div>
   </section>
+
+  <!-- Embed overlay -->
+  <Teleport to="body">
+    <div
+      v-if="activeEmbed"
+      class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
+      @click.self="activeEmbed = null"
+    >
+      <button
+        type="button"
+        class="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-white transition hover:bg-white/30"
+        @click="activeEmbed = null"
+      >
+        <i class="pi pi-times text-lg" />
+      </button>
+      <div class="relative max-h-[90vh] max-w-[90vw]">
+        <!-- Embed content goes here -->
+        <div class="text-sm font-semibold">No links yet</div>
+        <div class="mt-1 text-sm text-[color:var(--color-ink-soft)]">
+          Open the CMS and add your first button.
+        </div>
+        <slot name="empty-action" />
+      </div>
+    </div>
+  </Teleport>
 </template>
 
 <script lang="ts">
