@@ -177,6 +177,10 @@ const initAurora = () => {
 
   window.addEventListener('resize', resize);
 
+  // Also observe the container directly so we size on first mount
+  const ro = new ResizeObserver(resize);
+  ro.observe(container);
+
   const geometry = new Triangle(gl);
   if (geometry.attributes.uv) {
     delete geometry.attributes.uv;
@@ -239,6 +243,7 @@ const initAurora = () => {
   return () => {
     cancelAnimationFrame(animateId);
     window.removeEventListener('resize', resize);
+    ro.disconnect();
     if (container && gl.canvas.parentNode === container) {
       container.removeChild(gl.canvas);
     }

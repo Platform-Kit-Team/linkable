@@ -217,6 +217,8 @@ const setupAnimation = () => {
     program.uniforms.iResolution.value.set(gl.canvas.width, gl.canvas.height, gl.canvas.width / gl.canvas.height);
   }
   window.addEventListener('resize', resize);
+  const ro = new ResizeObserver(resize);
+  ro.observe(container);
   resize();
 
   let targetHover = 0;
@@ -274,6 +276,7 @@ const setupAnimation = () => {
   cleanupAnimation = () => {
     cancelAnimationFrame(rafId);
     window.removeEventListener('resize', resize);
+    ro.disconnect();
     container.removeEventListener('mousemove', handleMouseMove);
     container.removeEventListener('mouseleave', handleMouseLeave);
     container.removeChild(gl.canvas);

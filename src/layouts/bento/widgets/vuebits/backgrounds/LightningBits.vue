@@ -170,6 +170,8 @@ const initWebGL = () => {
 
   resizeCanvas();
   window.addEventListener('resize', resizeCanvas);
+  const ro = new ResizeObserver(resizeCanvas);
+  ro.observe(canvas.parentElement ?? canvas);
 
   gl = canvas.getContext('webgl');
   if (!gl) {
@@ -206,6 +208,7 @@ const initWebGL = () => {
 
   return () => {
     window.removeEventListener('resize', resizeCanvas);
+    ro.disconnect();
   };
 };
 

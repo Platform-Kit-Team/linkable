@@ -161,6 +161,8 @@ const initSilk = () => {
   };
 
   window.addEventListener('resize', resize);
+  const ro = new ResizeObserver(resize);
+  ro.observe(container);
 
   const geometry = new Plane(gl, {
     width: 1,
@@ -216,6 +218,7 @@ const initSilk = () => {
   return () => {
     cancelAnimationFrame(animateId);
     window.removeEventListener('resize', resize);
+    ro.disconnect();
     if (container && gl.canvas.parentNode === container) {
       container.removeChild(gl.canvas);
     }

@@ -105,13 +105,15 @@ let program: Program | null = null;
 let mesh: Mesh | null = null;
 let frame: number | null = null;
 let start: number = 0;
+let resizeObserver: ResizeObserver | null = null;
 
 const cleanup = () => {
   if (frame) {
     cancelAnimationFrame(frame);
     frame = null;
   }
-  window.removeEventListener('resize', resize);
+  resizeObserver?.disconnect();
+  resizeObserver = null;
 };
 
 const resize = () => {
@@ -170,8 +172,8 @@ onMounted(() => {
 
   mesh = new Mesh(gl, { geometry, program });
 
-  window.addEventListener('resize', resize);
-  resize();
+  resizeObserver = new ResizeObserver(resize);
+  resizeObserver.observe(canvasRef.value.parentElement!);
 
   start = performance.now();
   loop();

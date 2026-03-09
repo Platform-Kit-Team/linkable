@@ -172,6 +172,8 @@ const initParticles = () => {
     gl.canvas.style.left = '0';
   };
   window.addEventListener('resize', resize, false);
+  const ro = new ResizeObserver(resize);
+  ro.observe(container);
   resize();
 
   if (props.moveParticlesOnHover) {
@@ -264,6 +266,7 @@ const initParticles = () => {
 
   return () => {
     window.removeEventListener('resize', resize);
+    ro.disconnect();
     if (props.moveParticlesOnHover) {
       container.removeEventListener('mousemove', handleMouseMove);
     }

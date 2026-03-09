@@ -29,6 +29,7 @@ let gl: OGLRenderingContext | null = null;
 let program: Program | null = null;
 let mesh: Mesh | null = null;
 let animationId: number | null = null;
+let resizeObserver: ResizeObserver | null = null;
 
 const vertexShader = `
 attribute vec2 uv;
@@ -146,12 +147,12 @@ const initializeScene = () => {
 
   container.appendChild(canvas);
 
-  window.addEventListener('resize', resize);
+  resizeObserver = new ResizeObserver(resize);
+  resizeObserver.observe(container);
   if (props.mouseReact) {
     container.addEventListener('mousemove', handleMouseMove);
   }
 
-  resize();
   animationId = requestAnimationFrame(update);
 };
 
@@ -161,7 +162,8 @@ const cleanup = () => {
     animationId = null;
   }
 
-  window.removeEventListener('resize', resize);
+  resizeObserver?.disconnect();
+  resizeObserver = null;
 
   if (containerRef.value) {
     containerRef.value.removeEventListener('mousemove', handleMouseMove);
