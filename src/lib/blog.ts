@@ -114,6 +114,7 @@ export type BlogPostMeta = {
 export type BlogPost = BlogPostMeta & {
   content: string; // raw markdown body (no frontmatter)
   html: string; // rendered HTML
+  audioUrl?: string; // TTS audio file URL if generated at build time
 };
 
 // ── frontmatter parser ───────────────────────────────────────────────

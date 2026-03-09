@@ -25,7 +25,7 @@
   ],
   "scripts": {
     "dev": "node scripts/install-layout-deps.mjs && vite",
-    "build": "node scripts/install-layout-deps.mjs && node scripts/import-from-github.mjs && node scripts/export-data.mjs && vite build",
+    "build": "node scripts/install-layout-deps.mjs && node scripts/import-from-github.mjs && node scripts/export-data.mjs && node scripts/run-tts.mjs && vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "format": "prettier --write .",

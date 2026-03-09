@@ -574,8 +574,8 @@ export default defineComponent({
         faviconLink.remove();
       }
 
-      // Apple touch icon — use OG image if available, else favicon
-      const touchSrc = p.ogImageUrl || p.faviconUrl;
+      // Apple touch icon — only use favicon if explicitly set by the user
+      const touchSrc = p.faviconUrl;
       let touchLink = document.querySelector<HTMLLinkElement>('link#__linkable-apple-touch');
       if (touchSrc) {
         if (!touchLink) {

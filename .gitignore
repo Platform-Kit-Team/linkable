@@ -28,6 +28,8 @@ dist-ssr
 .env.production
 
 # Generated NGINX files
+.tts-cache
+.tts-uv
 nginx.conf
 nginx.pid
 

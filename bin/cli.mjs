@@ -232,6 +232,13 @@ const runBuild = () => {
     }
   }
 
+  // Copy voice.mp3 → public/voice.mp3 (reference voice for TTS)
+  const userVoiceFile = path.join(contentDir, "voice.mp3");
+  if (existsSync(userVoiceFile)) {
+    copyFileSync(userVoiceFile, path.join(packageRoot, "public", "voice.mp3"));
+    console.log(`  ✔ Staged voice.mp3 for TTS`);
+  }
+
   // Copy layouts/ → src/layouts/user/ (user-provided theme overrides)
   const userLayoutsDir = path.join(contentDir, "layouts");
   const destUserLayouts = path.join(packageRoot, "src", "layouts", "user");
@@ -318,6 +325,24 @@ const runBuild = () => {
       });
     } catch (err) {
       console.warn(`  ⚠ Export step failed — continuing with existing data.`);
+    }
+  }
+
+  // ── 2d. Set up Python venv and TTS dependencies if TTS is enabled ──
+  if (mergedEnv.VITE_TTS_ENABLED) {
+    const ttsRunner = path.join(packageRoot, "scripts", "run-tts.mjs");
+    if (existsSync(ttsRunner)) {
+      console.log(`\n  🐍 Setting up Python TTS environment…\n`);
+      try {
+        execSync(`node ${JSON.stringify(ttsRunner)}`, {
+          cwd: packageRoot,
+          env: mergedEnv,
+          stdio: "inherit",
+        });
+        console.log(`  ✔ TTS audio generation complete`);
+      } catch (err) {
+        console.warn(`  ⚠ TTS generation failed — continuing without audio.`);
+      }
     }
   }
 

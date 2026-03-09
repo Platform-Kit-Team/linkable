@@ -19,6 +19,13 @@
       style="max-height: 320px"
     />
 
+    <!-- Audio player (TTS) -->
+    <AudioPlayer
+      v-if="post.audioUrl"
+      :src="post.audioUrl"
+      class="mb-4"
+    />
+
     <!-- Post header -->
     <div class="mb-4">
       <h1 class="text-xl font-bold tracking-tight sm:text-2xl">
@@ -52,9 +59,11 @@
 import { computed, defineComponent, type PropType } from "vue";
 import type { BlogPost } from "../lib/blog";
 import { resolveUploadUrl } from "../lib/github";
+import AudioPlayer from "./AudioPlayer.vue";
 
 export default defineComponent({
   name: "BlogPostView",
+  components: { AudioPlayer },
   props: {
     post: { type: Object as PropType<BlogPost | null>, default: null },
   },

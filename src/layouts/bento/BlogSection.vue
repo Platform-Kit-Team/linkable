@@ -19,6 +19,11 @@
           class="mb-4 w-full rounded-2xl object-cover shadow-sm"
           style="max-height: 320px"
         />
+        <AudioPlayer
+          v-if="currentPost.audioUrl"
+          :src="currentPost.audioUrl"
+          class="mb-4"
+        />
         <div v-if="currentPost.date" class="mb-2 text-[11px] font-medium uppercase tracking-widest text-[color:var(--color-brand)]">
           {{ formatDate(currentPost.date) }}
         </div>
@@ -187,6 +192,7 @@ import type { BlogPost, BlogPostMeta } from "../../lib/blog";
 import SearchBar from "../../components/SearchBar.vue";
 import BlogEditorDrawer from "../../components/BlogEditorDrawer.vue";
 import NewsletterComposeDrawer from "../../components/NewsletterComposeDrawer.vue";
+import AudioPlayer from "../../components/AudioPlayer.vue";
 export type { BlogSectionProps, BlogSectionEmits } from "../../lib/component-contracts";
 
 interface UnifiedItem {
@@ -216,7 +222,7 @@ const typeFilters = [
 
 export default defineComponent({
   name: "BentoBlogSection",
-  components: { SearchBar, BlogEditorDrawer, NewsletterComposeDrawer },
+  components: { SearchBar, BlogEditorDrawer, NewsletterComposeDrawer, AudioPlayer },
   props: {
     posts: { type: Array as PropType<BlogPostMeta[]>, required: true },
     currentPost: { type: Object as PropType<BlogPost | null>, default: null },

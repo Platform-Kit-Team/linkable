@@ -1,4 +1,4 @@
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import nodeCrypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
@@ -421,8 +421,17 @@ const cmsMiddlewarePlugin = () => ({
           const { meta, body } = parseFrontmatter(raw);
           const postMeta = metaFromRaw(meta, slug);
           const html = renderMarkdown(body);
+          // Include audioUrl if TTS audio exists for this post
+          const devAudioDir = path.resolve(__dirname, "public", "blog", "audio");
+          const devAudioMp3 = path.join(devAudioDir, `${slug}.mp3`);
+          const devAudioWav = path.join(devAudioDir, `${slug}.wav`);
+          const devAudioUrl = fs.existsSync(devAudioMp3)
+            ? `/blog/audio/${slug}.mp3`
+            : fs.existsSync(devAudioWav)
+            ? `/blog/audio/${slug}.wav`
+            : undefined;
           res.setHeader("Content-Type", "application/json");
-          res.end(JSON.stringify({ ...postMeta, content: body, html }));
+          res.end(JSON.stringify({ ...postMeta, content: body, html, ...(devAudioUrl ? { audioUrl: devAudioUrl } : {}) }));
           return;
         }
 
@@ -592,6 +601,43 @@ const blogBuildPlugin = () => ({
     console.log(`[blog-build] Generated RSS feed (${index.length} item(s))`);
 
     console.log(`[blog-build] Generated ${files.length} blog post(s) into public/blog/`);
+
+    // ── TTS audio generation ──────────────────────────────────────────
+    if (readEnvVar("VITE_TTS_ENABLED")) {
+      const ttsRunner = path.resolve(__dirname, "scripts", "run-tts.mjs");
+      if (fs.existsSync(ttsRunner)) {
+        console.log("[blog-build] Running TTS synthesis (this may take a while)…");
+        const result = spawnSync("node", [ttsRunner], {
+          cwd: __dirname,
+          env: process.env,
+          stdio: "inherit",
+        });
+        if (result.status !== 0) {
+          console.warn(`[blog-build] TTS script exited with code ${result.status} — continuing without audio.`);
+        }
+      } else {
+        console.warn("[blog-build] scripts/run-tts.mjs not found — skipping TTS.");
+      }
+
+      // Inject audioUrl into each post JSON if TTS audio was generated (mp3 preferred, wav fallback)
+      const audioDir = path.resolve(__dirname, "public", "blog", "audio");
+      for (const file of files) {
+        const slug = slugFromFilename(file);
+        const audioMp3 = path.join(audioDir, `${slug}.mp3`);
+        const audioWav = path.join(audioDir, `${slug}.wav`);
+        const postJsonPath = path.join(publicBlogDir, `${slug}.json`);
+        const audioUrl = fs.existsSync(audioMp3)
+          ? `/blog/audio/${slug}.mp3`
+          : fs.existsSync(audioWav)
+          ? `/blog/audio/${slug}.wav`
+          : null;
+        if (audioUrl && fs.existsSync(postJsonPath)) {
+          const post = JSON.parse(fs.readFileSync(postJsonPath, "utf8"));
+          post.audioUrl = audioUrl;
+          fs.writeFileSync(postJsonPath, JSON.stringify(post, null, 2));
+        }
+      }
+    }
   },
   /** After the full build, generate pre-rendered HTML for each blog post so
    *  crawlers (iMessage, Twitter, etc.) get post-specific OG meta tags. */
