@@ -137,7 +137,7 @@ const initParticles = () => {
   const container = containerRef.value;
   if (!container) return;
 
-  renderer = new Renderer({ depth: false, alpha: true });
+  renderer = new Renderer({ depth: false, alpha: true, dpr: Math.min(window.devicePixelRatio || 1, 2) });
   const gl = renderer.gl;
   container.appendChild(gl.canvas);
   gl.clearColor(0, 0, 0, 0);

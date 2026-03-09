@@ -352,8 +352,7 @@ const widgetBackgroundVariantSchemas: Record<string, FormKitSchemaNode[]> = {
     { $formkit: "text", name: "grainientClassName", label: "Class name" },
   ],
   iridescence: [
-    { $formkit: "color", name: "iridescenceBaseColor", label: "Base color" },
-    { $formkit: "text", name: "iridescenceColor", label: "Advanced RGB CSV (optional override)", placeholder: "1,1,1" },
+    { $formkit: "color", name: "iridescenceBaseColor", label: "Color" },
     { $formkit: "number", name: "iridescenceSpeed", label: "Speed", min: 0, max: 10, step: 0.01 },
     { $formkit: "number", name: "iridescenceAmplitude", label: "Amplitude", min: 0, max: 2, step: 0.01 },
     { $formkit: "checkbox", name: "iridescenceMouseReact", label: "Mouse react" },

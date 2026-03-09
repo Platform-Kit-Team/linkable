@@ -48,15 +48,6 @@
           </AutoComplete>
           <div class="cms__help">Choose from <a href="https://lucide.dev/icons" target="_blank" rel="noreferrer" class="underline">Lucide icons</a>. Leave empty for default.</div>
         </div>
-        <div class="flex items-center justify-between gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--glass-2)] p-3">
-          <div>
-            <div class="text-xs font-extrabold text-[color:var(--color-ink)]">Enable {{ (collection.label || schema.label).toLowerCase() }}</div>
-            <div class="mt-0.5 text-xs font-semibold text-[color:var(--color-ink-soft)]">
-              When disabled, this tab will not appear on the public page.
-            </div>
-          </div>
-          <ToggleSwitch :modelValue="collection.enabled" @update:modelValue="updateMeta('enabled', $event)" />
-        </div>
         <div v-if="schema.searchable" class="flex items-center justify-between gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--glass-2)] p-3">
           <div>
             <div class="text-xs font-extrabold text-[color:var(--color-ink)]">Enable search</div>
@@ -133,7 +124,7 @@
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, ref, type PropType } from "vue";
+import { computed, defineComponent, onMounted, ref, type PropType } from "vue";
 import draggable from "vuedraggable";
 import Button from "primevue/button";
 import InputText from "primevue/inputtext";
@@ -161,6 +152,7 @@ export default defineComponent({
     schema: { type: Object as PropType<ContentSchema>, required: true },
     collection: { type: Object as PropType<ContentCollection>, required: true },
     items: { type: Array as PropType<Record<string, unknown>[]>, default: () => [] },
+    initialItemId: { type: String, default: "" },
   },
   emits: ["update:items", "update:collection"],
   setup(props, { emit }) {
@@ -188,6 +180,13 @@ export default defineComponent({
       activeItemId.value = id;
       editorOpen.value = true;
     };
+
+    onMounted(() => {
+      if (props.initialItemId) {
+        const found = props.items.find((i) => (i as any).id === props.initialItemId);
+        if (found) openEditor(props.initialItemId);
+      }
+    });
 
     const addItem = () => {
       const factory = props.schema.newItem;

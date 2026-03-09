@@ -14,7 +14,7 @@
       :tabs="tabs"
       @switch="onTabSwitch"
     />
-    <div class="px-0 md:px-4">
+    <div class="px-8">
       <LinksSection
         v-if="activeTab === 'links'"
         :links="model.collections.links?.items || []"
@@ -191,14 +191,6 @@ export default defineComponent({
       videoRefs: [] as any[],
       confirmationStatus: '',
       confirmationMap,
-      tabs: [
-        { key: 'links', label: 'All', icon: 'Link' },
-        { key: 'resume', label: 'About Me', icon: 'FileText' },
-        { key: 'gallery', label: 'My Work', icon: 'Image' },
-        { key: 'blog', label: 'Articles', icon: 'BookOpen' },
-        { key: 'embeds', label: 'Embeds', icon: 'Code' },
-        { key: 'newsletter', label: 'Newsletter', icon: 'Mail' },
-      ],
     };
   },
   created() {
@@ -208,6 +200,11 @@ export default defineComponent({
   watch: {
     route() {
       void this.syncRouteState();
+    },
+    tabs(newTabs: Array<{ key: string }>) {
+      if (newTabs.length && !newTabs.find((t) => t.key === this.activeTab)) {
+        this.activeTab = newTabs[0].key;
+      }
     },
   },
   methods: {
@@ -337,6 +334,26 @@ export default defineComponent({
     },
   },
   computed: {
+    tabs(): Array<{ key: string; label: string; icon: string }> {
+      const collectionOrder = [
+        { key: 'links',      label: 'All',        icon: 'Link' },
+        { key: 'resume',     label: 'About Me',   icon: 'FileText' },
+        { key: 'gallery',    label: 'Gallery',    icon: 'Image' },
+        { key: 'blog',       label: 'Blog',       icon: 'BookOpen' },
+        { key: 'embeds',     label: 'Embeds',     icon: 'Code' },
+        { key: 'newsletter', label: 'Newsletter', icon: 'Mail' },
+      ];
+      return collectionOrder
+        .filter((def) => this.model?.collections?.[def.key]?.enabled === true)
+        .map((def) => {
+          const col = this.model?.collections?.[def.key];
+          return {
+            key: def.key,
+            label: col?.label || def.label,
+            icon: col?.icon || def.icon,
+          };
+        });
+    },
     videoItems(): GalleryItem[] {
       const items = this.model?.collections?.gallery?.items || [];
       return items.filter((item: GalleryItem) => item.enabled && item.type === 'video');

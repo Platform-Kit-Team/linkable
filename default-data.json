@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 37,
+  "schemaVersion": 38,
   "profile": {
     "displayName": "Linkable",
     "tagline": "Design-forward links. Clean, fast, yours.",
@@ -31,8 +31,8 @@
     },
     "links": {
       "enabled": true,
-      "label": "",
-      "icon": "",
+      "label": "All",
+      "icon": "Link",
       "searchEnabled": false,
       "items": [
         {
@@ -72,15 +72,15 @@
     },
     "gallery": {
       "enabled": false,
-      "label": "",
-      "icon": "",
+      "label": "Gallery",
+      "icon": "Image",
       "searchEnabled": false,
       "items": []
     },
     "resume": {
       "enabled": false,
-      "label": "",
-      "icon": "",
+      "label": "About Me",
+      "icon": "FileText",
       "searchEnabled": false,
       "items": [
         {
@@ -94,29 +94,29 @@
     },
     "blog": {
       "enabled": false,
-      "label": "",
-      "icon": "",
+      "label": "Blog",
+      "icon": "BookOpen",
       "searchEnabled": false,
       "items": []
     },
     "embeds": {
       "enabled": true,
-      "label": "",
-      "icon": "",
+      "label": "Embeds",
+      "icon": "Code",
       "searchEnabled": false,
       "items": []
     },
     "widgets": {
       "enabled": false,
-      "label": "",
-      "icon": "",
+      "label": "Widgets",
+      "icon": "Sparkles",
       "searchEnabled": false,
       "items": []
     },
     "newsletter": {
       "enabled": false,
-      "label": "",
-      "icon": "",
+      "label": "Newsletter",
+      "icon": "Mail",
       "searchEnabled": false,
       "items": []
     }

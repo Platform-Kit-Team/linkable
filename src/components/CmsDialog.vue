@@ -616,6 +616,55 @@
           <!-- Dynamic content schema panels -->
           <template v-for="cs in (activeManifest?.contentSchemas ?? [])" :key="cs.key">
             <div v-if="contentSubTab === cs.key" class="cms__subPanel">
+              <!-- Nav visibility / label / icon settings (shown for all tab-nav collections) -->
+              <div
+                v-if="!['socials', 'widgets', 'embeds'].includes(cs.key) && draft.collections[cs.key]"
+                class="cms__card"
+                style="margin-bottom: 10px"
+              >
+                <div class="cms__form">
+                  <div class="flex items-center justify-between gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--glass-2)] p-3">
+                    <div>
+                      <div class="text-xs font-extrabold text-[color:var(--color-ink)]">Show in navigation</div>
+                      <div class="mt-0.5 text-xs font-semibold text-[color:var(--color-ink-soft)]">
+                        Display this section as a tab on your public page.
+                      </div>
+                    </div>
+                    <ToggleSwitch
+                      :modelValue="draft.collections[cs.key].enabled"
+                      @update:modelValue="updateCollectionMeta(cs.key, { ...draft.collections[cs.key], enabled: $event })"
+                    />
+                  </div>
+                  <div class="mt-2 flex flex-col gap-1">
+                    <label class="cms__label">Tab label</label>
+                    <InputText
+                      class="w-full"
+                      :modelValue="draft.collections[cs.key].label"
+                      :placeholder="cs.label"
+                      @update:modelValue="updateCollectionMeta(cs.key, { ...draft.collections[cs.key], label: String($event) })"
+                    />
+                  </div>
+                  <div class="mt-2 flex flex-col gap-1">
+                    <label class="cms__label">
+                      Tab icon
+                      <span class="font-normal text-[color:var(--color-ink-soft)]">(Lucide name, e.g. &ldquo;BookOpen&rdquo;)</span>
+                    </label>
+                    <div class="flex items-center gap-2">
+                      <InputText
+                        class="w-full"
+                        :modelValue="draft.collections[cs.key].icon"
+                        :placeholder="cs.icon"
+                        @update:modelValue="updateCollectionMeta(cs.key, { ...draft.collections[cs.key], icon: String($event) })"
+                      />
+                      <component
+                        :is="getTabIconComponent(draft.collections[cs.key].icon || cs.icon)"
+                        :size="18"
+                        class="shrink-0 text-[color:var(--color-ink-soft)]"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
               <!-- Custom editor component (resume, blog, newsletter, etc.) -->
               <template v-if="resolvedEditorComponents[cs.key]">
                 <div v-if="cs.searchable && draft.collections[cs.key]" class="cms__card" style="margin-bottom: 10px">
@@ -645,6 +694,7 @@
                 :schema="cs"
                 :collection="draft.collections[cs.key]"
                 :items="draft.collections[cs.key]?.items ?? []"
+                :initial-item-id="cs.key === contentSubTab ? initialItemId : ''"
                 @update:items="updateCollectionItems(cs.key, $event)"
                 @update:collection="updateCollectionMeta(cs.key, $event)"
               />
@@ -765,6 +815,9 @@ export default defineComponent({
     initialTab: { type: String, default: "site" },
     initialEmbedId: { type: String, default: "" },
     initialBlogSlug: { type: String, default: "" },
+    initialContentSubTab: { type: String, default: "" },
+    initialItemId: { type: String, default: "" },
+    navTrigger: { type: Number, default: 0 },
   },
   emits: ["update:open", "update:model", "blog-posts-updated", "lock", "reauth"],
   setup(props, { emit }) {
@@ -856,6 +909,21 @@ export default defineComponent({
             tab.value = 'content';
             contentSubTab.value = 'blog';
           }
+          // If a direct content sub-tab is provided, navigate to it
+          if (props.initialContentSubTab) {
+            tab.value = 'content';
+            contentSubTab.value = props.initialContentSubTab;
+          }
+        }
+      },
+    );
+    // Also react when navTrigger increments (CMS already open case)
+    watch(
+      () => props.navTrigger,
+      () => {
+        if (props.initialContentSubTab) {
+          tab.value = 'content';
+          contentSubTab.value = props.initialContentSubTab;
         }
       },
     );

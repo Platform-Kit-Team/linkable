@@ -112,6 +112,7 @@ const initSilk = () => {
   if (!container) return;
 
   renderer = new Renderer({
+    dpr: Math.min(window.devicePixelRatio || 1, 2),
     alpha: true,
     antialias: true
   });

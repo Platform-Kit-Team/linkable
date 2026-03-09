@@ -208,7 +208,7 @@ const setupAnimation = () => {
 
   function resize() {
     if (!container) return;
-    const dpr = window.devicePixelRatio || 1;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const width = container.clientWidth;
     const height = container.clientHeight;
     renderer.setSize(width * dpr, height * dpr);

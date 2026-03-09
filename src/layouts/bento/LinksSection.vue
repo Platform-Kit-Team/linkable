@@ -66,7 +66,7 @@
         :min-h="1"
         :max-h="6"
         drag-ignore-from="a, button, .bento-cell-inner"
-        class="bento-grid__item"
+        class="bento-grid__item group"
         :class="{
           'bento-grid__item--selected': editing && selectedId === li.i,
         }"
@@ -102,13 +102,64 @@
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" d="M18 6L6 18M6 6l12 12"/></svg>
           </button>
+          <!-- Insert-before (left) button -->
+          <button
+            class="absolute left-0 top-1/2 z-30 flex h-7 w-7 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-[var(--color-brand)] text-white shadow-md opacity-0 transition-opacity group-hover:opacity-100 hover:brightness-110"
+            title="Insert card before"
+            @click.stop="startInsert(String(li.i), 'before', $event)"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" d="M12 5v14M5 12h14"/></svg>
+          </button>
+          <!-- Insert-after (right) button -->
+          <button
+            class="absolute right-0 top-1/2 z-30 flex h-7 w-7 translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-[var(--color-brand)] text-white shadow-md opacity-0 transition-opacity group-hover:opacity-100 hover:brightness-110"
+            title="Insert card after"
+            @click.stop="startInsert(String(li.i), 'after', $event)"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" d="M12 5v14M5 12h14"/></svg>
+          </button>
         </template>
+
+        <!-- Per-cell CMS edit button (non-editing mode) -->
+        <button
+          v-if="canEdit && !editing"
+          class="absolute top-2 right-2 z-20 flex h-7 w-7 items-center justify-center rounded-lg bg-white/80 text-[color:var(--color-ink)] opacity-0 shadow-sm backdrop-blur-sm ring-1 ring-black/10 transition-opacity group-hover:opacity-100 hover:bg-white"
+          title="Edit this card"
+          @click.stop="editCellContent(String(li.i))"
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path stroke-linecap="round" stroke-linejoin="round" d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>
       </GridItem>
     </GridLayout>
 
+    <!-- Insert-near type picker popover -->
+    <Teleport to="body">
+      <div
+        v-if="insertAnchorId"
+        class="fixed inset-0 z-[9999]"
+        @click.self="insertAnchorId = null"
+      >
+        <div
+          class="absolute flex flex-col gap-1.5 rounded-2xl bg-white p-3 shadow-2xl ring-1 ring-black/10"
+          :style="insertPickerStyle"
+        >
+          <p class="mb-1 text-[10px] font-extrabold uppercase tracking-wider text-[color:var(--color-ink-soft)]">Insert card</p>
+          <button
+            v-for="t in addTypes"
+            :key="t.type"
+            class="flex items-center gap-2 rounded-xl px-3 py-1.5 text-xs font-medium text-[color:var(--color-ink)] transition hover:bg-[var(--color-brand)]/10 hover:text-[var(--color-brand)]"
+            @click.stop="insertNear(t.type)"
+          >
+            <component :is="t.icon" :size="13" />
+            {{ t.label }}
+          </button>
+        </div>
+      </div>
+    </Teleport>
+
     <!-- Selected item editor drawer -->
     <Drawer
-      :visible="editing && !!selectedItem"
+      :visible="!!selectedItem"
       position="right"
       :style="{ width: 'min(380px, 96vw)' }"
       :showCloseIcon="true"
@@ -300,6 +351,7 @@ export default defineComponent({
     const model = inject<Ref<BioModel>>("bioModel");
     const blogPosts = inject<Ref<BlogPostMeta[]>>("blogPosts", ref([]));
     const canUseCms = inject<ComputedRef<boolean>>("canUseCms", computed(() => false));
+    const openItemEditor = inject<((collectionKey: string, itemId: string) => void) | undefined>('openItemEditor');
 
     const editing = ref(false);
     const selectedId = ref<string | null>(null);
@@ -539,10 +591,27 @@ export default defineComponent({
       { type: "profile" as const, label: "Profile", icon: User },
       { type: "link" as const, label: "Link", icon: Link },
       { type: "gallery" as const, label: "Image/Video", icon: Image },
-      { type: "widget" as const, label: "Widget", icon: Sparkles },
       { type: "blog" as const, label: "Blog Post", icon: BookOpen },
       { type: "embed" as const, label: "Embed", icon: Code },
+      { type: "widget" as const, label: "Widget", icon: Sparkles },
     ];
+
+    const typeToCollection: Record<string, string> = {
+      link: 'links',
+      gallery: 'gallery',
+      widget: 'widgets',
+      embed: 'embeds',
+      blog: 'blog',
+    };
+
+    const editCellContent = (gridItemId: string) => {
+      const item = gridItems.value.find((i) => i.id === gridItemId);
+      if (!item) return;
+      const col = typeToCollection[item.type];
+      if (col && item.refId && openItemEditor) {
+        openItemEditor(col, item.refId);
+      }
+    };
 
     const nextFreeY = (): number => {
       const items = gridItems.value;
@@ -567,6 +636,91 @@ export default defineComponent({
       data.items.push(item);
       glpLayout.value = buildLayout();
       selectedId.value = item.id;
+      commitGrid();
+    };
+
+    // ── Insert-near (before / after an existing card) ──
+    const insertAnchorId = ref<string | null>(null);
+    const insertDirection = ref<'before' | 'after'>('after');
+    const insertPickerPos = ref({ x: 0, y: 0 });
+
+    const insertPickerStyle = computed(() => ({
+      left: `${insertPickerPos.value.x}px`,
+      top: `${insertPickerPos.value.y}px`,
+    }));
+
+    const startInsert = (id: string, dir: 'before' | 'after', event: MouseEvent) => {
+      insertAnchorId.value = id;
+      insertDirection.value = dir;
+      // Position picker near the click, clamped slightly from edges
+      const x = Math.min(event.clientX + 8, window.innerWidth - 200);
+      const y = Math.min(event.clientY + 8, window.innerHeight - 280);
+      insertPickerPos.value = { x, y };
+    };
+
+    const insertNear = (type: BentoGridItem["type"]) => {
+      const anchorId = insertAnchorId.value;
+      insertAnchorId.value = null;
+      const data = ensureGridData();
+      const ref = data.items.find((i) => i.id === anchorId);
+      if (!ref) { addItem(type); return; }
+
+      const newItem: BentoGridItem = {
+        id: newId(),
+        type,
+        refId: "",
+        col: 1,
+        row: 1,
+        colSpan: 2,
+        rowSpan: 2,
+        thumbnailUrl: "",
+        headerText: "",
+        buttonText: "",
+      };
+
+      const cols = effectiveCols.value;
+      const newW = 2;
+      const newH = 2;
+
+      if (insertDirection.value === 'before') {
+        const spaceLeft = ref.col - 1; // columns free to the left of ref
+        if (spaceLeft >= newW) {
+          // Fit to the left on the same row
+          newItem.col = ref.col - newW;
+          newItem.row = ref.row;
+          newItem.colSpan = newW;
+          newItem.rowSpan = Math.min(newH, ref.rowSpan);
+        } else {
+          // Push everything from ref's row down to make room above
+          data.items.forEach((i) => { if (i.row >= ref.row) i.row += newH; });
+          newItem.col = 1;
+          newItem.row = ref.row;
+          newItem.colSpan = Math.min(newW, cols);
+          newItem.rowSpan = newH;
+        }
+      } else {
+        const rightEdge = (ref.col - 1) + ref.colSpan; // 0-based right edge
+        const spaceRight = cols - rightEdge;
+        if (spaceRight >= newW) {
+          // Fit to the right on the same row
+          newItem.col = rightEdge + 1;
+          newItem.row = ref.row;
+          newItem.colSpan = newW;
+          newItem.rowSpan = Math.min(newH, ref.rowSpan);
+        } else {
+          // Push everything below the ref's row down to make room after it
+          const insertRow = ref.row + ref.rowSpan;
+          data.items.forEach((i) => { if (i.row >= insertRow) i.row += newH; });
+          newItem.col = 1;
+          newItem.row = insertRow;
+          newItem.colSpan = Math.min(newW, cols);
+          newItem.rowSpan = newH;
+        }
+      }
+
+      data.items.push(newItem);
+      glpLayout.value = buildLayout();
+      selectedId.value = newItem.id;
       commitGrid();
     };
 
@@ -656,10 +810,15 @@ export default defineComponent({
       activeEmbed,
       refOptions,
       addTypes,
+      editCellContent,
       glpLayout,
       glpGap,
       setCols,
       addItem,
+      insertAnchorId,
+      insertPickerStyle,
+      startInsert,
+      insertNear,
       removeItem,
       selectItem,
       onItemMoved,

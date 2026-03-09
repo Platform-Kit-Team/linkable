@@ -1,7 +1,7 @@
 <template>
-  <div class="relative h-full w-full overflow-hidden" :style="cardStyle">
+  <div ref="rootRef" class="relative h-full w-full overflow-hidden" :style="cardStyle">
     <div class="absolute inset-0" :style="backgroundStyle" />
-    <div class="absolute inset-0 overflow-hidden">
+    <div v-if="bgVisible" class="absolute inset-0 overflow-hidden">
       <AuroraBits
         v-if="widget.backgroundVariant === 'aurora'"
         class="h-full w-full"
@@ -217,7 +217,7 @@
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, defineAsyncComponent, type PropType } from "vue";
+import { computed, defineComponent, defineAsyncComponent, ref, onMounted, onUnmounted, type PropType } from "vue";
 import type { WidgetItem } from "../../lib/model";
 
 // Text components — lazy so GSAP/animation libs don't block initial parse
@@ -272,6 +272,32 @@ export default defineComponent({
     widget: { type: Object as PropType<WidgetItem>, required: true },
   },
   setup(props) {
+    const rootRef = ref<HTMLElement | null>(null);
+    const bgVisible = ref(true);
+    let bgUnmountTimer: ReturnType<typeof setTimeout> | null = null;
+    let bgObserver: IntersectionObserver | null = null;
+
+    onMounted(() => {
+      if (typeof IntersectionObserver === 'undefined') return;
+      bgObserver = new IntersectionObserver(
+        (entries) => {
+          if (entries[0].isIntersecting) {
+            if (bgUnmountTimer) { clearTimeout(bgUnmountTimer); bgUnmountTimer = null; }
+            bgVisible.value = true;
+          } else {
+            bgUnmountTimer = setTimeout(() => { bgVisible.value = false; }, 2000);
+          }
+        },
+        { threshold: 0, rootMargin: '100px' }
+      );
+      if (rootRef.value) bgObserver.observe(rootRef.value);
+    });
+
+    onUnmounted(() => {
+      bgObserver?.disconnect();
+      if (bgUnmountTimer) clearTimeout(bgUnmountTimer);
+    });
+
     const parseJson = <T extends Record<string, unknown>>(raw: string, fallback: T): T => {
       try {
         const parsed = JSON.parse(raw || "");
@@ -488,9 +514,7 @@ export default defineComponent({
     }));
 
     const iridescenceProps = computed(() => ({
-      color: props.widget.iridescenceBaseColor
-        ? parseHexRgb(props.widget.iridescenceBaseColor, [1, 1, 1])
-        : parseRgbCsv(props.widget.iridescenceColor, [1, 1, 1]),
+      color: parseHexRgb(props.widget.iridescenceBaseColor || '#ffffff', [1, 1, 1]),
       speed: props.widget.iridescenceSpeed,
       amplitude: props.widget.iridescenceAmplitude,
       mouseReact: props.widget.iridescenceMouseReact,
@@ -678,6 +702,8 @@ export default defineComponent({
       textVariantClass,
       textVariantStyle,
       buttonStyle,
+      rootRef,
+      bgVisible,
     };
   },
 });

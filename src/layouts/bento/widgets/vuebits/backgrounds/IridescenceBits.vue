@@ -118,7 +118,7 @@ const initializeScene = () => {
   cleanup();
 
   const container = containerRef.value;
-  renderer = new Renderer();
+  renderer = new Renderer({ dpr: Math.min(window.devicePixelRatio || 1, 2) });
   gl = renderer.gl;
   gl.clearColor(1, 1, 1, 1);
 

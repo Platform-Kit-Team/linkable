@@ -134,7 +134,7 @@ const initWebGL = () => {
 
   const resizeCanvas = () => {
     const rect = canvas.getBoundingClientRect();
-    const dpr = window.devicePixelRatio || 1;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
 
     let width = rect.width;
     let height = rect.height;

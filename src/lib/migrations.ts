@@ -29,7 +29,7 @@
 
 // ── current version ──────────────────────────────────────────────────
 
-export const CURRENT_SCHEMA_VERSION = 37;
+export const CURRENT_SCHEMA_VERSION = 38;
 
 // ── migration registry ──────────────────────────────────────────────
 
@@ -953,6 +953,24 @@ const migrations: Migration[] = [
         }
       }
       data.schemaVersion = 37;
+      return data;
+    },
+  },
+  {
+    toVersion: 38,
+    migrate: (data) => {
+      // v37 → v38: resume, gallery, blog, and newsletter `enabled` now drives
+      // the user-facing tab nav.  They were always visible before this change,
+      // so set enabled=true to preserve existing behaviour for current users.
+      const collections = data.collections && typeof data.collections === "object"
+        ? (data.collections as Record<string, any>)
+        : {};
+      for (const key of ["resume", "gallery", "blog", "newsletter"]) {
+        if (collections[key] && typeof collections[key] === "object") {
+          collections[key].enabled = true;
+        }
+      }
+      data.schemaVersion = 38;
       return data;
     },
   },
