@@ -14,7 +14,7 @@
       :tabs="tabs"
       @switch="onTabSwitch"
     />
-    <div>
+    <div class="px-0 md:px-4">
       <LinksSection
         v-if="activeTab === 'links'"
         :links="model.collections.links?.items || []"

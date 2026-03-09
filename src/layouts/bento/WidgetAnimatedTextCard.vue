@@ -217,28 +217,32 @@
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, type PropType } from "vue";
+import { computed, defineComponent, defineAsyncComponent, type PropType } from "vue";
 import type { WidgetItem } from "../../lib/model";
-import ShinyTextBits from "./widgets/vuebits/ShinyTextBits.vue";
-import GradientTextBits from "./widgets/vuebits/GradientTextBits.vue";
-import GlitchTextBits from "./widgets/vuebits/GlitchTextBits.vue";
-import BlurTextBits from "./widgets/vuebits/BlurTextBits.vue";
-import SplitTextBits from "./widgets/vuebits/SplitTextBits.vue";
-import TextTypeBits from "./widgets/vuebits/TextTypeBits.vue";
-import RotatingTextBits from "./widgets/vuebits/RotatingTextBits.vue";
-import VariableProximityBits from "./widgets/vuebits/VariableProximityBits.vue";
-import AuroraBits from "./widgets/vuebits/backgrounds/AuroraBits.vue";
-import ColorBendsBits from "./widgets/vuebits/backgrounds/ColorBendsBits.vue";
-import DarkVeilBits from "./widgets/vuebits/backgrounds/DarkVeilBits.vue";
-import DotGridBits from "./widgets/vuebits/backgrounds/DotGridBits.vue";
-import GrainientBits from "./widgets/vuebits/backgrounds/GrainientBits.vue";
-import IridescenceBits from "./widgets/vuebits/backgrounds/IridescenceBits.vue";
-import LightningBits from "./widgets/vuebits/backgrounds/LightningBits.vue";
-import LiquidEtherBits from "./widgets/vuebits/backgrounds/LiquidEtherBits.vue";
-import OrbBits from "./widgets/vuebits/backgrounds/OrbBits.vue";
-import ParticlesBits from "./widgets/vuebits/backgrounds/ParticlesBits.vue";
-import PrismaticBurstBits from "./widgets/vuebits/backgrounds/PrismaticBurstBits.vue";
-import SilkBits from "./widgets/vuebits/backgrounds/SilkBits.vue";
+
+// Text components — lazy so GSAP/animation libs don't block initial parse
+const ShinyTextBits = defineAsyncComponent(() => import("./widgets/vuebits/ShinyTextBits.vue"));
+const GradientTextBits = defineAsyncComponent(() => import("./widgets/vuebits/GradientTextBits.vue"));
+const GlitchTextBits = defineAsyncComponent(() => import("./widgets/vuebits/GlitchTextBits.vue"));
+const BlurTextBits = defineAsyncComponent(() => import("./widgets/vuebits/BlurTextBits.vue"));
+const SplitTextBits = defineAsyncComponent(() => import("./widgets/vuebits/SplitTextBits.vue"));
+const TextTypeBits = defineAsyncComponent(() => import("./widgets/vuebits/TextTypeBits.vue"));
+const RotatingTextBits = defineAsyncComponent(() => import("./widgets/vuebits/RotatingTextBits.vue"));
+const VariableProximityBits = defineAsyncComponent(() => import("./widgets/vuebits/VariableProximityBits.vue"));
+
+// Background components — lazy so THREE.js / OGL / WebGL shaders don't block initial parse
+const AuroraBits = defineAsyncComponent(() => import("./widgets/vuebits/backgrounds/AuroraBits.vue"));
+const ColorBendsBits = defineAsyncComponent(() => import("./widgets/vuebits/backgrounds/ColorBendsBits.vue"));
+const DarkVeilBits = defineAsyncComponent(() => import("./widgets/vuebits/backgrounds/DarkVeilBits.vue"));
+const DotGridBits = defineAsyncComponent(() => import("./widgets/vuebits/backgrounds/DotGridBits.vue"));
+const GrainientBits = defineAsyncComponent(() => import("./widgets/vuebits/backgrounds/GrainientBits.vue"));
+const IridescenceBits = defineAsyncComponent(() => import("./widgets/vuebits/backgrounds/IridescenceBits.vue"));
+const LightningBits = defineAsyncComponent(() => import("./widgets/vuebits/backgrounds/LightningBits.vue"));
+const LiquidEtherBits = defineAsyncComponent(() => import("./widgets/vuebits/backgrounds/LiquidEtherBits.vue"));
+const OrbBits = defineAsyncComponent(() => import("./widgets/vuebits/backgrounds/OrbBits.vue"));
+const ParticlesBits = defineAsyncComponent(() => import("./widgets/vuebits/backgrounds/ParticlesBits.vue"));
+const PrismaticBurstBits = defineAsyncComponent(() => import("./widgets/vuebits/backgrounds/PrismaticBurstBits.vue"));
+const SilkBits = defineAsyncComponent(() => import("./widgets/vuebits/backgrounds/SilkBits.vue"));
 
 export default defineComponent({
   name: "WidgetAnimatedTextCard",
@@ -405,7 +409,7 @@ export default defineComponent({
       ),
       amplitude: props.widget.auroraAmplitude,
       blend: props.widget.auroraBlend,
-      time: props.widget.auroraTime,
+      time: props.widget.auroraTime || undefined,
       speed: props.widget.auroraSpeed,
       intensity: props.widget.auroraIntensity,
       className: props.widget.auroraClassName,
