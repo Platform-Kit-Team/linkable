@@ -144,6 +144,9 @@
     "cardText": "#0b1220",
     "radiusXl": "1.6rem",
     "radiusLg": "1.2rem",
+    "fontFamily": "",
+    "fontWeight": "",
+    "letterSpacing": "",
     "layoutVars": {},
     "layoutData": {
       "defaultTab": "links",
@@ -171,6 +174,9 @@
       "cardText": "#0b1220",
       "radiusXl": "1.6rem",
       "radiusLg": "1.2rem",
+      "fontFamily": "",
+      "fontWeight": "",
+      "letterSpacing": "",
       "layoutVars": {},
       "layoutData": {}
     },
@@ -193,6 +199,9 @@
       "cardText": "#0b1220",
       "radiusXl": "1.6rem",
       "radiusLg": "1.2rem",
+      "fontFamily": "",
+      "fontWeight": "",
+      "letterSpacing": "",
       "layoutVars": {},
       "layoutData": {}
     }

@@ -29,7 +29,7 @@
 
 // ── current version ──────────────────────────────────────────────────
 
-export const CURRENT_SCHEMA_VERSION = 38;
+export const CURRENT_SCHEMA_VERSION = 39;
 
 // ── migration registry ──────────────────────────────────────────────
 
@@ -971,6 +971,35 @@ const migrations: Migration[] = [
         }
       }
       data.schemaVersion = 38;
+      return data;
+    },
+  },
+  {
+    toVersion: 39,
+    migrate: (data) => {
+      // v38 → v39: add fontFamily + fontWeight + letterSpacing to theme, and
+      // fontWeight + letterSpacing to embed/widget items.
+      if (data.theme && typeof data.theme === "object") {
+        data.theme.fontFamily ??= "";
+        data.theme.fontWeight ??= "";
+        data.theme.letterSpacing ??= "";
+      }
+      const collections = data.collections && typeof data.collections === "object"
+        ? (data.collections as Record<string, any>)
+        : {};
+      if (Array.isArray(collections.embeds?.items)) {
+        for (const e of collections.embeds.items) {
+          e.letterSpacing ??= "";
+          e.fontWeight ??= "";
+        }
+      }
+      if (Array.isArray(collections.widgets?.items)) {
+        for (const w of collections.widgets.items) {
+          w.letterSpacing ??= "";
+          w.fontWeight ??= "";
+        }
+      }
+      data.schemaVersion = 39;
       return data;
     },
   },

@@ -4,6 +4,7 @@ import ColorPickerInput from "../components/formkit/ColorPickerInput.vue";
 import ImageUploadInput from "../components/formkit/ImageUploadInput.vue";
 import TagListInput from "../components/formkit/TagListInput.vue";
 import IconSelectInput from "../components/formkit/IconSelectInput.vue";
+import GoogleFontPickerInput from "../components/formkit/GoogleFontPickerInput.vue";
 
 /**
  * Custom FormKit inputs registered globally.
@@ -13,6 +14,7 @@ import IconSelectInput from "../components/formkit/IconSelectInput.vue";
  *   { $formkit: 'imageUpload', name: 'imageUrl', label: 'Image' }
  *   { $formkit: 'tagList', name: 'tags', label: 'Tags' }
  *   { $formkit: 'iconSelect', name: 'icon', label: 'Icon' }
+ *   { $formkit: 'googleFontPicker', name: 'fontFamily', label: 'Font family' }
  */
 const customInputs: DefaultConfigOptions["inputs"] = {
   colorpicker: createInput(ColorPickerInput, {
@@ -26,6 +28,9 @@ const customInputs: DefaultConfigOptions["inputs"] = {
   }),
   iconSelect: createInput(IconSelectInput, {
     props: ["placeholder"],
+  }),
+  googleFontPicker: createInput(GoogleFontPickerInput, {
+    props: [],
   }),
 };
 

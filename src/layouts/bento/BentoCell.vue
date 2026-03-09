@@ -178,6 +178,7 @@
         v-if="item.headerText"
         class="text-sm font-semibold"
         :class="!item.thumbnailUrl && 'text-[color:var(--color-ink)]'"
+        :style="embedFontStyle"
       >
         {{ item.headerText }}
       </div>
@@ -185,6 +186,7 @@
         v-else
         class="text-sm font-semibold"
         :class="!item.thumbnailUrl && 'text-[color:var(--color-ink)]'"
+        :style="embedFontStyle"
       >
         {{ embedData.label }}
       </div>
@@ -194,6 +196,7 @@
         :class="item.thumbnailUrl
           ? 'bg-white/20 backdrop-blur-sm hover:bg-white/30'
           : 'bg-[var(--color-brand)] text-white hover:brightness-110'"
+        :style="embedFontStyle"
       >
         {{ item.buttonText }}
       </span>
@@ -207,7 +210,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, computed, inject, ref, type PropType, type Ref } from "vue";
+import { defineComponent, computed, inject, ref, watchEffect, type PropType, type Ref } from "vue";
 import type { BentoGridItem } from "./manifest";
 import type { BioLink, BioModel, GalleryItem, EmbedItem, SocialLink, WidgetItem } from "../../lib/model";
 import type { BlogPostMeta } from "../../lib/blog";
@@ -270,7 +273,34 @@ export default defineComponent({
       }
     };
 
-    return { model, linkData, galleryData, widgetData, blogData, embedData, embedHtml, widgetCellStyle, enabledSocials, getIcon, formatDate };
+    const loadGoogleFont = (family: string) => {
+      if (!family) return;
+      const id = `gf-${family.replace(/\s+/g, "-").toLowerCase()}`;
+      if (document.getElementById(id)) return;
+      const link = document.createElement("link");
+      link.id = id;
+      link.rel = "stylesheet";
+      link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(family)}:wght@300;400;500;600;700;800;900&display=swap`;
+      document.head.appendChild(link);
+    };
+
+    watchEffect(() => {
+      const family = embedData.value?.fontFamily;
+      if (family) loadGoogleFont(family);
+    });
+
+    const embedFontStyle = computed<Record<string, string>>(() => {
+      const d = embedData.value;
+      if (!d) return {};
+      const style: Record<string, string> = {};
+      if (d.fontSize) style.fontSize = `${d.fontSize}px`;
+      if (d.fontFamily) style.fontFamily = `'${d.fontFamily}', sans-serif`;
+      if (d.fontWeight) style.fontWeight = d.fontWeight;
+      if (d.letterSpacing) style.letterSpacing = d.letterSpacing;
+      return style;
+    });
+
+    return { model, linkData, galleryData, widgetData, blogData, embedData, embedHtml, widgetCellStyle, enabledSocials, getIcon, formatDate, embedFontStyle };
   },
 });
 </script>

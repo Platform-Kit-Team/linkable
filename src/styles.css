@@ -51,8 +51,9 @@ body {
 }
 
 body {
-  font-family: var(--font-sans);
+  font-family: var(--page-font-family, var(--font-sans));
   color: var(--color-ink);
+  letter-spacing: var(--page-letter-spacing, normal);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 

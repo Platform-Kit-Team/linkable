@@ -32,7 +32,7 @@
           :key="schemaKey"
           type="form"
           :actions="false"
-          :value="modelValue"
+          :value="seedValue"
           :classes="{ form: 'formkit-cms-form' }"
           @input="onInput"
         >
@@ -71,7 +71,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, type PropType } from "vue";
+import { defineComponent, ref, watch, type PropType } from "vue";
 import Drawer from "primevue/drawer";
 import Button from "primevue/button";
 import ToggleSwitch from "primevue/toggleswitch";
@@ -93,6 +93,15 @@ export default defineComponent({
     const expanded = ref(false);
     const visible = ref(props.open);
 
+    // Seed the form once per item (keyed by schemaKey). We intentionally do NOT
+    // make this reactive to modelValue changes after init — doing so creates a
+    // feedback loop: FormKit emits @input → model updates → new :value → FormKit
+    // fires @input again → infinite cycle that blocks the event queue.
+    const seedValue = ref({ ...props.modelValue });
+    watch(() => props.schemaKey, () => {
+      seedValue.value = { ...props.modelValue };
+    });
+
     const onInput = (value: unknown) => {
       if (value && typeof value === "object") {
         emit("update:modelValue", { ...props.modelValue, ...(value as Record<string, unknown>) });
@@ -103,7 +112,7 @@ export default defineComponent({
       emit("update:modelValue", { ...props.modelValue, enabled: v });
     };
 
-    return { expanded, visible, onInput, onToggle };
+    return { expanded, visible, onInput, onToggle, seedValue };
   },
   watch: {
     open(v) { this.visible = v; },

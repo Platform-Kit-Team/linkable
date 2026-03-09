@@ -106,6 +106,9 @@ export type BioTheme = {
   cardText: string;
   radiusXl: string;
   radiusLg: string;
+  fontFamily: string;
+  fontWeight: string;
+  letterSpacing: string;
   layoutVars: Record<string, string>;
   layoutData: Record<string, unknown>;
 };
@@ -123,6 +126,10 @@ export type EmbedItem = {
   enabled: boolean;
   publishDate: string;
   expirationDate: string;
+  fontSize: number;
+  fontFamily: string;
+  fontWeight: string;
+  letterSpacing: string;
 };
 
 export type WidgetType = "animated-text";
@@ -135,6 +142,9 @@ export type WidgetItem = {
   backgroundVariant: string;
   textColor: string;
   fontSize: number;
+  fontFamily: string;
+  fontWeight: string;
+  letterSpacing: string;
   backgroundColor: string;
   buttonColor: string;
   buttonTextColor: string;
@@ -549,6 +559,9 @@ export const defaultTheme = (): BioTheme => ({
   cardText: "#0b1220",
   radiusXl: "1.6rem",
   radiusLg: "1.2rem",
+  fontFamily: "",
+  fontWeight: "",
+  letterSpacing: "",
   layoutVars: {},
   layoutData: {},
 });
@@ -572,6 +585,9 @@ export const darkTheme = (): BioTheme => ({
   cardText: "#f1f5f9",
   radiusXl: "1.6rem",
   radiusLg: "1.2rem",
+  fontFamily: "",
+  fontWeight: "",
+  letterSpacing: "",
   layoutVars: {},
   layoutData: {},
 });
@@ -589,6 +605,10 @@ export const newEmbed = (): EmbedItem => ({
   enabled: true,
   publishDate: "",
   expirationDate: "",
+  fontSize: 14,
+  fontFamily: "",
+  fontWeight: "",
+  letterSpacing: "",
 });
 
 export const newWidget = (): WidgetItem => ({
@@ -599,6 +619,9 @@ export const newWidget = (): WidgetItem => ({
   backgroundVariant: "aurora",
   textColor: "#ffffff",
   fontSize: 20,
+  fontFamily: "",
+  fontWeight: "",
+  letterSpacing: "",
   backgroundColor: "",
   buttonColor: "#ffffff",
   buttonTextColor: "#0f172a",
@@ -1013,6 +1036,9 @@ const sanitizeTheme = (raw: unknown, fallback: BioTheme): BioTheme => {
     cardText: asString(t.cardText).slice(0, 40) || fallback.cardText,
     radiusXl: asString(t.radiusXl).slice(0, 20) || fallback.radiusXl,
     radiusLg: asString(t.radiusLg).slice(0, 20) || fallback.radiusLg,
+    fontFamily: asString(t.fontFamily).slice(0, 120),
+    fontWeight: asString(t.fontWeight).slice(0, 10),
+    letterSpacing: asString(t.letterSpacing).slice(0, 20),
     layoutVars: sanitizeLayoutVars(t.layoutVars),
     layoutData: (() => {
       const ld = (t.layoutData && typeof t.layoutData === "object" && !Array.isArray(t.layoutData)) ? { ...(t.layoutData as Record<string, unknown>) } : {} as Record<string, unknown>;
@@ -1150,6 +1176,10 @@ export const sanitizeModel = (input: unknown): BioModel => {
       enabled: typeof e?.enabled === "boolean" ? e.enabled : true,
       publishDate: asString(e?.publishDate).slice(0, 10),
       expirationDate: asString(e?.expirationDate).slice(0, 10),
+      fontSize: Math.max(8, Math.min(120, Number.isFinite(Number(e?.fontSize)) ? Number(e.fontSize) : 14)),
+      fontFamily: asString(e?.fontFamily).slice(0, 120),
+      fontWeight: asString(e?.fontWeight).slice(0, 10),
+      letterSpacing: asString(e?.letterSpacing).slice(0, 20),
     }))
     .filter((e: EmbedItem) => !!e.id)
     .slice(0, 20);
@@ -1173,6 +1203,9 @@ export const sanitizeModel = (input: unknown): BioModel => {
       backgroundVariant: asString(w?.backgroundVariant).slice(0, 60) || "aurora",
       textColor: asString(w?.textColor).slice(0, 20) || "#ffffff",
       fontSize: Math.max(10, Math.min(120, Number.isFinite(Number(w?.fontSize)) ? Number(w?.fontSize) : 20)),
+      fontFamily: asString(w?.fontFamily).slice(0, 120),
+      fontWeight: asString(w?.fontWeight).slice(0, 10),
+      letterSpacing: asString(w?.letterSpacing).slice(0, 20),
       backgroundColor: asString(w?.backgroundColor).slice(0, 20),
       buttonColor: asString(w?.buttonColor).slice(0, 20) || "#ffffff",
       buttonTextColor: asString(w?.buttonTextColor).slice(0, 20) || "#0f172a",

@@ -526,6 +526,48 @@
             </div>
           </Transition>
 
+          <!-- Typography -->
+          <button type="button" class="cms__accordion-trigger" @click="themeSection.typography = !themeSection.typography">
+            <span class="cms__accordion-label"><i class="pi pi-text" /> Typography</span>
+            <i class="pi" :class="themeSection.typography ? 'pi-chevron-up' : 'pi-chevron-down'" />
+          </button>
+          <Transition name="cms-collapse">
+            <div v-if="themeSection.typography" class="cms__accordion-body">
+              <div class="cms__color-grid" style="grid-template-columns: 1fr;">
+                <div class="cms__color-field" style="max-width: 100%;">
+                  <label class="cms__label">Page font family
+                    <button v-if="isOverridden('fontFamily')" class="cms__reset-btn" @click="resetField('fontFamily')" title="Reset to preset"><i class="pi pi-undo" /></button>
+                  </label>
+                  <GoogleFontPicker
+                    :modelValue="draft.theme.fontFamily || ''"
+                    @update:modelValue="draft.theme.fontFamily = $event"
+                  />
+                </div>
+                <div class="cms__color-field">
+                  <label class="cms__label">Font weight
+                    <button v-if="isOverridden('fontWeight')" class="cms__reset-btn" @click="resetField('fontWeight')" title="Reset to preset"><i class="pi pi-undo" /></button>
+                  </label>
+                  <select v-model="draft.theme.fontWeight" class="cms__color-hex cms__color-hex--full" style="appearance: auto;">
+                    <option value="">Default</option>
+                    <option value="300">300 – Light</option>
+                    <option value="400">400 – Regular</option>
+                    <option value="500">500 – Medium</option>
+                    <option value="600">600 – Semi Bold</option>
+                    <option value="700">700 – Bold</option>
+                    <option value="800">800 – Extra Bold</option>
+                    <option value="900">900 – Black</option>
+                  </select>
+                </div>
+                <div class="cms__color-field">
+                  <label class="cms__label">Letter spacing
+                    <button v-if="isOverridden('letterSpacing')" class="cms__reset-btn" @click="resetField('letterSpacing')" title="Reset to preset"><i class="pi pi-undo" /></button>
+                  </label>
+                  <InputText v-model="draft.theme.letterSpacing" class="cms__color-hex cms__color-hex--full" placeholder="e.g. 0.05em, -0.01em" />
+                </div>
+              </div>
+            </div>
+          </Transition>
+
           <!-- Layout-specific variables -->
           <template v-if="activeManifest && activeManifest.vars.length > 0">
             <button type="button" class="cms__accordion-trigger" @click="themeSection.layoutVars = !themeSection.layoutVars">
@@ -768,6 +810,7 @@ import Textarea from "primevue/textarea";
 import ToggleSwitch from "primevue/toggleswitch";
 import { useToast } from "primevue/usetoast";
 import LayoutSchemaRenderer from "./LayoutSchemaRenderer.vue";
+import GoogleFontPicker from "./GoogleFontPicker.vue";
 
 import ImageUploadField from "./ImageUploadField.vue";
 import CollectionListEditor from "./CollectionListEditor.vue";
@@ -808,6 +851,7 @@ export default defineComponent({
     AnalyticsPanel,
     ToggleSwitch,
     LayoutSchemaRenderer,
+    GoogleFontPicker,
   },
   props: {
     open: { type: Boolean, required: true },
@@ -885,6 +929,7 @@ export default defineComponent({
       surfaces: false,
       cards: false,
       radius: false,
+      typography: false,
       layoutVars: false,
       layoutSettings: false,
     });
@@ -1083,6 +1128,7 @@ export default defineComponent({
       "colorBrand", "colorBrandStrong", "colorAccent", "colorInk", "colorInkSoft",
       "bg", "glass", "glass2", "glassStrong", "colorBorder", "colorBorder2",
       "cardBg", "cardBorder", "cardText", "radiusXl", "radiusLg",
+      "fontFamily", "fontWeight", "letterSpacing",
     ] as const;
 
     const isOverridden = (key: string) => {

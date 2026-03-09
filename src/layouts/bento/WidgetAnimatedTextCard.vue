@@ -217,7 +217,7 @@
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, defineAsyncComponent, ref, onMounted, onUnmounted, type PropType } from "vue";
+import { computed, defineComponent, defineAsyncComponent, ref, watchEffect, onMounted, onUnmounted, type PropType } from "vue";
 import type { WidgetItem } from "../../lib/model";
 
 // Text components — lazy so GSAP/animation libs don't block initial parse
@@ -624,6 +624,9 @@ export default defineComponent({
 
     const cardStyle = computed<Record<string, string>>(() => ({
       "--vb-font-size": `${Math.max(10, props.widget.fontSize || 20)}px`,
+      "--vb-font-family": props.widget.fontFamily ? `'${props.widget.fontFamily}', sans-serif` : "inherit",
+      "--vb-font-weight": props.widget.fontWeight || "",
+      "--vb-letter-spacing": props.widget.letterSpacing || "",
       "--vb-text-speed": String(props.widget.textPresetSpeed || 1),
       "--vb-text-intensity": String(props.widget.textPresetIntensity || 1),
       "--vb-bg-speed": String(props.widget.backgroundPresetSpeed || 1),
@@ -657,6 +660,22 @@ export default defineComponent({
         borderColor: `${bg}99`,
         color: fg,
       };
+    });
+
+    const loadGoogleFont = (family: string) => {
+      if (!family) return;
+      const id = `gf-${family.replace(/\s+/g, "-").toLowerCase()}`;
+      if (document.getElementById(id)) return;
+      const link = document.createElement("link");
+      link.id = id;
+      link.rel = "stylesheet";
+      link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(family)}:wght@300;400;500;600;700;800;900&display=swap`;
+      document.head.appendChild(link);
+    };
+
+    watchEffect(() => {
+      const family = props.widget.fontFamily;
+      if (family) loadGoogleFont(family);
     });
 
     return {
@@ -712,6 +731,9 @@ export default defineComponent({
 <style scoped>
 .widget-text {
   text-shadow: 0 6px 28px rgba(0, 0, 0, 0.35);
+  font-family: var(--vb-font-family, inherit);
+  font-weight: var(--vb-font-weight, inherit);
+  letter-spacing: var(--vb-letter-spacing, inherit);
 }
 
 /* Text variants */

@@ -519,6 +519,21 @@ export default defineComponent({
       if (t.cardText) root.setProperty('--card-text', t.cardText);
       if (t.radiusXl) root.setProperty('--radius-xl', t.radiusXl);
       if (t.radiusLg) root.setProperty('--radius-lg', t.radiusLg);
+      root.setProperty('--page-font-family', t.fontFamily ? `'${t.fontFamily}', sans-serif` : '');
+      root.setProperty('--page-font-weight', t.fontWeight || '');
+      root.setProperty('--page-letter-spacing', t.letterSpacing || '');
+
+      // Load Google Font for page font family
+      if (t.fontFamily) {
+        const id = `gf-page-${t.fontFamily.replace(/\s+/g, '-').toLowerCase()}`;
+        if (!document.getElementById(id)) {
+          const link = document.createElement('link');
+          link.id = id;
+          link.rel = 'stylesheet';
+          link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(t.fontFamily)}:wght@300;400;500;600;700;800;900&display=swap`;
+          document.head.appendChild(link);
+        }
+      }
 
       // Apply layout-specific custom variables
       if (t.layoutVars) {
