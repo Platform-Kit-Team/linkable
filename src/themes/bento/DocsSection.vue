@@ -3,7 +3,7 @@
     <!-- Mobile sidebar toggle -->
     <button
       v-if="!sidebarOpen"
-      class="mb-0 flex items-center gap-1.5 rounded-full border border-[var(--bento-card-border,rgba(0,0,0,0.06))] bg-[var(--bento-card-bg,#fff)] px-4 py-2 text-xs font-medium text-[color:var(--color-ink-soft)] shadow-sm transition hover:text-[color:var(--color-ink)] lg:hidden"
+      class="mb-3 flex items-center gap-1.5 rounded-full border border-[var(--bento-card-border,rgba(0,0,0,0.06))] bg-[var(--bento-card-bg,#fff)] px-4 py-2 text-xs font-medium text-[color:var(--color-ink-soft)] shadow-sm transition hover:text-[color:var(--color-ink)] lg:hidden"
       @click="sidebarOpen = true"
     >
       <svg
@@ -345,7 +345,7 @@
         
         <template v-if="currentDoc">
           <!-- Breadcrumb -->
-          <div class="mb-4 flex items-center gap-1.5 text-xs text-[color:var(--color-ink-soft)]">
+          <div class="mb-4 mt-0  flex items-center gap-1.5 text-xs text-[color:var(--color-ink-soft)]">
             <button class="hover:text-[color:var(--color-ink)] transition" @click="navigateTo('')">
               Docs
             </button>
