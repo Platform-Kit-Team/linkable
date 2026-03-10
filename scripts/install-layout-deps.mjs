@@ -3,10 +3,12 @@
  * install-layout-deps.mjs
  *
  * Scans src/themes/ and src/overrides/ for directories containing a
- * package.json, and installs their dependencies into local node_modules.
+ * package.json, collects their dependencies, and installs any missing
+ * packages into the root node_modules.
  *
  * This keeps theme- and user-specific dependencies declared in their own
- * package.json without needing a pnpm workspace setup.
+ * package.json (source of truth) while making them available for both
+ * Vite bundling and runtime dynamic imports in build hooks.
  */
 import { readdirSync, existsSync, readFileSync } from "fs";
 import { join } from "path";
@@ -16,31 +18,33 @@ const root = process.cwd();
 const themesDir = join(root, "src", "themes");
 const overridesDir = join(root, "src", "overrides");
 
-/** Collect dirs that have a package.json with missing deps. */
-function collectDirsWithMissingDeps(dirs) {
-  const result = [];
+/** Collect all dependencies from theme/override package.json files. */
+function collectAllDeps(dirs) {
+  const deps = {}; // name → version
   for (const dir of dirs) {
     const pkgPath = join(dir, "package.json");
     if (!existsSync(pkgPath)) continue;
 
     const pkg = JSON.parse(readFileSync(pkgPath, "utf-8"));
-    const deps = { ...pkg.dependencies, ...pkg.devDependencies };
-    if (Object.keys(deps).length === 0) continue;
-
-    let hasMissing = false;
-    for (const name of Object.keys(deps)) {
-      const localInstalledPath = join(dir, "node_modules", name, "package.json");
-      if (!existsSync(localInstalledPath)) {
-        hasMissing = true;
-        break;
-      }
-    }
-
-    if (hasMissing) {
-      result.push(dir);
+    const allDeps = { ...pkg.dependencies, ...pkg.devDependencies };
+    for (const [name, version] of Object.entries(allDeps)) {
+      // First-seen version wins (themes are processed before overrides)
+      if (!deps[name]) deps[name] = version;
     }
   }
-  return result;
+  return deps;
+}
+
+/** Return deps not yet installed in root node_modules. */
+function findMissingDeps(deps) {
+  const missing = {};
+  for (const [name, version] of Object.entries(deps)) {
+    const installedPkg = join(root, "node_modules", name, "package.json");
+    if (!existsSync(installedPkg)) {
+      missing[name] = version;
+    }
+  }
+  return missing;
 }
 
 // Theme directories
@@ -53,23 +57,28 @@ const themeDirs = existsSync(themesDir)
 // User overrides directory
 const overrideDirs = existsSync(overridesDir) ? [overridesDir] : [];
 
-const themePaths = collectDirsWithMissingDeps([...themeDirs, ...overrideDirs]);
+const allDeps = collectAllDeps([...themeDirs, ...overrideDirs]);
+const missing = findMissingDeps(allDeps);
 
-if (themePaths.length === 0) {
+if (Object.keys(missing).length === 0) {
   console.log("[theme-deps] All theme/override dependencies already installed.");
   process.exit(0);
 }
 
-const runInstall = (cmd) => {
-  for (const themePath of themePaths) {
-    console.log(`[theme-deps] Installing deps in ${themePath}`);
-    execSync(cmd(themePath), { stdio: "inherit" });
-  }
-};
+// Build install spec list: "name@version name@version ..."
+const specs = Object.entries(missing)
+  .map(([name, version]) => `${name}@${version}`)
+  .join(" ");
+
+console.log(`[theme-deps] Installing missing deps: ${Object.keys(missing).join(", ")}`);
 
 try {
-  runInstall((layoutPath) => `npm install --prefix \"${layoutPath}\" --no-package-lock`);
+  execSync(`pnpm add ${specs}`, { cwd: root, stdio: "inherit" });
 } catch {
-  execSync("pnpm --version", { stdio: "ignore" });
-  runInstall((layoutPath) => `pnpm install --dir \"${layoutPath}\"`);
+  try {
+    execSync(`npm install --no-save ${specs}`, { cwd: root, stdio: "inherit" });
+  } catch (err) {
+    console.error("[theme-deps] Failed to install dependencies:", err.message);
+    process.exit(1);
+  }
 }

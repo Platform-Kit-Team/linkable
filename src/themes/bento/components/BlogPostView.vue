@@ -19,7 +19,7 @@
       style="max-height: 320px"
     />
 
-    <!-- Audio player (TTS) -->
+    <!-- Audio player -->
     <AudioPlayer
       v-if="post.audioUrl"
       :src="post.audioUrl"

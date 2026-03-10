@@ -48,6 +48,7 @@ const loadConfigFrom = async (dir: string, names?: string[]): Promise<PlatformKi
           platform: "node",
           target: "node18",
           packages: "external",
+          loader: { ".vue": "empty" },
         });
         try {
           const mod = await import(`${tmpPath}?t=${Date.now()}`);
@@ -71,20 +72,33 @@ const loadConfigFrom = async (dir: string, names?: string[]): Promise<PlatformKi
 };
 
 /**
- * Merge two PlatformKitConfig objects at build time.
- * - `contentCollections`: deep-merged per key (override wins per-key)
+ * Deep-merge two PlatformKitConfig objects.
+ * - Objects: recursively merged (override extends/overwrites keys)
  * - `buildHooks`: concatenated (all levels run)
- * - Scalar/object fields: override wins
+ * - Arrays (other than buildHooks): override replaces
+ * - Scalars / functions: override wins
  */
 const mergeBuildConfigs = (base: PlatformKitConfig, override: PlatformKitConfig): PlatformKitConfig => {
-  const merged = { ...base, ...override };
+  const deepMerge = (target: any, source: any): any => {
+    if (source === undefined || source === null) return target;
+    if (target === undefined || target === null) return source;
+    if (Array.isArray(source)) return source;
+    if (
+      source && typeof source === "object" && !Array.isArray(source) &&
+      target && typeof target === "object" && !Array.isArray(target)
+    ) {
+      const result = { ...target };
+      for (const key of Object.keys(source)) {
+        result[key] = deepMerge(target[key], source[key]);
+      }
+      return result;
+    }
+    return source;
+  };
 
-  // Deep-merge contentCollections: base + override per-key
-  if (base.contentCollections || override.contentCollections) {
-    merged.contentCollections = { ...(base.contentCollections ?? {}), ...(override.contentCollections ?? {}) };
-  }
+  const merged = deepMerge(base, override) as PlatformKitConfig;
 
-  // Concatenate buildHooks from all levels
+  // Special case: buildHooks are concatenated, not replaced
   if (base.buildHooks || override.buildHooks) {
     merged.buildHooks = [...(base.buildHooks ?? []), ...(override.buildHooks ?? [])];
   }
@@ -117,18 +131,20 @@ const loadPlatformKitConfig = async (): Promise<PlatformKitConfig> => {
     }
   }
 
-  // 2b. Load theme build config (Node-safe build hooks)
+  // 2b. Load theme config (platformkit.config.ts)
+  //     .vue imports are externalized by the esbuild loader so build-time
+  //     loading works even when the config references Vue editor components.
   const themeDir = path.resolve(__dirname, "src", "themes", themeName);
   if (fs.existsSync(themeDir)) {
-    const themeBuildConfig = await loadConfigFrom(themeDir, ["platformkit.build.ts", "platformkit.build.js"]);
-    config = mergeBuildConfigs(config, themeBuildConfig);
+    const themeConfig = await loadConfigFrom(themeDir);
+    config = mergeBuildConfigs(config, themeConfig);
   }
 
-  // 3. Load user overrides build config
+  // 3. Load user overrides (platformkit.config.ts)
   const overridesDir = path.resolve(__dirname, "src", "overrides");
   if (fs.existsSync(overridesDir)) {
-    const userBuildConfig = await loadConfigFrom(overridesDir, ["platformkit.build.ts", "platformkit.build.js"]);
-    config = mergeBuildConfigs(config, userBuildConfig);
+    const userConfig = await loadConfigFrom(overridesDir);
+    config = mergeBuildConfigs(config, userConfig);
   }
 
   return config;
@@ -1149,7 +1165,7 @@ const collectionBuildPlugin = () => ({
       }
     }
   },
-  closeBundle() {
+  async closeBundle() {
     const distDir = path.resolve(__dirname, "dist");
     if (!fs.existsSync(distDir)) return;
 
@@ -1205,7 +1221,7 @@ const collectionBuildPlugin = () => ({
 
       for (const hook of closeBundleHooks) {
         try {
-          hook.run({ collections: collectionsCtx, distDir, config: pkConfig, siteModel });
+          await hook.run({ collections: collectionsCtx, distDir, config: pkConfig, siteModel });
           console.log(`[build-hook] ${hook.name} completed`);
         } catch (err: any) {
           console.warn(`[build-hook] ${hook.name} failed: ${err.message}`);

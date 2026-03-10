@@ -67,7 +67,7 @@ if (args.includes("--help") || args.includes("-h") || args.length === 0) {
     tailwind.config.js   Optional Tailwind CSS extensions (merged with core)
     vite.plugins.js      Optional Vite plugins / custom server middleware
     vite.config.{ts,js}  Optional full Vite config override (deep-merged with core)
-    platformkit.config.ts  Optional site/RSS/build configuration
+    platformkit.config.ts  Optional site config (deep-merged with platform + theme)
     index.html           Optional HTML template override
 
   Examples:
@@ -313,13 +313,15 @@ const runBuild = () => {
     }
   }
 
-  // Copy platformkit.config.{ts,js,mjs} → project root
+  // Copy platformkit.config.{ts,js,mjs} → src/overrides/ (deep-merged with platform + theme config at build time)
+  const overridesForConfig = path.join(packageRoot, "src", "overrides");
+  mkdirSync(overridesForConfig, { recursive: true });
   for (const ext of ["ts", "js", "mjs"]) {
     const userConfigFile = path.join(contentDir, `platformkit.config.${ext}`);
     if (existsSync(userConfigFile)) {
-      copyFileSync(userConfigFile, path.join(packageRoot, `platformkit.config.${ext}`));
-      console.log(`  ✔ Staged platformkit.config.${ext}`);
-      break; // only stage the first one found
+      copyFileSync(userConfigFile, path.join(overridesForConfig, `platformkit.config.${ext}`));
+      console.log(`  ✔ Staged platformkit.config.${ext} (merged with platform + theme config)`);
+      break;
     }
   }
 
@@ -451,7 +453,7 @@ const runBuild = () => {
   const viteCmd = existsSync(viteBin) ? viteBin : "npx vite";
   const buildCmd = `${viteCmd} build --outDir ${JSON.stringify(buildOutDir)}`;
 
-  /** Remove staged user themes & overrides to keep the core tree clean. */
+  /** Remove staged user themes, overrides, and configs to keep the core tree clean. */
   const cleanupUserStaged = () => {
     const userThemesPath = path.join(packageRoot, "src", "themes", "user");
     const userOverridesPath = path.join(packageRoot, "src", "overrides", "user");
@@ -464,6 +466,13 @@ const runBuild = () => {
     }
     if (existsSync(userDepsMarker)) {
       rmSync(userDepsMarker, { force: true });
+    }
+    // Clean staged config files from src/overrides/
+    for (const name of [
+      "platformkit.config.ts", "platformkit.config.js", "platformkit.config.mjs",
+    ]) {
+      const staged = path.join(packageRoot, "src", "overrides", name);
+      if (existsSync(staged)) rmSync(staged, { force: true });
     }
   };
 

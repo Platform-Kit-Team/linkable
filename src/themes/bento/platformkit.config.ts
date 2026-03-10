@@ -1,4 +1,6 @@
 import type { PlatformKitConfig } from "../../lib/config";
+import { createTtsHook } from "./build-hooks/tts-hook";
+import { createImageOptimizeHook } from "./build-hooks/image-optimize-hook";
 import routes from "./routes-manifest";
 import type { FormKitSchemaNode } from "@formkit/core";
 import type { ThemeConfig } from "../../lib/model";
@@ -623,6 +625,59 @@ const manifest: PlatformKitConfig = {
   ],
   cmsTabs: [],
   routes,
+  contentCollections: {
+    blog: {
+      directory: "content/blog",
+      format: "markdown",
+      label: "Blog",
+      icon: "BookOpen",
+      sortField: "date",
+      sortOrder: "desc",
+      defaultEnabled: false,
+      searchable: true,
+      fieldDefaults: {
+        published: true,
+        tags: [],
+        excerpt: "",
+        coverImage: "",
+        audio: "",
+        publishDate: "",
+        expirationDate: "",
+        rss: true,
+      },
+      indexFilter: (item: Record<string, unknown>) => {
+        if (item.published === false) return false;
+        const today = new Date().toISOString().slice(0, 10);
+        if (
+          item.publishDate &&
+          typeof item.publishDate === "string" &&
+          today < item.publishDate
+        )
+          return false;
+        if (
+          item.expirationDate &&
+          typeof item.expirationDate === "string" &&
+          today > item.expirationDate
+        )
+          return false;
+        return true;
+      },
+      generateRss: true,
+      generateOgPages: { routePrefix: "content" },
+    },
+  },
+  buildHooks: [
+    createTtsHook({
+      collection: "blog",
+      voice: "af_heart",
+      filter: (item) => item.published !== false,
+    }),
+    createImageOptimizeHook({
+      maxWidth: 1920,
+      maxHeight: 1920,
+      quality: 80,
+    }),
+  ],
 };
 
 export default manifest;
