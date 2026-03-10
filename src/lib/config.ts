@@ -91,6 +91,81 @@ export interface ContentCollectionConfig {
   // ── Validation ────────────────────────────────────────────────────
   /** Optional Zod schema to validate each item at build time. */
   validationSchema?: ZodSchema;
+
+  // ── Build hooks ──────────────────────────────────────────────────
+  /**
+   * Filter function for the published index. Only items passing this
+   * filter appear in the build-time index.json. Items that fail the filter
+   * still get individual {slug}.json files — they just aren't listed.
+   */
+  indexFilter?: (item: Record<string, unknown>) => boolean;
+
+  /**
+   * Build-time hooks for post-processing (RSS, OG pre-rendering, etc.).
+   * These hooks run only in Node.js context during `vite build`.
+   */
+  buildHooks?: {
+    /**
+     * Called after all items have been written to the output directory.
+     * Good for generating RSS feeds, sitemaps, or other derived files.
+     */
+    afterBuild?: (context: CollectionBuildContext) => void;
+    /**
+     * Called after the entire Vite build (in closeBundle). Good for
+     * generating pre-rendered HTML files using the built output.
+     */
+    closeBundle?: (context: CollectionCloseBundleContext) => void;
+  };
+
+  // ── Built-in build integrations ──────────────────────────────────
+  /**
+   * Enable RSS feed generation for this collection at build time.
+   * Items must have `slug`, `title`, `date`, and optionally `excerpt`, `html`,
+   * `audio`, `rss`, `tags` fields. Items with `rss: false` are excluded.
+   * The RSS configuration (feeds, linkFormat, etc.) comes from `PlatformKitConfig.rss`.
+   */
+  generateRss?: boolean;
+
+  /**
+   * Enable OG meta pre-rendering for this collection at build time.
+   * Generates per-item HTML files (e.g. `dist/content/{slug}/index.html`)
+   * so social crawlers get item-specific OG tags without JavaScript.
+   */
+  generateOgPages?: boolean | {
+    /** URL path prefix for pre-rendered pages. Default: "content" */
+    routePrefix?: string;
+  };
+
+}
+
+/** Context passed to collection afterBuild hooks. */
+export interface CollectionBuildContext {
+  /** All items in the collection (after filtering). */
+  items: Record<string, unknown>[];
+  /** All items before filtering (includes unpublished). */
+  allItems: Record<string, unknown>[];
+  /** Absolute path to the output directory (e.g. public/content/collections/blog/). */
+  outputDir: string;
+  /** Absolute path to the source directory (e.g. content/blog/). */
+  sourceDir: string;
+  /** The full PlatformKitConfig. */
+  config: PlatformKitConfig;
+  /** The parsed CMS site model. */
+  siteModel: any;
+}
+
+/** Context passed to collection closeBundle hooks. */
+export interface CollectionCloseBundleContext {
+  /** All items that were included in the published index. */
+  items: Record<string, unknown>[];
+  /** Absolute path to the Vite build output (dist/). */
+  distDir: string;
+  /** The collection key (e.g. "blog"). */
+  collectionKey: string;
+  /** The full PlatformKitConfig. */
+  config: PlatformKitConfig;
+  /** The parsed CMS site model. */
+  siteModel: any;
 }
 
 export interface PlatformKitConfig {
@@ -107,12 +182,7 @@ export interface PlatformKitConfig {
   };
 
   /** Override default file paths. */
-  paths?: {
-    /** Markdown blog post source directory (default: "content/blog") */
-    blogContent?: string;
-    /** Blog JSON output directory relative to public/content/ (default: "blog") */
-    blogOutput?: string;
-  };
+  paths?: Record<string, never>;
 
   /** RSS feed generation. */
   rss?: {
@@ -141,8 +211,8 @@ export interface PlatformKitConfig {
     startUrl?: string;
   };
 
-  /** Blog rendering options. */
-  blog?: {
+  /** Markdown rendering options. */
+  markdown?: {
     /**
      * Additional highlight.js language names to register for code blocks
      * at build time. The core set (js, ts, python, bash, css, etc.) is
@@ -207,10 +277,6 @@ export interface PlatformKitConfig {
     pushEndpoint?: string;
     /** File upload endpoint (default: "/cms-upload") */
     uploadEndpoint?: string;
-    /** Blog post list endpoint (default: "/__blog-posts") */
-    blogListEndpoint?: string;
-    /** Blog post read/write endpoint (default: "/__blog-post") */
-    blogPostEndpoint?: string;
   };
 
   /** Dev-server defaults (overridden by CLI flags). */
@@ -296,6 +362,49 @@ export interface PlatformKitConfig {
    * scalar values use user-wins semantics.
    */
   vite?: Record<string, any>;
+
+  /**
+   * Build-time hooks that run during `vite build`.
+   * Each config level (platform, theme, user) can contribute hooks;
+   * they are concatenated during the config merge so all levels' hooks run.
+   */
+  buildHooks?: BuildHook[];
+}
+
+/**
+ * A build-time hook that runs during `vite build`.
+ * Registered via `buildHooks` on PlatformKitConfig at any config level.
+ */
+export interface BuildHook {
+  /** Human-readable name for logging. */
+  name: string;
+  /**
+   * Phase when the hook runs:
+   * - `"afterCollectionBuild"` — after all collection items are built to
+   *   `public/content/collections/`. Receives the built data for each collection.
+   * - `"closeBundle"` — after the final Vite bundle is written to `dist/`.
+   *   Good for post-processing the dist output.
+   */
+  phase: "afterCollectionBuild" | "closeBundle";
+  /** The hook implementation. */
+  run: (context: BuildHookContext) => void | Promise<void>;
+}
+
+/** Context passed to build hooks. */
+export interface BuildHookContext {
+  /** Built data for each collection, keyed by collection key. */
+  collections: Record<string, {
+    items: Record<string, unknown>[];
+    allItems: Record<string, unknown>[];
+    outputDir: string;
+    sourceDir: string;
+  }>;
+  /** Absolute path to the Vite build output (dist/). Only set in closeBundle phase. */
+  distDir?: string;
+  /** The full merged PlatformKitConfig. */
+  config: PlatformKitConfig;
+  /** The parsed CMS site model. */
+  siteModel: any;
 }
 
 /**

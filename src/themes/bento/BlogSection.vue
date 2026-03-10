@@ -267,7 +267,7 @@ import {
   type ComputedRef,
 } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import type { BlogPost, BlogPostMeta } from '../../lib/blog';
+import type { BlogPost, BlogPostMeta } from './blog-types';
 import SearchBar from './components/SearchBar.vue';
 import BlogEditorDrawer from '../../admin/BlogEditorDrawer.vue';
 import NewsletterComposeDrawer from '../../admin/NewsletterComposeDrawer.vue';

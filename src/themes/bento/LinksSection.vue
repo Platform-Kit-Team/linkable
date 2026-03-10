@@ -307,7 +307,7 @@
 import { defineComponent, computed, inject, ref, watch, onMounted, onUnmounted, type PropType, type Ref, type ComputedRef } from "vue";
 import type { BioModel } from "../../lib/model";
 import type { BioLink, GalleryItem, EmbedItem, WidgetItem } from "./collection-types";
-import type { BlogPostMeta } from "../../lib/blog";
+import type { BlogPostMeta } from "./blog-types";
 import type { BentoGridData, BentoGridItem } from "./manifest";
 import type { MasonryItem } from "./components/MasonryGrid.vue";
 import { Link, Image, BookOpen, Code, User, Sparkles } from "lucide-vue-next";

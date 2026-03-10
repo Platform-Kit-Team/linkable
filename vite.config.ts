@@ -12,13 +12,13 @@ import jsYaml from "js-yaml";
 import { sanitizeModel, stableStringify } from "./src/lib/model";
 import {
   parseFrontmatter,
-  metaFromRaw,
-  slugFromFilename,
   serializeFrontmatter,
   renderMarkdown,
   hljs,
-} from "./src/lib/blog";
+} from "./src/lib/markdown";
 import type { PlatformKitConfig, RssFeedConfig, ContentCollectionConfig } from "./src/lib/config";
+import { buildRssFeed, escapeXml as escapeRssXml } from "./src/lib/rss";
+import { generateOgPages } from "./src/lib/og-prerender";
 import type { ContentCollectionDef } from "./src/lib/layout-manifest";
 import { migrateCollectionItem } from "./src/lib/collection-migrations";
 import type { CollectionMigrationConfig } from "./src/lib/collection-migrations";
@@ -26,20 +26,29 @@ import type { CollectionMigrationConfig } from "./src/lib/collection-migrations"
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // ── Load platformkit.config.js/.ts (optional) ───────────────────────
-const loadPlatformKitConfig = async (): Promise<PlatformKitConfig> => {
-  const names = ["platformkit.config.ts", "platformkit.config.js", "platformkit.config.mjs"];
-  for (const name of names) {
-    const configPath = path.resolve(__dirname, name);
+/** Load a single PlatformKitConfig file from a directory. Returns {} if none found. */
+const loadConfigFrom = async (dir: string, names?: string[]): Promise<PlatformKitConfig> => {
+  const fileNames = names ?? ["platformkit.config.ts", "platformkit.config.js", "platformkit.config.mjs"];
+  for (const name of fileNames) {
+    const configPath = path.resolve(dir, name);
     if (!fs.existsSync(configPath)) continue;
 
     if (name.endsWith(".ts")) {
-      // Transpile .ts → temp .mjs via esbuild (already a Vite dependency)
       try {
-        const { transformSync } = await import("esbuild");
-        const code = fs.readFileSync(configPath, "utf-8");
-        const result = transformSync(code, { loader: "ts", format: "esm", target: "node18" });
+        const localRequire = createRequire(path.resolve(__dirname, "package.json"));
+        const esbuild = localRequire("esbuild") as typeof import("esbuild");
         const tmpPath = configPath + ".__tmp.mjs";
-        fs.writeFileSync(tmpPath, result.code);
+        // Use buildSync to bundle local imports (e.g. build-hooks/) into a single file.
+        // External: node builtins and npm packages — only local .ts/.js are inlined.
+        esbuild.buildSync({
+          entryPoints: [configPath],
+          outfile: tmpPath,
+          bundle: true,
+          format: "esm",
+          platform: "node",
+          target: "node18",
+          packages: "external",
+        });
         try {
           const mod = await import(`${tmpPath}?t=${Date.now()}`);
           return mod.default ?? mod;
@@ -47,26 +56,90 @@ const loadPlatformKitConfig = async (): Promise<PlatformKitConfig> => {
           try { fs.unlinkSync(tmpPath); } catch {}
         }
       } catch (err: any) {
-        console.warn(`[platformkit] Failed to load ${name}: ${err?.message}`);
+        console.warn(`[platformkit] Failed to load ${configPath}: ${err?.message}`);
       }
     } else {
       try {
         const mod = await import(`${configPath}?t=${Date.now()}`);
         return mod.default ?? mod;
       } catch (err: any) {
-        console.warn(`[platformkit] Failed to load ${name}: ${err?.message}`);
+        console.warn(`[platformkit] Failed to load ${configPath}: ${err?.message}`);
       }
     }
   }
   return {};
 };
 
+/**
+ * Merge two PlatformKitConfig objects at build time.
+ * - `contentCollections`: deep-merged per key (override wins per-key)
+ * - `buildHooks`: concatenated (all levels run)
+ * - Scalar/object fields: override wins
+ */
+const mergeBuildConfigs = (base: PlatformKitConfig, override: PlatformKitConfig): PlatformKitConfig => {
+  const merged = { ...base, ...override };
+
+  // Deep-merge contentCollections: base + override per-key
+  if (base.contentCollections || override.contentCollections) {
+    merged.contentCollections = { ...(base.contentCollections ?? {}), ...(override.contentCollections ?? {}) };
+  }
+
+  // Concatenate buildHooks from all levels
+  if (base.buildHooks || override.buildHooks) {
+    merged.buildHooks = [...(base.buildHooks ?? []), ...(override.buildHooks ?? [])];
+  }
+
+  return merged;
+};
+
+/**
+ * Load and merge PlatformKitConfig from all three levels:
+ *   1. Root platformkit.config.ts — platform defaults
+ *   2. src/themes/<active>/platformkit.config.ts — theme config
+ *   3. src/overrides/platformkit.config.ts — user overrides (final say)
+ *
+ * The active theme is detected from the CMS data file.
+ */
+const loadPlatformKitConfig = async (): Promise<PlatformKitConfig> => {
+  // 1. Root config
+  let config = await loadConfigFrom(__dirname);
+
+  // 2. Detect active theme from CMS data
+  const cmsPath = path.resolve(__dirname, "cms-data.json");
+  const defaultPath = path.resolve(__dirname, "default-data.json");
+  let themeName = "bento"; // fallback
+  for (const p of [cmsPath, defaultPath]) {
+    if (fs.existsSync(p)) {
+      try {
+        const d = JSON.parse(fs.readFileSync(p, "utf8"));
+        if (d?.theme?.layout) { themeName = d.theme.layout; break; }
+      } catch {}
+    }
+  }
+
+  // 2b. Load theme build config (Node-safe build hooks)
+  const themeDir = path.resolve(__dirname, "src", "themes", themeName);
+  if (fs.existsSync(themeDir)) {
+    const themeBuildConfig = await loadConfigFrom(themeDir, ["platformkit.build.ts", "platformkit.build.js"]);
+    config = mergeBuildConfigs(config, themeBuildConfig);
+  }
+
+  // 3. Load user overrides build config
+  const overridesDir = path.resolve(__dirname, "src", "overrides");
+  if (fs.existsSync(overridesDir)) {
+    const userBuildConfig = await loadConfigFrom(overridesDir, ["platformkit.build.ts", "platformkit.build.js"]);
+    config = mergeBuildConfigs(config, userBuildConfig);
+  }
+
+  return config;
+};
+
 const pkConfig: PlatformKitConfig = await loadPlatformKitConfig();
 
 // ── Register extra highlight.js languages from config ────────────────
-if (pkConfig.blog?.highlightLanguages?.length) {
+if (pkConfig.markdown?.highlightLanguages?.length) {
   const requireCJS = createRequire(import.meta.url);
-  for (const lang of pkConfig.blog.highlightLanguages) {
+  for (const lang of pkConfig.markdown.highlightLanguages) {
     try {
       const langDef = requireCJS(`highlight.js/lib/languages/${lang}`);
       hljs.registerLanguage(lang, langDef);
@@ -114,7 +187,7 @@ const userViteConfig = await loadUserViteConfig();
 const dataFilePath = path.resolve(__dirname, "cms-data.json");
 const defaultDataFilePath = path.resolve(__dirname, "default-data.json");
 const publicDataFilePath = path.resolve(__dirname, "public/content/data.json");
-const blogContentDir = path.resolve(__dirname, pkConfig.paths?.blogContent || "content/blog");
+
 
 // ── File-based content collection definitions ───────────────────────
 const collectionDefs: ContentCollectionDef[] = Object.entries(pkConfig.contentCollections ?? {}).map(
@@ -418,8 +491,6 @@ const CMS_ENDPOINTS = {
   upload:   pkConfig.cms?.uploadEndpoint   || "/cms-upload",
   data:     pkConfig.cms?.dataEndpoint     || "/__cms-data",
   push:     pkConfig.cms?.pushEndpoint     || "/__cms-push",
-  blogList: pkConfig.cms?.blogListEndpoint || "/__blog-posts",
-  blogPost: pkConfig.cms?.blogPostEndpoint || "/__blog-post",
 };
 
 // Allowed file extensions for uploads (R1)
@@ -688,117 +759,6 @@ const cmsMiddlewarePlugin = () => ({
         return;
       }
 
-      // ── Blog post endpoints ────────────────────────────────────────
-      if (url === CMS_ENDPOINTS.blogList && req.method === "GET") {
-        // List all blog posts metadata
-        if (!fs.existsSync(blogContentDir)) {
-          fs.mkdirSync(blogContentDir, { recursive: true });
-        }
-        const files = fs.readdirSync(blogContentDir).filter((f: string) => f.endsWith(".md"));
-        const posts = files.map((file: string) => {
-          const raw = fs.readFileSync(path.join(blogContentDir, file), "utf8");
-          const { meta } = parseFrontmatter(raw);
-          const slug = slugFromFilename(file);
-          return metaFromRaw(meta, slug);
-        });
-        // Sort newest first
-        posts.sort((a: any, b: any) => (b.date > a.date ? 1 : b.date < a.date ? -1 : 0));
-        res.setHeader("Content-Type", "application/json");
-        res.end(JSON.stringify(posts));
-        return;
-      }
-
-      if (url === CMS_ENDPOINTS.blogPost) {
-        const fullUrl = new URL(req.url ?? "", "http://localhost");
-        const slug = fullUrl.searchParams.get("slug") ?? "";
-
-        if (req.method === "GET") {
-          if (!slug) {
-            res.statusCode = 400;
-            res.end("Missing slug parameter");
-            return;
-          }
-          const safeSlug = path.basename(slug).replace(/[^a-zA-Z0-9_-]/g, "-");
-          if (!safeSlug || safeSlug === "-") {
-            res.statusCode = 400;
-            res.end("Invalid slug");
-            return;
-          }
-          const filePath = path.join(blogContentDir, `${safeSlug}.md`);
-          if (!fs.existsSync(filePath)) {
-            res.statusCode = 404;
-            res.end("Not found");
-            return;
-          }
-          const raw = fs.readFileSync(filePath, "utf8");
-          const { meta, body } = parseFrontmatter(raw);
-          const postMeta = metaFromRaw(meta, safeSlug);
-          const html = renderMarkdown(body);
-          // Include audioUrl if TTS audio exists for this post
-          const devAudioDir = path.resolve(__dirname, "public", "content", "blog", "audio");
-          const devAudioMp3 = path.join(devAudioDir, `${safeSlug}.mp3`);
-          const devAudioWav = path.join(devAudioDir, `${safeSlug}.wav`);
-          const devAudioUrl = fs.existsSync(devAudioMp3)
-            ? `/content/blog/audio/${safeSlug}.mp3`
-            : fs.existsSync(devAudioWav)
-            ? `/content/blog/audio/${safeSlug}.wav`
-            : undefined;
-          res.setHeader("Content-Type", "application/json");
-          res.end(JSON.stringify({ ...postMeta, content: body, html, ...(devAudioUrl ? { audioUrl: devAudioUrl } : {}) }));
-          return;
-        }
-
-        if (req.method === "POST") {
-          const body = await collectRequestBody(req);
-          const { slug: postSlug, markdown } = JSON.parse(body);
-          if (!postSlug || !markdown) {
-            res.statusCode = 400;
-            res.end("Missing slug or markdown");
-            return;
-          }
-          if (!fs.existsSync(blogContentDir)) {
-            fs.mkdirSync(blogContentDir, { recursive: true });
-          }
-          // R9: Strip path segments to prevent path traversal, then sanitize
-          const safeName = path.basename(postSlug).replace(/[^a-zA-Z0-9_-]/g, "-").slice(0, 120);
-          if (!safeName || safeName === "-") {
-            res.statusCode = 400;
-            res.end("Invalid slug");
-            return;
-          }
-          const filePath = path.join(blogContentDir, `${safeName}.md`);
-          fs.writeFileSync(filePath, markdown);
-          res.statusCode = 204;
-          res.end();
-          return;
-        }
-
-        if (req.method === "DELETE") {
-          if (!slug) {
-            res.statusCode = 400;
-            res.end("Missing slug parameter");
-            return;
-          }
-          const safeSlug = path.basename(slug).replace(/[^a-zA-Z0-9_-]/g, "-");
-          if (!safeSlug || safeSlug === "-") {
-            res.statusCode = 400;
-            res.end("Invalid slug");
-            return;
-          }
-          const filePath = path.join(blogContentDir, `${safeSlug}.md`);
-          if (fs.existsSync(filePath)) {
-            fs.unlinkSync(filePath);
-          }
-          res.statusCode = 204;
-          res.end();
-          return;
-        }
-
-        res.statusCode = 405;
-        res.end("Method Not Allowed");
-        return;
-      }
-
       // ── Generic file collection CRUD ─────────────────────────────
       const collectionMatch = url.match(/^\/__collection\/([a-zA-Z0-9_-]+)$/);
       if (collectionMatch) {
@@ -922,31 +882,40 @@ const cmsMiddlewarePlugin = () => ({
 
       // ── RSS feed (dev) ───────────────────────────────────────────
       if (url === "/content/rss.xml" && req.method === "GET") {
-        if (!fs.existsSync(blogContentDir)) {
-          fs.setHeader?.("Content-Type", "application/rss+xml");
+        // Find a collection with RSS enabled
+        const rssDef = collectionDefs.find(d => {
+          const cfg = (pkConfig.contentCollections ?? {})[d.key];
+          return cfg?.generateRss;
+        });
+        const rssDir = rssDef ? path.resolve(__dirname, rssDef.directory) : null;
+        const rssExt = rssDef ? COLLECTION_FORMAT_EXT[rssDef.format] : ".md";
+
+        if (!rssDir || !fs.existsSync(rssDir)) {
           res.statusCode = 200;
           res.setHeader("Content-Type", "application/rss+xml");
-          res.end(buildRssFeed([], readDefaultModel()));
+          res.end(buildRssFeed([], readDefaultModel(), pkConfig));
           return;
         }
-        const files = fs.readdirSync(blogContentDir).filter((f: string) => f.endsWith(".md"));
+        const files = fs.readdirSync(rssDir).filter((f: string) => f.endsWith(rssExt));
         const posts: any[] = [];
         for (const file of files) {
-          const raw = fs.readFileSync(path.join(blogContentDir, file), "utf8");
-          const { meta, body } = parseFrontmatter(raw);
-          const slug = slugFromFilename(file);
-          const postMeta = metaFromRaw(meta, slug);
-          if (!postMeta.published) continue;
-          const html = renderMarkdown(body);
-          posts.push({ ...postMeta, html });
+          const fp = path.join(rssDir, file);
+          const { data, body } = readCollectionFile(fp, rssDef!.format);
+          if (data.published === false) continue;
+          const slug = path.basename(file, rssExt);
+          const html = body ? renderMarkdown(body) : "";
+          posts.push({ ...data, slug, html });
         }
-        posts.sort((a: any, b: any) => (b.date > a.date ? 1 : b.date < a.date ? -1 : 0));
+        if (rssDef!.sortField) {
+          const sf = rssDef!.sortField;
+          posts.sort((a: any, b: any) => (b[sf] > a[sf] ? 1 : b[sf] < a[sf] ? -1 : 0));
+        }
         const siteModel = fs.existsSync(dataFilePath)
           ? JSON.parse(fs.readFileSync(dataFilePath, "utf8"))
           : readDefaultModel();
         res.statusCode = 200;
         res.setHeader("Content-Type", "application/rss+xml");
-        res.end(buildRssFeed(posts, siteModel));
+        res.end(buildRssFeed(posts, siteModel, pkConfig));
         return;
       }
 
@@ -955,59 +924,6 @@ const cmsMiddlewarePlugin = () => ({
     });
   },
 });
-
-/** Escape XML special characters */
-const escapeXml = (s: string): string =>
-  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;");
-
-/** Build an RSS XML string from published blog posts and site metadata. */
-const buildRssFeed = (
-  posts: { slug: string; title: string; date: string; excerpt: string; html: string; audio?: string; audioUrl?: string }[],
-  siteModel: any,
-  feedCfg?: RssFeedConfig,
-): string => {
-  const siteTitle = escapeXml(
-    feedCfg?.title || pkConfig.site?.name || siteModel?.profile?.displayName || "Blog",
-  );
-  const siteDesc = escapeXml(
-    feedCfg?.description || pkConfig.site?.tagline || siteModel?.profile?.tagline || "",
-  );
-  const lang = feedCfg?.language || pkConfig.site?.language || "en";
-  const outputPath = feedCfg?.output || "rss.xml";
-  // Use VITE_SITE_URL env var, or fall back to localhost
-  const siteUrl = (pkConfig.site?.url || process.env.VITE_SITE_URL || "http://localhost:8080").replace(/\/$/, "");
-
-  const items = posts.map((p) => {
-    const pubDate = new Date(p.date).toUTCString();
-    const linkTemplate = feedCfg?.linkFormat || pkConfig.rss?.linkFormat || "{siteUrl}/#blog/{slug}";
-    const link = linkTemplate
-      .replace("{siteUrl}", siteUrl)
-      .replace("{slug}", encodeURIComponent(p.slug));
-    const audioUrl = p.audio || p.audioUrl;
-    const enclosure = audioUrl ? `\n      <enclosure url="${escapeXml(siteUrl + audioUrl)}" type="audio/mpeg" length="0" />` : '';
-    return `    <item>
-      <title>${escapeXml(p.title)}</title>
-      <link>${escapeXml(link)}</link>
-      <guid isPermaLink="false">${escapeXml(p.slug)}</guid>
-      <pubDate>${pubDate}</pubDate>
-      <description>${escapeXml(p.excerpt || "")}</description>
-      <content:encoded><![CDATA[${p.html}]]></content:encoded>${enclosure}
-    </item>`;
-  });
-
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom">
-  <channel>
-    <title>${siteTitle}</title>
-    <link>${escapeXml(siteUrl)}</link>
-    <description>${siteDesc}</description>
-    <language>${lang}</language>
-    <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
-    <atom:link href="${escapeXml(siteUrl)}/content/${escapeXml(outputPath)}" rel="self" type="application/rss+xml" />
-${items.join("\n")}
-  </channel>
-</rss>`;
-};
 
 /** Build plugin: validate all content at build time. Exits with error if any content is invalid. */
 const contentValidationPlugin = () => ({
@@ -1027,23 +943,6 @@ const contentValidationPlugin = () => ({
         JSON.parse(raw);
       } catch (err) {
         errors.push(`cms-data.json: Invalid JSON — ${(err as Error).message}`);
-      }
-    }
-
-    // ── Validate blog posts ────────────────────────────────────────
-    if (fs.existsSync(blogContentDir)) {
-      const mdFiles = fs.readdirSync(blogContentDir).filter((f: string) => f.endsWith(".md"));
-      for (const file of mdFiles) {
-        try {
-          const raw = fs.readFileSync(path.join(blogContentDir, file), "utf8");
-          const { meta } = parseFrontmatter(raw);
-          const title = typeof meta.title === "string" ? meta.title.trim() : "";
-          if (!title) {
-            errors.push(`blog/${file}: Missing or empty "title" in frontmatter`);
-          }
-        } catch (err) {
-          errors.push(`blog/${file}: Failed to parse — ${(err as Error).message}`);
-        }
       }
     }
 
@@ -1089,199 +988,17 @@ const contentValidationPlugin = () => ({
   },
 });
 
-/** Build plugin: generate static blog JSON files into public/content/blog/ at build time. */
-const blogBuildPlugin = () => ({
-  name: "blog-build",
-  buildStart() {
-    if (!fs.existsSync(blogContentDir)) return;
-    const files = fs.readdirSync(blogContentDir).filter((f: string) => f.endsWith(".md"));
-    if (files.length === 0) return;
-
-    const publicBlogDir = path.resolve(__dirname, "public", "content", pkConfig.paths?.blogOutput || "blog");
-    if (!fs.existsSync(publicBlogDir)) {
-      fs.mkdirSync(publicBlogDir, { recursive: true });
-    }
-
-    const index: any[] = [];
-
-    for (const file of files) {
-      const raw = fs.readFileSync(path.join(blogContentDir, file), "utf8");
-      const { meta, body } = parseFrontmatter(raw);
-      const slug = slugFromFilename(file);
-      const postMeta = metaFromRaw(meta, slug);
-      const html = renderMarkdown(body);
-
-      const post = { ...postMeta, content: body, html };
-      fs.writeFileSync(path.join(publicBlogDir, `${slug}.json`), JSON.stringify(post, null, 2));
-
-      if (postMeta.published) {
-        // When scheduleExclude is set (via config or env), exclude posts outside their schedule window
-        const excludeBySchedule = pkConfig.build?.scheduleExclude || !!readEnvVar("VITE_SCHEDULE_EXCLUDE_BUILD");
-        if (excludeBySchedule && !isScheduleVisibleNow(postMeta)) continue;
-        index.push(postMeta);
-      }
-    }
-
-    index.sort((a, b) => (b.date > a.date ? 1 : b.date < a.date ? -1 : 0));
-    fs.writeFileSync(path.join(publicBlogDir, "index.json"), JSON.stringify(index, null, 2));
-
-    // Generate RSS feed(s)
-    if (pkConfig.rss?.enabled !== false) {
-      const siteModel = fs.existsSync(dataFilePath)
-        ? JSON.parse(fs.readFileSync(dataFilePath, "utf8"))
-        : readDefaultModel();
-
-      // Hydrate each index entry with its full HTML for RSS <content:encoded>
-      const hydrateForRss = (meta: any) => {
-        const postFile = path.join(publicBlogDir, `${meta.slug}.json`);
-        if (fs.existsSync(postFile)) {
-          const full = JSON.parse(fs.readFileSync(postFile, "utf8"));
-          return { ...meta, html: full.html || "", audio: full.audio, audioUrl: full.audioUrl };
-        }
-        return { ...meta, html: "", audio: meta.audio, audioUrl: meta.audioUrl };
-      };
-
-      // Posts eligible for RSS: published + not excluded by `rss: false` frontmatter
-      const rssEligible = index.filter((m: any) => m.rss !== false);
-
-      // Determine feeds — use config feeds or a single default feed
-      const feedConfigs: RssFeedConfig[] =
-        pkConfig.rss?.feeds && pkConfig.rss.feeds.length > 0
-          ? pkConfig.rss.feeds
-          : [{ output: "rss.xml" }];
-
-      for (const feedCfg of feedConfigs) {
-        let feedPosts = rssEligible;
-
-        // Apply path regex filter
-        if (feedCfg.pathFilter) {
-          const pathRe = new RegExp(feedCfg.pathFilter);
-          feedPosts = feedPosts.filter((m: any) => pathRe.test(m.slug));
-        }
-
-        // Apply content regex filter (match against raw markdown body)
-        if (feedCfg.contentFilter) {
-          const contentRe = new RegExp(feedCfg.contentFilter);
-          feedPosts = feedPosts.filter((m: any) => {
-            const postFile = path.join(blogContentDir, `${m.slug}.md`);
-            if (!fs.existsSync(postFile)) return false;
-            const raw = fs.readFileSync(postFile, "utf8");
-            return contentRe.test(raw);
-          });
-        }
-
-        // Apply tag filter
-        if (feedCfg.tags && feedCfg.tags.length > 0) {
-          const tagSet = new Set(feedCfg.tags.map((t: string) => t.toLowerCase()));
-          feedPosts = feedPosts.filter((m: any) =>
-            Array.isArray(m.tags) && m.tags.some((t: string) => tagSet.has(t.toLowerCase())),
-          );
-        }
-
-        const rssPosts = feedPosts.map(hydrateForRss);
-        const rssXml = buildRssFeed(rssPosts, siteModel, feedCfg);
-        const outputFile = feedCfg.output || "rss.xml";
-        const outputPath = path.resolve(__dirname, "public", "content", outputFile);
-        const outputDir = path.dirname(outputPath);
-        if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
-        fs.writeFileSync(outputPath, rssXml);
-        console.log(`[blog-build] Generated RSS feed ${outputFile} (${rssPosts.length} item(s))`);
-      }
-    }
-
-    console.log(`[blog-build] Generated ${files.length} blog post(s) into public/content/blog/`);
-  },
-  /** After the full build, generate pre-rendered HTML for each blog post so
-   *  crawlers (iMessage, Twitter, etc.) get post-specific OG meta tags. */
-  closeBundle() {
-    const distDir = path.resolve(__dirname, "dist");
-    const indexHtmlPath = path.join(distDir, "index.html");
-    if (!fs.existsSync(indexHtmlPath)) return;
-
-    const blogIndexPath = path.join(distDir, "content", "blog", "index.json");
-    if (!fs.existsSync(blogIndexPath)) return;
-
-    const siteModel = fs.existsSync(dataFilePath)
-      ? sanitizeModel(JSON.parse(fs.readFileSync(dataFilePath, "utf8")))
-      : readDefaultModel();
-    const siteUrl = resolveSiteUrl();
-
-    const toAbsolute = (url: string) => {
-      if (!url) return "";
-      if (/^https?:\/\//.test(url)) return url;
-      return siteUrl ? `${siteUrl}${url.startsWith("/") ? "" : "/"}${url}` : url;
-    };
-
-    const esc = (s: string) =>
-      s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-
-    const baseHtml = fs.readFileSync(indexHtmlPath, "utf8");
-    const posts: any[] = JSON.parse(fs.readFileSync(blogIndexPath, "utf8"));
-    let count = 0;
-
-    for (const post of posts) {
-      const postJsonPath = path.join(distDir, "content", "blog", `${post.slug}.json`);
-      if (!fs.existsSync(postJsonPath)) continue;
-
-      const full = JSON.parse(fs.readFileSync(postJsonPath, "utf8"));
-      const title = full.title || post.title || "Blog Post";
-      const excerpt = full.excerpt || "";
-      const coverImage = full.coverImage || siteModel?.profile?.ogImageUrl || "";
-      const postUrl = siteUrl ? `${siteUrl}/content/${encodeURIComponent(post.slug)}` : "";
-
-      // Build post-specific OG tags
-      const ogTags: string[] = [];
-      ogTags.push(`<meta property="og:title" content="${esc(title)}" />`);
-      if (excerpt) {
-        ogTags.push(`<meta property="og:description" content="${esc(excerpt)}" />`);
-      }
-      if (coverImage) {
-        ogTags.push(`<meta property="og:image" content="${esc(toAbsolute(coverImage))}" />`);
-        ogTags.push(`<meta name="twitter:card" content="summary_large_image" />`);
-      }
-      ogTags.push(`<meta property="og:type" content="article" />`);
-      if (postUrl) {
-        ogTags.push(`<meta property="og:url" content="${esc(postUrl)}" />`);
-      }
-
-      // Start from base HTML, replace the site-level OG tags with post-specific ones
-      let postHtml = baseHtml;
-
-      // Remove existing OG/twitter meta tags injected by ogMetaPlugin
-      postHtml = postHtml.replace(/<meta\s+(?:property="og:|name="twitter:)[^>]*\/>\s*\n?\s*/g, "");
-
-      // Update <title>
-      postHtml = postHtml.replace(/<title>[^<]*<\/title>/, `<title>${esc(title)}</title>`);
-
-      // Update description
-      postHtml = postHtml.replace(
-        /<meta\s+name="description"\s+content="[^"]*"\s*\/?>/,
-        `<meta name="description" content="${esc(excerpt)}" />`,
-      );
-
-      // Inject post OG tags before </head>
-      postHtml = postHtml.replace("</head>", `    ${ogTags.join("\n    ")}\n  </head>`);
-
-      // Write to dist/content/{slug}/index.html
-      const outDir = path.join(distDir, "content", post.slug);
-      fs.mkdirSync(outDir, { recursive: true });
-      fs.writeFileSync(path.join(outDir, "index.html"), postHtml);
-      count++;
-    }
-
-    if (count > 0) {
-      console.log(`[blog-build] Pre-rendered ${count} blog post HTML file(s) into dist/content/`);
-    }
-  },
-});
-
 /** Build plugin: generate static JSON files for all file-based content collections. */
+// Track built collection data for closeBundle hooks and build hooks
+const builtCollectionData: Record<string, { items: Record<string, unknown>[]; allItems: Record<string, unknown>[]; outputDir: string; sourceDir: string }> = {};
+
 const collectionBuildPlugin = () => ({
   name: "collection-build",
-  buildStart() {
+  async buildStart() {
     if (collectionDefs.length === 0) return;
 
     for (const def of collectionDefs) {
+      const cfg = (pkConfig.contentCollections ?? {})[def.key];
       const dir = path.resolve(__dirname, def.directory);
       if (!fs.existsSync(dir)) continue;
 
@@ -1294,7 +1011,7 @@ const collectionBuildPlugin = () => ({
         fs.mkdirSync(outDir, { recursive: true });
       }
 
-      const index: Record<string, unknown>[] = [];
+      const allItems: Record<string, unknown>[] = [];
       const mc = getMigrationConfig(def.key);
 
       for (const file of files) {
@@ -1311,8 +1028,12 @@ const collectionBuildPlugin = () => ({
 
         fs.writeFileSync(path.join(outDir, `${slug}.json`), JSON.stringify(item, null, 2));
         const { content: _c, html: _h, ...indexData } = item;
-        index.push(indexData);
+        allItems.push(indexData);
       }
+
+      // Apply indexFilter if defined
+      const indexFilter = cfg?.indexFilter;
+      const index = indexFilter ? allItems.filter(indexFilter) : [...allItems];
 
       // Sort index
       if (def.sortField) {
@@ -1327,6 +1048,169 @@ const collectionBuildPlugin = () => ({
 
       fs.writeFileSync(path.join(outDir, "index.json"), JSON.stringify(index, null, 2));
       console.log(`[collection-build] Generated ${files.length} ${def.key} item(s) into public/content/collections/${def.key}/`);
+
+      // Store for closeBundle and call afterBuild hook
+      builtCollectionData[def.key] = { items: index, allItems, outputDir: outDir, sourceDir: dir };
+
+      if (cfg?.buildHooks?.afterBuild) {
+        const siteModel = fs.existsSync(dataFilePath)
+          ? JSON.parse(fs.readFileSync(dataFilePath, "utf8"))
+          : readDefaultModel();
+        cfg.buildHooks.afterBuild({
+          items: index,
+          allItems,
+          outputDir: outDir,
+          sourceDir: dir,
+          config: pkConfig,
+          siteModel,
+        });
+      }
+
+      // ── Built-in RSS generation ──────────────────────────────────
+      if (cfg?.generateRss && pkConfig.rss?.enabled !== false) {
+        const siteModel = fs.existsSync(dataFilePath)
+          ? JSON.parse(fs.readFileSync(dataFilePath, "utf8"))
+          : readDefaultModel();
+
+        // Hydrate each index entry with its full HTML for RSS <content:encoded>
+        const rssEligible = index.filter((m: any) => m.rss !== false);
+
+        const feedConfigs: RssFeedConfig[] =
+          pkConfig.rss?.feeds && pkConfig.rss.feeds.length > 0
+            ? pkConfig.rss.feeds
+            : [{ output: "rss.xml" }];
+
+        for (const feedCfg of feedConfigs) {
+          let feedPosts = rssEligible;
+
+          if (feedCfg.pathFilter) {
+            const pathRe = new RegExp(feedCfg.pathFilter);
+            feedPosts = feedPosts.filter((m: any) => pathRe.test(m.slug));
+          }
+          if (feedCfg.contentFilter) {
+            const contentRe = new RegExp(feedCfg.contentFilter);
+            feedPosts = feedPosts.filter((m: any) => {
+              const postFile = path.join(dir, `${m.slug}${ext}`);
+              if (!fs.existsSync(postFile)) return false;
+              const raw = fs.readFileSync(postFile, "utf8");
+              return contentRe.test(raw);
+            });
+          }
+          if (feedCfg.tags && feedCfg.tags.length > 0) {
+            const tagSet = new Set(feedCfg.tags.map((t: string) => t.toLowerCase()));
+            feedPosts = feedPosts.filter((m: any) =>
+              Array.isArray(m.tags) && m.tags.some((t: string) => tagSet.has(t.toLowerCase())),
+            );
+          }
+
+          // Hydrate with rendered HTML
+          const rssPosts = feedPosts.map((meta: any) => {
+            const postFile = path.join(outDir, `${meta.slug}.json`);
+            if (fs.existsSync(postFile)) {
+              const full = JSON.parse(fs.readFileSync(postFile, "utf8"));
+              return { ...meta, html: full.html || "", audio: full.audio, audioUrl: full.audioUrl };
+            }
+            return { ...meta, html: "" };
+          });
+
+          const rssXml = buildRssFeed(rssPosts, siteModel, pkConfig, feedCfg);
+          const outputFile = feedCfg.output || "rss.xml";
+          const outputPath = path.resolve(__dirname, "public", "content", outputFile);
+          const feedOutDir = path.dirname(outputPath);
+          if (!fs.existsSync(feedOutDir)) fs.mkdirSync(feedOutDir, { recursive: true });
+          fs.writeFileSync(outputPath, rssXml);
+          console.log(`[collection-build] Generated RSS feed ${outputFile} (${rssPosts.length} item(s))`);
+        }
+      }
+    }
+
+    // ── Run afterCollectionBuild hooks from all config levels ───────
+    if (pkConfig.buildHooks?.length) {
+      const afterBuildHooks = pkConfig.buildHooks.filter(h => h.phase === "afterCollectionBuild");
+      if (afterBuildHooks.length > 0) {
+        const siteModel = fs.existsSync(dataFilePath)
+          ? JSON.parse(fs.readFileSync(dataFilePath, "utf8"))
+          : readDefaultModel();
+
+        // Build allItems map for hook context
+        const collectionsCtx: Record<string, { items: Record<string, unknown>[]; allItems: Record<string, unknown>[]; outputDir: string; sourceDir: string }> = {};
+        for (const [key, data] of Object.entries(builtCollectionData)) {
+          collectionsCtx[key] = data;
+        }
+
+        for (const hook of afterBuildHooks) {
+          try {
+            await hook.run({ collections: collectionsCtx, config: pkConfig, siteModel });
+            console.log(`[build-hook] ${hook.name} completed`);
+          } catch (err: any) {
+            console.warn(`[build-hook] ${hook.name} failed: ${err.message}`);
+          }
+        }
+      }
+    }
+  },
+  closeBundle() {
+    const distDir = path.resolve(__dirname, "dist");
+    if (!fs.existsSync(distDir)) return;
+
+    for (const def of collectionDefs) {
+      const cfg = (pkConfig.contentCollections ?? {})[def.key];
+      const built = builtCollectionData[def.key];
+      if (!built) continue;
+
+      const siteModel = fs.existsSync(dataFilePath)
+        ? sanitizeModel(JSON.parse(fs.readFileSync(dataFilePath, "utf8")))
+        : readDefaultModel();
+
+      // Call custom per-collection closeBundle hook
+      if (cfg?.buildHooks?.closeBundle) {
+        cfg.buildHooks.closeBundle({
+          items: built.items,
+          distDir,
+          collectionKey: def.key,
+          config: pkConfig,
+          siteModel,
+        });
+      }
+
+      // Built-in OG pre-rendering
+      if (cfg?.generateOgPages) {
+        const routePrefix = typeof cfg.generateOgPages === "object"
+          ? cfg.generateOgPages.routePrefix || "content"
+          : "content";
+        const count = generateOgPages(
+          built.items as any[],
+          distDir,
+          siteModel,
+          pkConfig,
+          routePrefix,
+        );
+        if (count > 0) {
+          console.log(`[collection-build] Pre-rendered ${count} ${def.key} OG page(s)`);
+        }
+      }
+    }
+
+    // ── Run closeBundle hooks from all config levels ─────────────
+    const closeBundleHooks = pkConfig.buildHooks?.filter(h => h.phase === "closeBundle") ?? [];
+    if (closeBundleHooks.length > 0) {
+      const siteModel = fs.existsSync(dataFilePath)
+        ? sanitizeModel(JSON.parse(fs.readFileSync(dataFilePath, "utf8")))
+        : readDefaultModel();
+
+      const collectionsCtx: Record<string, { items: Record<string, unknown>[]; allItems: Record<string, unknown>[]; outputDir: string; sourceDir: string }> = {};
+      for (const [key, data] of Object.entries(builtCollectionData)) {
+        collectionsCtx[key] = data;
+      }
+
+      for (const hook of closeBundleHooks) {
+        try {
+          hook.run({ collections: collectionsCtx, distDir, config: pkConfig, siteModel });
+          console.log(`[build-hook] ${hook.name} completed`);
+        } catch (err: any) {
+          console.warn(`[build-hook] ${hook.name} failed: ${err.message}`);
+        }
+      }
     }
   },
 });
@@ -1794,7 +1678,6 @@ const prerenderBuildPlugin = () => ({
           ...userPlugins,
           cmsMiddlewarePlugin(),
           contentValidationPlugin(),
-          blogBuildPlugin(),
           collectionBuildPlugin(),
           scheduleBuildPlugin(),
           prerenderBuildPlugin(),
@@ -1821,8 +1704,6 @@ const prerenderBuildPlugin = () => ({
           "__PK_CMS_DATA_ENDPOINT__": JSON.stringify(CMS_ENDPOINTS.data),
           "__PK_CMS_PUSH_ENDPOINT__": JSON.stringify(CMS_ENDPOINTS.push),
           "__PK_CMS_UPLOAD_ENDPOINT__": JSON.stringify(CMS_ENDPOINTS.upload),
-          "__PK_CMS_BLOG_LIST_ENDPOINT__": JSON.stringify(CMS_ENDPOINTS.blogList),
-          "__PK_CMS_BLOG_POST_ENDPOINT__": JSON.stringify(CMS_ENDPOINTS.blogPost),
           "__ENCRYPTED_GITHUB_TOKEN__": (() => {
             const token = readEnvVar("GITHUB_TOKEN");
             const secret = readEnvVar("CMS_PASSWORD");

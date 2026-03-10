@@ -10,5 +10,3 @@ declare const __PK_CONTENT_COLLECTIONS__: import("./lib/layout-manifest").Conten
 declare const __PK_CMS_DATA_ENDPOINT__: string | undefined;
 declare const __PK_CMS_PUSH_ENDPOINT__: string | undefined;
 declare const __PK_CMS_UPLOAD_ENDPOINT__: string | undefined;
-declare const __PK_CMS_BLOG_LIST_ENDPOINT__: string | undefined;
-declare const __PK_CMS_BLOG_POST_ENDPOINT__: string | undefined;

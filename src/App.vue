@@ -202,7 +202,7 @@ import { getLayoutConfig } from './lib/component-resolver';
 import { useLayoutRoutes } from './lib/component-resolver';
 import { defaultModel, type BioModel, sanitizeModel, stableStringify } from './lib/model';
 import { fetchModel, persistModel, getStagedData, clearStagedData } from './lib/persistence';
-import { fetchBlogPosts, type BlogPostMeta } from './lib/blog';
+import { fetchCollectionItems } from './lib/collections';
 import {
   GITHUB_SYNC_EVENT,
   canUseGithubSync,
@@ -771,12 +771,12 @@ export default defineComponent({
     };
 
     // ── Blog posts (for CMS panel) ──────────────────────────────────
-    const blogPosts = ref<BlogPostMeta[]>([]);
+    const blogPosts = ref<Record<string, unknown>[]>([]);
     provide('blogPosts', blogPosts);
 
     const loadBlogPosts = async () => {
       try {
-        blogPosts.value = await fetchBlogPosts();
+        blogPosts.value = await fetchCollectionItems("blog");
       } catch {
         blogPosts.value = [];
       }

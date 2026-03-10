@@ -99,7 +99,7 @@
 
 <script lang="ts">
 import { defineComponent } from "vue";
-import { fetchBlogPost, fetchBlogPosts } from "../../lib/blog";
+import { fetchCollectionItems, fetchCollectionItem } from "../../lib/collections";
 import type { GalleryItem } from "./collection-types";
 import ProfileHeader from "./ProfileHeader.vue";
 import TabNav from "./TabNav.vue";
@@ -210,14 +210,14 @@ export default defineComponent({
   methods: {
     async loadBlogPosts() {
       try {
-        this.blogPosts = await fetchBlogPosts();
+        this.blogPosts = await fetchCollectionItems("blog");
       } catch {
         this.blogPosts = [];
       }
     },
     async loadBlogPost(slug: string) {
       try {
-        this.currentBlogPost = await fetchBlogPost(slug);
+        this.currentBlogPost = await fetchCollectionItem("blog", slug);
       } catch {
         this.currentBlogPost = null;
       }

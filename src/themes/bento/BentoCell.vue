@@ -214,7 +214,7 @@ import { defineComponent, computed, inject, ref, watchEffect, type PropType, typ
 import type { BentoGridItem } from "./manifest";
 import type { BioModel } from "../../lib/model";
 import type { BioLink, GalleryItem, EmbedItem, SocialLink, WidgetItem } from "./collection-types";
-import type { BlogPostMeta } from "../../lib/blog";
+import type { BlogPostMeta } from "./blog-types";
 import { icons as lucideIcons } from "lucide-vue-next";
 import { resolveEmbedHtml } from "../../lib/utils";
 import { sanitizeHtml } from "../../lib/sanitize-html";

@@ -3,9 +3,17 @@
  *
  * In dev mode, talks to the Vite CMS middleware at `/__collection/{key}`.
  * In production, reads pre-built static JSON from `/content/collections/{key}/`.
+ * Pending (staged) entries are merged on top of fetched data so that CMS edits
+ * are immediately visible even before they are committed to a backend.
  */
 
 import type { ContentCollectionDef } from "./layout-manifest";
+import {
+  applyPendingToItem,
+  applyPendingToList,
+  stagePendingDelete,
+  stagePendingSave,
+} from "./pending";
 
 // Build-time injected collection definitions
 const defs: ContentCollectionDef[] =
@@ -22,6 +30,8 @@ export const getCollectionDefs = (): ContentCollectionDef[] => defs;
 export const fetchCollectionItems = async (
   key: string,
 ): Promise<Record<string, unknown>[]> => {
+  let items: Record<string, unknown>[];
+
   if (import.meta.env.DEV) {
     const res = await fetch(`/__collection/${encodeURIComponent(key)}`, {
       cache: "no-store",
@@ -30,15 +40,20 @@ export const fetchCollectionItems = async (
       if (res.status === 404) return [];
       throw new Error(`Failed to fetch collection ${key}: ${res.status}`);
     }
-    return res.json();
+    items = await res.json();
+  } else {
+    const res = await fetch(`/content/collections/${encodeURIComponent(key)}/index.json`);
+    if (!res.ok) {
+      if (res.status === 404) items = [];
+      else throw new Error(`Failed to fetch collection ${key}: ${res.status}`);
+    } else {
+      items = await res.json();
+    }
   }
 
-  const res = await fetch(`/content/collections/${encodeURIComponent(key)}/index.json`);
-  if (!res.ok) {
-    if (res.status === 404) return [];
-    throw new Error(`Failed to fetch collection ${key}: ${res.status}`);
-  }
-  return res.json();
+  // Merge pending entries on top of fetched data
+  const def = getCollectionDef(key);
+  return applyPendingToList(key, items, def?.sortField, def?.sortOrder);
 };
 
 /** Fetch a single item by slug from a file-based collection. */
@@ -46,6 +61,11 @@ export const fetchCollectionItem = async (
   key: string,
   slug: string,
 ): Promise<Record<string, unknown> | null> => {
+  // Check pending state first
+  const pending = applyPendingToItem(key, slug);
+  if (pending === null) return null; // deleted
+  if (pending !== undefined) return pending; // staged save
+
   if (import.meta.env.DEV) {
     const res = await fetch(
       `/__collection/${encodeURIComponent(key)}?slug=${encodeURIComponent(slug)}`,
@@ -76,9 +96,8 @@ export const saveCollectionItem = async (
     });
     return;
   }
-  throw new Error(
-    "Collection editing in production requires GitHub sync (not yet implemented for generic collections).",
-  );
+  // Production: stage the change in localStorage until committed
+  stagePendingSave(key, slug, data);
 };
 
 /** Delete a collection item by slug. */
@@ -93,7 +112,6 @@ export const deleteCollectionItem = async (
     );
     return;
   }
-  throw new Error(
-    "Collection editing in production requires GitHub sync (not yet implemented for generic collections).",
-  );
+  // Production: stage the deletion in localStorage until committed
+  stagePendingDelete(key, slug);
 };

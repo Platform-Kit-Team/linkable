@@ -46,7 +46,7 @@
 
 <script lang="ts">
 import { defineComponent, type PropType } from "vue";
-import type { BlogPostMeta } from "@/lib/blog";
+import type { BlogPostMeta } from "../blog-types";
 import { resolveUploadUrl } from "@/lib/github";
 
 export default defineComponent({

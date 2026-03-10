@@ -11,7 +11,6 @@
 
 import type { BioLink, SocialLink, GalleryItem } from "../themes/bento/collection-types";
 import type { ResumeData } from "../themes/bento/resume-types";
-import type { BlogPostMeta, BlogPost } from "./blog";
 
 export interface MasonryItem {
   id: string;
@@ -110,8 +109,8 @@ export interface GallerySectionEmits {
 /* ------------------------------------------------------------------ */
 
 export interface BlogSectionProps {
-  posts: BlogPostMeta[];
-  currentPost?: BlogPost | null;
+  posts: Record<string, unknown>[];
+  currentPost?: Record<string, unknown> | null;
   label?: string;
   searchEnabled?: boolean;
   availableTags?: string[];

@@ -194,6 +194,11 @@ function mergeConfigs(base: PlatformKitConfig, override: Partial<PlatformKitConf
     merged.presets = { ...(base.presets ?? {}), ...(override.presets ?? {}) };
   }
 
+  // Merge buildHooks: concatenate (all levels run)
+  if (base.buildHooks || override.buildHooks) {
+    merged.buildHooks = [...(base.buildHooks ?? []), ...(override.buildHooks ?? [])];
+  }
+
   return merged;
 }
 

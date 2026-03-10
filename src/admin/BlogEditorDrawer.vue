@@ -183,10 +183,9 @@ import MarkdownEditor from "./MarkdownEditor.vue";
 import { useToast } from "primevue/usetoast";
 
 import {
-  saveBlogPost,
-  deleteBlogPost,
-  type BlogPost,
-} from "@/lib/blog";
+  saveCollectionItem,
+  deleteCollectionItem,
+} from "@/lib/collections";
 
 const toSlug = (title: string) =>
   title
@@ -200,7 +199,7 @@ export default defineComponent({
   components: { Button, DatePicker, Drawer, ImageUploadField, AudioUploadField, InputText, MultiSelect, Textarea, ToggleSwitch, MarkdownEditor },
   props: {
     open: { type: Boolean, required: true },
-    post: { type: Object as PropType<BlogPost | null>, default: null },
+    post: { type: Object as PropType<Record<string, unknown> | null>, default: null },
     originalSlug: { type: String, default: "" },
     allTags: { type: Array as PropType<string[]>, default: () => [] },
   },
@@ -300,7 +299,7 @@ export default defineComponent({
       saving.value = true;
       try {
         if (props.originalSlug && props.originalSlug !== slug) {
-          await deleteBlogPost(props.originalSlug);
+          await deleteCollectionItem("blog", props.originalSlug);
         }
 
         const frontmatter: Record<string, unknown> = {
@@ -317,7 +316,7 @@ export default defineComponent({
           expirationDate: localExpirationDate.value,
         };
 
-        await saveBlogPost(slug, frontmatter, localBody.value);
+        await saveCollectionItem("blog", slug, { ...frontmatter, content: localBody.value });
 
         toast.add({ severity: "success", summary: isNew.value ? "Created" : "Saved", detail: `Post "${frontmatter.title}" saved.`, life: 2200 });
         emit("saved");
@@ -333,7 +332,7 @@ export default defineComponent({
       if (!props.originalSlug && !localSlug.value) return;
       const slug = props.originalSlug || localSlug.value;
       try {
-        await deleteBlogPost(slug);
+        await deleteCollectionItem("blog", slug);
         toast.add({ severity: "warn", summary: "Deleted", detail: "Blog post removed.", life: 2200 });
         emit("deleted");
         visible.value = false;

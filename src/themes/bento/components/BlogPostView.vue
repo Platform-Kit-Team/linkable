@@ -57,7 +57,7 @@
 
 <script lang="ts">
 import { computed, defineComponent, type PropType } from "vue";
-import type { BlogPost } from "@/lib/blog";
+import type { BlogPost } from "../blog-types";
 import { resolveUploadUrl } from "@/lib/github";
 import { sanitizeHtml } from "@/lib/sanitize-html";
 import AudioPlayer from "./AudioPlayer.vue";

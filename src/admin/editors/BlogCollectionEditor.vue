@@ -58,7 +58,7 @@ import Button from "primevue/button";
 import Tag from "primevue/tag";
 import { useToast } from "primevue/usetoast";
 import BlogEditorDrawer from "../BlogEditorDrawer.vue";
-import { fetchBlogPosts, fetchBlogPost, type BlogPostMeta, type BlogPost } from "@/lib/blog";
+import { fetchCollectionItems, fetchCollectionItem } from "@/lib/collections";
 import type { ContentCollection } from "@/lib/model";
 
 export default defineComponent({
@@ -70,22 +70,23 @@ export default defineComponent({
   emits: ["blog-posts-updated"],
   setup(_, { emit }) {
     const toast = useToast();
-    const blogPosts = ref<BlogPostMeta[]>([]);
+    const blogPosts = ref<Record<string, unknown>[]>([]);
     const editorOpen = ref(false);
-    const editorPost = ref<BlogPost | null>(null);
+    const editorPost = ref<Record<string, unknown> | null>(null);
     const editorOriginalSlug = ref("");
 
     const allBlogTags = computed(() => {
       const tagSet = new Set<string>();
       for (const p of blogPosts.value) {
-        if (p.tags) p.tags.forEach((t: string) => tagSet.add(t));
+        const tags = p.tags as string[] | undefined;
+        if (tags) tags.forEach((t: string) => tagSet.add(t));
       }
       return [...tagSet].sort();
     });
 
     const refresh = async () => {
       try {
-        blogPosts.value = await fetchBlogPosts();
+        blogPosts.value = await fetchCollectionItems("blog");
       } catch {
         blogPosts.value = [];
       }
@@ -100,7 +101,7 @@ export default defineComponent({
 
     const openExisting = async (slug: string) => {
       try {
-        const post = await fetchBlogPost(slug);
+        const post = await fetchCollectionItem("blog", slug);
         editorPost.value = post;
         editorOriginalSlug.value = slug;
         editorOpen.value = true;
