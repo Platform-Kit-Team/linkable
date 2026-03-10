@@ -3,8 +3,8 @@
   "profile": {
     "displayName": "PlatformKit",
     "tagline": "Design-forward links. Clean, fast, yours.",
-    "faviconUrl": "",
-    "ogImageUrl": ""
+    "faviconUrl": "/pwa-logo.png",
+    "ogImageUrl": "/pwa-logo.png"
   },
   "collections": {
     "socials": {

@@ -549,8 +549,8 @@ const buildManifest = (siteModel: any) => {
   const description = pkConfig.site?.tagline || siteModel?.profile?.tagline || "";
   const bg = siteModel?.theme?.bg || "#f5f7fb";
   const brand = siteModel?.theme?.colorBrand || "#3b82f6";
-  const ogImage = siteModel?.profile?.ogImageUrl || "";
-  const favicon = siteModel?.profile?.faviconUrl || "";
+  const ogImage = siteModel?.profile?.ogImageUrl || "/pwa-logo.png";
+  const favicon = siteModel?.profile?.faviconUrl || "/pwa-logo.png";
 
   const icons: { src: string; sizes: string; type: string; purpose?: string }[] = [];
 
