@@ -263,7 +263,7 @@ const onFileChange = (event: Event) => {
 const uploadViaDevServer = async (file: File) => {
   const formData = new FormData();
   formData.append("file", file, file.name);
-  const response = await fetch("/cms-upload", {
+  const response = await fetch(typeof __PK_CMS_UPLOAD_ENDPOINT__ !== "undefined" ? __PK_CMS_UPLOAD_ENDPOINT__ : "/cms-upload", {
     method: "POST",
     body: formData,
   });

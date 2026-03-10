@@ -14,6 +14,7 @@ import {
   metaFromRaw,
   slugFromFilename,
   renderMarkdown,
+  hljs,
 } from "./src/lib/blog";
 import type { PlatformKitConfig, RssFeedConfig } from "./src/lib/config";
 
@@ -57,10 +58,58 @@ const loadPlatformKitConfig = async (): Promise<PlatformKitConfig> => {
 
 const pkConfig: PlatformKitConfig = await loadPlatformKitConfig();
 
+// ── Register extra highlight.js languages from config ────────────────
+if (pkConfig.blog?.highlightLanguages?.length) {
+  const requireCJS = createRequire(import.meta.url);
+  for (const lang of pkConfig.blog.highlightLanguages) {
+    try {
+      const langDef = requireCJS(`highlight.js/lib/languages/${lang}`);
+      hljs.registerLanguage(lang, langDef);
+    } catch {
+      console.warn(`[platformkit] highlight.js language not found: ${lang}`);
+    }
+  }
+}
+
+// ── Deep-merge utility for Vite config ───────────────────────────────
+const deepMergeConfig = (target: Record<string, any>, source: Record<string, any>): Record<string, any> => {
+  const result = { ...target };
+  for (const key of Object.keys(source)) {
+    if (key === "plugins" && Array.isArray(source[key])) {
+      result[key] = [...(result[key] || []), ...source[key]];
+    } else if (
+      source[key] && typeof source[key] === "object" && !Array.isArray(source[key]) &&
+      target[key] && typeof target[key] === "object" && !Array.isArray(target[key])
+    ) {
+      result[key] = deepMergeConfig(target[key], source[key]);
+    } else {
+      result[key] = source[key];
+    }
+  }
+  return result;
+};
+
+// ── Load user Vite config (staged by CLI as vite.user.config.js) ─────
+const loadUserViteConfig = async (): Promise<Record<string, any>> => {
+  const configPath = path.resolve(__dirname, "vite.user.config.js");
+  if (!fs.existsSync(configPath)) return {};
+  try {
+    const mod = await import(`${configPath}?t=${Date.now()}`);
+    const resolved = mod.default ?? mod;
+    console.log("[user-vite-config] Loaded vite.user.config.js");
+    return typeof resolved === "object" && resolved !== null ? resolved : {};
+  } catch (err: any) {
+    console.warn(`[user-vite-config] Failed to load vite.user.config.js: ${err?.message}`);
+    return {};
+  }
+};
+
+const userViteConfig = await loadUserViteConfig();
+
 const dataFilePath = path.resolve(__dirname, "cms-data.json");
 const defaultDataFilePath = path.resolve(__dirname, "default-data.json");
 const publicDataFilePath = path.resolve(__dirname, "public/data.json");
-const blogContentDir = path.resolve(__dirname, "content/blog");
+const blogContentDir = path.resolve(__dirname, pkConfig.paths?.blogContent || "content/blog");
 
 /** Check if a schedulable item is currently visible based on its dates. */
 const isScheduleVisibleNow = (item: { publishDate?: string; expirationDate?: string }): boolean => {
@@ -251,12 +300,21 @@ const buildManifest = (siteModel: any) => {
     name,
     short_name: name,
     description,
-    start_url: "/",
-    display: "standalone",
+    start_url: pkConfig.pwa?.startUrl || "/",
+    display: pkConfig.pwa?.display || "standalone",
     background_color: bg,
     theme_color: brand,
     ...(icons.length > 0 ? { icons } : {}),
   };
+};
+
+// ── CMS endpoint paths (configurable via platformkit.config.ts) ──────
+const CMS_ENDPOINTS = {
+  upload:   pkConfig.cms?.uploadEndpoint   || "/cms-upload",
+  data:     pkConfig.cms?.dataEndpoint     || "/__cms-data",
+  push:     pkConfig.cms?.pushEndpoint     || "/__cms-push",
+  blogList: pkConfig.cms?.blogListEndpoint || "/__blog-posts",
+  blogPost: pkConfig.cms?.blogPostEndpoint || "/__blog-post",
 };
 
 const cmsMiddlewarePlugin = () => ({
@@ -265,7 +323,7 @@ const cmsMiddlewarePlugin = () => ({
     server.middlewares.use(async (req: any, res: any, next: any) => {
       const url = (req.url ?? "").split("?")[0];
 
-      if (url === "/cms-upload") {
+      if (url === CMS_ENDPOINTS.upload) {
         if (server.config.mode !== "development") {
           res.statusCode = 403;
           res.end("Forbidden");
@@ -367,7 +425,7 @@ const cmsMiddlewarePlugin = () => ({
         return;
       }
 
-      if (url === "/__cms-data") {
+      if (url === CMS_ENDPOINTS.data) {
         ensureSeedData();
 
         if (req.method === "OPTIONS") {
@@ -397,7 +455,7 @@ const cmsMiddlewarePlugin = () => ({
         return;
       }
 
-      if (url === "/__cms-push" && req.method === "POST") {
+      if (url === CMS_ENDPOINTS.push && req.method === "POST") {
         // Run the export-to-github script to push content to the remote repo
         const scriptPath = path.resolve(__dirname, "scripts/export-to-github.mjs");
         if (!fs.existsSync(scriptPath)) {
@@ -454,7 +512,7 @@ const cmsMiddlewarePlugin = () => ({
       }
 
       // ── Blog post endpoints ────────────────────────────────────────
-      if (url === "/__blog-posts" && req.method === "GET") {
+      if (url === CMS_ENDPOINTS.blogList && req.method === "GET") {
         // List all blog posts metadata
         if (!fs.existsSync(blogContentDir)) {
           fs.mkdirSync(blogContentDir, { recursive: true });
@@ -473,7 +531,7 @@ const cmsMiddlewarePlugin = () => ({
         return;
       }
 
-      if (url === "/__blog-post") {
+      if (url === CMS_ENDPOINTS.blogPost) {
         const fullUrl = new URL(req.url ?? "", "http://localhost");
         const slug = fullUrl.searchParams.get("slug") ?? "";
 
@@ -605,7 +663,10 @@ const buildRssFeed = (
 
   const items = posts.map((p) => {
     const pubDate = new Date(p.date).toUTCString();
-    const link = `${siteUrl}/#blog/${encodeURIComponent(p.slug)}`;
+    const linkTemplate = feedCfg?.linkFormat || pkConfig.rss?.linkFormat || "{siteUrl}/#blog/{slug}";
+    const link = linkTemplate
+      .replace("{siteUrl}", siteUrl)
+      .replace("{slug}", encodeURIComponent(p.slug));
     const audioUrl = p.audio || p.audioUrl;
     const enclosure = audioUrl ? `\n      <enclosure url="${escapeXml(siteUrl + audioUrl)}" type="audio/mpeg" length="0" />` : '';
     return `    <item>
@@ -640,7 +701,7 @@ const blogBuildPlugin = () => ({
     const files = fs.readdirSync(blogContentDir).filter((f: string) => f.endsWith(".md"));
     if (files.length === 0) return;
 
-    const publicBlogDir = path.resolve(__dirname, "public/blog");
+    const publicBlogDir = path.resolve(__dirname, "public", pkConfig.paths?.blogOutput || "blog");
     if (!fs.existsSync(publicBlogDir)) {
       fs.mkdirSync(publicBlogDir, { recursive: true });
     }
@@ -938,6 +999,7 @@ const ogMetaPlugin = () => {
 const manifestBuildPlugin = () => ({
   name: "manifest-build",
   buildStart() {
+    if (pkConfig.pwa?.enabled === false) return;
     const siteModel = fs.existsSync(dataFilePath)
       ? sanitizeModel(JSON.parse(fs.readFileSync(dataFilePath, "utf8")))
       : readDefaultModel();
@@ -1016,7 +1078,7 @@ const encryptTokenAtBuild = (token: string, password: string): string => {
 const prerenderBuildPlugin = () => ({
   name: "prerender",
   async closeBundle() {
-    if (!process.env.VITE_PRERENDER) return;
+    if (!pkConfig.build?.prerender && !process.env.VITE_PRERENDER) return;
 
     const distDir = path.resolve(__dirname, "dist");
     const indexHtmlPath = path.join(distDir, "index.html");
@@ -1031,7 +1093,7 @@ const prerenderBuildPlugin = () => ({
         ? JSON.parse(fs.readFileSync(dataFilePath, "utf8"))
         : null;
       const layoutName: string = data?.theme?.layout || "default";
-      const manifestPath = path.resolve(__dirname, "src", "layouts", layoutName, "manifest.ts");
+      const manifestPath = path.resolve(__dirname, "src", "themes", layoutName, "manifest.ts");
       if (fs.existsSync(manifestPath)) {
         const esbuild = createRequire(import.meta.url)("esbuild");
         const source = fs.readFileSync(manifestPath, "utf8");
@@ -1052,6 +1114,13 @@ const prerenderBuildPlugin = () => ({
       }
     } catch {
       // If manifest loading fails, just pre-render "/"
+    }
+
+    // Add user-configured extra routes
+    if (pkConfig.build?.prerenderRoutes?.length) {
+      for (const r of pkConfig.build.prerenderRoutes) {
+        if (!routes.includes(r)) routes.push(r);
+      }
     }
 
     // ── Start a static file server from dist/ ─────────────────────────
@@ -1252,7 +1321,7 @@ const prerenderBuildPlugin = () => ({
       }
     }
 
-      return {
+      const coreConfig: Record<string, any> = {
         resolve: {
           alias: {
             '@': path.resolve(__dirname, 'src'),
@@ -1290,6 +1359,12 @@ const prerenderBuildPlugin = () => ({
           "import.meta.env.VITE_GITHUB_REPO": JSON.stringify(readEnvVar("GITHUB_REPO")),
           "import.meta.env.VITE_GITHUB_BRANCH": JSON.stringify(readEnvVar("GITHUB_BRANCH")),
           "import.meta.env.VITE_SCHEDULE_EXCLUDE_BUILD": JSON.stringify(readEnvVar("VITE_SCHEDULE_EXCLUDE_BUILD")),
+          "__PK_EXTERNAL_COLLECTIONS__": JSON.stringify(pkConfig.externalCollections ?? ["blog", "newsletter"]),
+          "__PK_CMS_DATA_ENDPOINT__": JSON.stringify(CMS_ENDPOINTS.data),
+          "__PK_CMS_PUSH_ENDPOINT__": JSON.stringify(CMS_ENDPOINTS.push),
+          "__PK_CMS_UPLOAD_ENDPOINT__": JSON.stringify(CMS_ENDPOINTS.upload),
+          "__PK_CMS_BLOG_LIST_ENDPOINT__": JSON.stringify(CMS_ENDPOINTS.blogList),
+          "__PK_CMS_BLOG_POST_ENDPOINT__": JSON.stringify(CMS_ENDPOINTS.blogPost),
           "__ENCRYPTED_GITHUB_TOKEN__": (() => {
             const token = readEnvVar("GITHUB_TOKEN");
             const secret = readEnvVar("CMS_PASSWORD");
@@ -1302,4 +1377,14 @@ const prerenderBuildPlugin = () => ({
           })(),
         },
       };
+
+      // ── Merge user Vite config layers ──────────────────────────────
+      // 1. pkConfig.vite — inline overrides from platformkit.config.ts
+      // 2. userViteConfig — full config from vite.user.config.js (staged by CLI)
+      // Both are deep-merged; plugins are appended, objects merge, scalars user-wins.
+      const merged = deepMergeConfig(
+        deepMergeConfig(coreConfig, pkConfig.vite || {}),
+        userViteConfig,
+      );
+      return merged;
     });

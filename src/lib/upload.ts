@@ -11,10 +11,13 @@ import {
 
 const isDev = import.meta.env.DEV;
 
+declare const __PK_CMS_UPLOAD_ENDPOINT__: string | undefined;
+const CMS_UPLOAD_PATH = typeof __PK_CMS_UPLOAD_ENDPOINT__ !== "undefined" ? __PK_CMS_UPLOAD_ENDPOINT__ : "/cms-upload";
+
 const uploadViaDevServer = async (file: File): Promise<string> => {
   const formData = new FormData();
   formData.append("file", file, file.name);
-  const response = await fetch("/cms-upload", {
+  const response = await fetch(CMS_UPLOAD_PATH, {
     method: "POST",
     body: formData,
   });

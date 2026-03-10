@@ -4,7 +4,8 @@ import { sanitizeModel, stableStringify } from "./model";
 // use a unique path that won't collide with Vite's internal module
 // handling for JSON files. `/cms-data` was being rewritten by the server, so
 // fetching it returned a JS module rather than raw JSON.
-const DEV_ENDPOINT = "/__cms-data";
+declare const __PK_CMS_DATA_ENDPOINT__: string | undefined;
+const DEV_ENDPOINT = typeof __PK_CMS_DATA_ENDPOINT__ !== "undefined" ? __PK_CMS_DATA_ENDPOINT__ : "/__cms-data";
 const PROD_ENDPOINT = "/data.json";
 
 const PENDING_CMS_KEY = "pending-cms";

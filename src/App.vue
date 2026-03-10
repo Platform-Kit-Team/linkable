@@ -697,7 +697,7 @@ export default defineComponent({
       try {
         if (isDev) {
           // dev: call the push endpoint which runs export-to-github.mjs
-          const res = await fetch('/__cms-push', {
+          const res = await fetch(typeof __PK_CMS_PUSH_ENDPOINT__ !== "undefined" ? __PK_CMS_PUSH_ENDPOINT__ : '/__cms-push', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ message: message.trim() }),

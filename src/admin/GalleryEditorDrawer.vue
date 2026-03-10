@@ -336,7 +336,7 @@ export default defineComponent({
       try {
         const formData = new FormData();
         formData.append("file", file, file.name);
-        const res = await fetch("/cms-upload", { method: "POST", body: formData });
+        const res = await fetch(typeof __PK_CMS_UPLOAD_ENDPOINT__ !== "undefined" ? __PK_CMS_UPLOAD_ENDPOINT__ : "/cms-upload", { method: "POST", body: formData });
         if (!res.ok) throw new Error(await res.text() || `Upload failed (${res.status})`);
         const payload = (await res.json()) as { url?: string };
         if (!payload.url) throw new Error("Upload succeeded but no URL was returned.");

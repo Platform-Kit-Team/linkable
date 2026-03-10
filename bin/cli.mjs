@@ -32,6 +32,7 @@ import {
 } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { createRequire } from "node:module";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -65,7 +66,9 @@ if (args.includes("--help") || args.includes("-h") || args.length === 0) {
     supabase/            Optional Supabase migrations & functions
     tailwind.config.js   Optional Tailwind CSS extensions (merged with core)
     vite.plugins.js      Optional Vite plugins / custom server middleware
+    vite.config.{ts,js}  Optional full Vite config override (deep-merged with core)
     platformkit.config.ts  Optional site/RSS/build configuration
+    index.html           Optional HTML template override
 
   Examples:
     npx platformkit serve ./my-site
@@ -286,6 +289,30 @@ const runBuild = () => {
     console.log(`  ✔ Staged user vite.plugins.js`);
   }
 
+  // Copy vite.config.{ts,js,mjs} → vite.user.config.js (full user Vite config override)
+  for (const ext of ["ts", "js", "mjs"]) {
+    const userViteConfig = path.join(contentDir, `vite.config.${ext}`);
+    if (existsSync(userViteConfig)) {
+      if (ext === "ts") {
+        // Transpile TypeScript → JS before staging
+        try {
+          const cliRequire = createRequire(import.meta.url);
+          const { transformSync } = cliRequire("esbuild");
+          const code = readFileSync(userViteConfig, "utf8");
+          const result = transformSync(code, { loader: "ts", format: "esm", target: "node18" });
+          writeFileSync(path.join(packageRoot, "vite.user.config.js"), result.code);
+        } catch {
+          // Fallback: copy as-is and let Node handle it
+          copyFileSync(userViteConfig, path.join(packageRoot, "vite.user.config.js"));
+        }
+      } else {
+        copyFileSync(userViteConfig, path.join(packageRoot, "vite.user.config.js"));
+      }
+      console.log(`  ✔ Staged user vite.config.${ext}`);
+      break;
+    }
+  }
+
   // Copy platformkit.config.{ts,js,mjs} → project root
   for (const ext of ["ts", "js", "mjs"]) {
     const userConfigFile = path.join(contentDir, `platformkit.config.${ext}`);
@@ -294,6 +321,13 @@ const runBuild = () => {
       console.log(`  ✔ Staged platformkit.config.${ext}`);
       break; // only stage the first one found
     }
+  }
+
+  // Copy index.html → project root (user can override the HTML template)
+  const userIndexHtml = path.join(contentDir, "index.html");
+  if (existsSync(userIndexHtml)) {
+    copyFileSync(userIndexHtml, path.join(packageRoot, "index.html"));
+    console.log(`  ✔ Staged user index.html`);
   }
 
   // Install content repo npm dependencies (if package.json exists)

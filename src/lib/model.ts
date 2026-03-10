@@ -1,3 +1,6 @@
+// Injected at build time by Vite `define` — see vite.config.ts
+declare const __PK_EXTERNAL_COLLECTIONS__: string[] | undefined;
+
 /** @deprecated Import from src/themes/bento/collection-types instead — link is theme-level data */
 export type BioLink = {
   id: string;
@@ -1095,46 +1098,40 @@ export const sanitizeModel = (input: unknown): BioModel => {
   };
 
   // Links — generic passthrough (schema owned by theme)
-  const linksCol = sanitizeCollectionMeta(rawCollections.links, defaultCollection(true));
-
-  // Gallery — generic passthrough (schema owned by theme)
-  const galleryCol = sanitizeCollectionMeta(rawCollections.gallery, defaultCollection());
-
-  // Resume — generic passthrough (schema owned by theme)
-  const resumeCol = sanitizeCollectionMeta(rawCollections.resume, defaultCollection());
-
-  // Blog (external storage — items stay empty)
-  const blogCol = sanitizeCollectionMeta(rawCollections.blog, defaultCollection());
-  blogCol.items = [];
-
-  // Embeds — generic passthrough (schema owned by theme)
-  const embedsCol = sanitizeCollectionMeta(rawCollections.embeds, defaultCollection(true));
-
-  // Newsletter (external storage — Supabase-backed)
-  const newsletterCol = sanitizeCollectionMeta(rawCollections.newsletter, defaultCollection());
-  newsletterCol.items = [];
-
-  // Widgets — generic passthrough (schema owned by theme)
-  const widgetsCol = sanitizeCollectionMeta(rawCollections.widgets, defaultCollection());
-
-  // Socials — generic passthrough (schema owned by theme)
-  const socialsCol = sanitizeCollectionMeta(rawCollections.socials, defaultCollection(true));
-
-  const collections: Record<string, ContentCollection> = {
-    socials: socialsCol,
-    links: linksCol,
-    gallery: galleryCol,
-    resume: resumeCol,
-    blog: blogCol,
-    embeds: embedsCol,
-    widgets: widgetsCol,
-    newsletter: newsletterCol,
+  // All collections are sanitized via a data-driven loop. The only
+  // per-key variance is the default `enabled` value and whether the
+  // collection is externally managed (items emptied).
+  const enabledByDefault: Record<string, boolean> = {
+    socials: true,
+    links: true,
+    embeds: true,
   };
 
-  // Also preserve any extra collections from other layouts
-  for (const [key, val] of Object.entries(rawCollections as Record<string, unknown>)) {
-    if (!collections[key]) {
-      collections[key] = sanitizeCollectionMeta(val, defaultCollection());
+  // External collections have their items[] emptied — the real data
+  // lives in markdown files / Supabase / etc.
+  // At build time, Vite injects this list via `define`; at runtime we
+  // fall back to the hard default.
+  const externalKeys: ReadonlySet<string> =
+    typeof __PK_EXTERNAL_COLLECTIONS__ !== "undefined"
+      ? new Set(__PK_EXTERNAL_COLLECTIONS__)
+      : new Set(["blog", "newsletter"]);
+
+  const allKeys = new Set([
+    ...Object.keys(enabledByDefault),
+    ...Object.keys(rawCollections as Record<string, unknown>),
+    // Ensure well-known keys always exist even when absent from raw data
+    "gallery", "resume", "blog", "widgets", "newsletter",
+  ]);
+
+  const collections: Record<string, ContentCollection> = {};
+  for (const key of allKeys) {
+    const enabled = enabledByDefault[key] ?? false;
+    collections[key] = sanitizeCollectionMeta(
+      (rawCollections as Record<string, unknown>)[key],
+      defaultCollection(enabled),
+    );
+    if (externalKeys.has(key)) {
+      collections[key].items = [];
     }
   }
 

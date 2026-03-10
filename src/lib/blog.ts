@@ -59,6 +59,13 @@ hljs.registerLanguage("plaintext", plaintext);
 hljs.registerLanguage("text", plaintext);
 
 /**
+ * The shared highlight.js instance. Exported so build-time code
+ * (vite.config.ts) can register additional languages from the config
+ * without duplicating the core set.
+ */
+export { hljs };
+
+/**
  * Highlight a code string with hljs and return safe HTML.
  * Falls back to escaped plaintext for unknown languages.
  */
@@ -245,8 +252,10 @@ export const slugFromFilename = (filename: string): string =>
 
 // ── dev endpoints ────────────────────────────────────────────────────
 
-const DEV_BLOG_LIST = "/__blog-posts";
-const DEV_BLOG_POST = "/__blog-post";
+declare const __PK_CMS_BLOG_LIST_ENDPOINT__: string | undefined;
+declare const __PK_CMS_BLOG_POST_ENDPOINT__: string | undefined;
+const DEV_BLOG_LIST = typeof __PK_CMS_BLOG_LIST_ENDPOINT__ !== "undefined" ? __PK_CMS_BLOG_LIST_ENDPOINT__ : "/__blog-posts";
+const DEV_BLOG_POST = typeof __PK_CMS_BLOG_POST_ENDPOINT__ !== "undefined" ? __PK_CMS_BLOG_POST_ENDPOINT__ : "/__blog-post";
 const PROD_BLOG_INDEX = "/blog/index.json";
 const PROD_BLOG_POST = "/blog"; // `/blog/<slug>.json`
 const PENDING_BLOG_KEY = "pending-blog-posts";
