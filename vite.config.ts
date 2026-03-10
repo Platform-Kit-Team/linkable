@@ -978,6 +978,86 @@ ${items.join("\n")}
 </rss>`;
 };
 
+/** Build plugin: validate all content at build time. Exits with error if any content is invalid. */
+const contentValidationPlugin = () => ({
+  name: "content-validation",
+  buildStart() {
+    // Check env var (explicit "false" disables) then config (default: true)
+    const envVal = process.env.VITE_CONTENT_VALIDATION?.toLowerCase().trim();
+    if (envVal === "false" || envVal === "0") return;
+    if (pkConfig.build?.contentValidation === false) return;
+
+    const errors: string[] = [];
+
+    // ── Validate CMS data ──────────────────────────────────────────
+    if (fs.existsSync(dataFilePath)) {
+      try {
+        const raw = fs.readFileSync(dataFilePath, "utf8");
+        JSON.parse(raw);
+      } catch (err) {
+        errors.push(`cms-data.json: Invalid JSON — ${(err as Error).message}`);
+      }
+    }
+
+    // ── Validate blog posts ────────────────────────────────────────
+    if (fs.existsSync(blogContentDir)) {
+      const mdFiles = fs.readdirSync(blogContentDir).filter((f: string) => f.endsWith(".md"));
+      for (const file of mdFiles) {
+        try {
+          const raw = fs.readFileSync(path.join(blogContentDir, file), "utf8");
+          const { meta } = parseFrontmatter(raw);
+          const title = typeof meta.title === "string" ? meta.title.trim() : "";
+          if (!title) {
+            errors.push(`blog/${file}: Missing or empty "title" in frontmatter`);
+          }
+        } catch (err) {
+          errors.push(`blog/${file}: Failed to parse — ${(err as Error).message}`);
+        }
+      }
+    }
+
+    // ── Validate file-based collections ────────────────────────────
+    for (const def of collectionDefs) {
+      const dir = path.resolve(__dirname, def.directory);
+      if (!fs.existsSync(dir)) continue;
+
+      const ext = COLLECTION_FORMAT_EXT[def.format];
+      const files = fs.readdirSync(dir).filter((f: string) => f.endsWith(ext));
+      const cfg = (pkConfig.contentCollections ?? {})[def.key];
+
+      for (const file of files) {
+        const filePath = path.join(dir, file);
+        try {
+          const { data } = readCollectionFile(filePath, def.format);
+
+          // Run Zod validation if schema is provided
+          if (cfg?.validationSchema) {
+            const result = cfg.validationSchema.safeParse(data);
+            if (!result.success) {
+              const issues = result.error.issues
+                .map((i: { path: (string | number)[]; message: string }) => `  ${i.path.join(".")}: ${i.message}`)
+                .join("\n");
+              errors.push(`${def.key}/${file}: Schema validation failed:\n${issues}`);
+            }
+          }
+        } catch (err) {
+          errors.push(`${def.key}/${file}: Failed to parse — ${(err as Error).message}`);
+        }
+      }
+    }
+
+    if (errors.length > 0) {
+      const summary = errors.map((e) => `  ✗ ${e}`).join("\n");
+      throw new Error(
+        `\n[content-validation] Build aborted — ${errors.length} content error(s) found:\n${summary}\n\n` +
+        `Set VITE_CONTENT_VALIDATION=false to skip validation.\n`,
+      );
+    }
+
+    console.log("[content-validation] All content validated successfully.");
+  },
+});
+
 /** Build plugin: generate static blog JSON files into public/content/blog/ at build time. */
 const blogBuildPlugin = () => ({
   name: "blog-build",
@@ -1682,6 +1762,7 @@ const prerenderBuildPlugin = () => ({
           userDepsPlugin(),
           ...userPlugins,
           cmsMiddlewarePlugin(),
+          contentValidationPlugin(),
           blogBuildPlugin(),
           collectionBuildPlugin(),
           scheduleBuildPlugin(),

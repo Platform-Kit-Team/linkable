@@ -87,6 +87,10 @@ export interface ContentCollectionConfig {
   fieldDefaults?: Record<string, unknown>;
   /** Imperative migration transforms, run in version order (version-gated, run once per item). */
   migrations?: CollectionMigrationEntry[];
+
+  // ── Validation ────────────────────────────────────────────────────
+  /** Optional Zod schema to validate each item at build time. */
+  validationSchema?: ZodSchema;
 }
 
 export interface PlatformKitConfig {
@@ -226,6 +230,12 @@ export interface PlatformKitConfig {
     prerenderRoutes?: string[];
     /** Strip items outside their schedule window at build time */
     scheduleExclude?: boolean;
+    /**
+     * Validate all content against schemas at build time.
+     * Fails the build if any content is invalid. Default: true.
+     * Override via env var VITE_CONTENT_VALIDATION=false.
+     */
+    contentValidation?: boolean;
   };
 
   // ── Theme / Layout UI ──────────────────────────────────────────────
