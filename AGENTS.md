@@ -103,7 +103,6 @@ File-based content collections (defined in `platformkit.config.ts` under `conten
 1. **Declarative (idempotent, always runs):**
    - `fieldRenames`: `{ newFieldName: "oldFieldName" }` — moves values from old keys to new ones.
    - `fieldDefaults`: `{ fieldName: defaultValue }` — fills in missing fields with defaults.
-
 2. **Imperative (version-gated, runs once):**
    - `migrations`: Array of `{ toVersion, transform }` — arbitrary JS transforms that run in version order when `_schemaVersion` is behind.
 

@@ -207,50 +207,50 @@ Issues identified via full codebase audit. Grouped by priority.
 
 ### Critical — Security
 
-| #  | Issue                                      | Status | Location                    | Description                                                                                                                                                                                                     |
-| -- | ------------------------------------------ | ------ | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| R1 | **File upload: no type validation**        | ✅      | `vite.config.ts` upload handler | Accepts any file by spoofing MIME type. No allowlist of permitted extensions/MIME types.                                                                                                                        |
-| R2 | **File upload: no size limit**             | ✅      | `vite.config.ts` upload handler | No request body size cap — user can upload arbitrarily large files and fill disk.                                                                                                                               |
-| R3 | **File upload: path traversal in filename** | ✅      | `vite.config.ts` upload handler | Filename sanitization doesn't strip `../` path segments. Attacker can write outside `public/uploads/`.                                                                                                          |
-| R4 | **No server-side CMS auth**                | ⬜      | `vite.config.ts` CMS endpoints | Dev endpoints (`/__cms-data`, `/__cms-push`, `/cms-upload`) have zero authentication. Password gate is UI-only — anyone on the network can POST data.                                                           |
-| R5 | **XSS via headScript / bodyEndScript**     | ⬜      | `src/lib/model.ts`          | `scripts.headScript` and `scripts.bodyEndScript` inject user-controlled JS into HTML with no CSP or sanitization.                                                                                               |
+| #  | Issue                                       | Status | Location                        | Description                                                                                                                                           |
+| -- | ------------------------------------------- | ------ | ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| R1 | **File upload: no type validation**         | ✅      | `vite.config.ts` upload handler | Accepts any file by spoofing MIME type. No allowlist of permitted extensions/MIME types.                                                              |
+| R2 | **File upload: no size limit**              | ✅      | `vite.config.ts` upload handler | No request body size cap — user can upload arbitrarily large files and fill disk.                                                                     |
+| R3 | **File upload: path traversal in filename** | ✅      | `vite.config.ts` upload handler | Filename sanitization doesn't strip `../` path segments. Attacker can write outside `public/uploads/`.                                                |
+| R4 | **No server-side CMS auth**                 | ⬜      | `vite.config.ts` CMS endpoints  | Dev endpoints (`/__cms-data`, `/__cms-push`, `/cms-upload`) have zero authentication. Password gate is UI-only — anyone on the network can POST data. |
+| R5 | **XSS via headScript / bodyEndScript**      | ⬜      | `src/lib/model.ts`              | `scripts.headScript` and `scripts.bodyEndScript` inject user-controlled JS into HTML with no CSP or sanitization.                                     |
 
 ### High
 
-| #  | Issue                                          | Status | Location                    | Description                                                                                                                                            |
-| -- | ---------------------------------------------- | ------ | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| R6 | **`sanitizeUrl()` case-variant bypass**        | ✅      | `src/lib/model.ts`          | Doesn't catch `JaVaScRiPt:` or mixed-case schemes — only lowercase `javascript:` is blocked.                                                          |
-| R7 | **Audio conversion race condition**            | ⬜      | `vite.config.ts` upload      | HTTP response sent before ffmpeg conversion completes. Client sees success but converted file may not exist yet.                                        |
-| R8 | **localStorage QuotaExceededError silent**     | ✅      | `src/lib/persistence.ts`    | `localStorage.setItem()` failure is silently caught — user loses edits with no notification.                                                            |
-| R9 | **Blog slug path traversal**                   | ✅      | `vite.config.ts` blog POST  | Slug like `../../etc/passwd` not stripped of path segments. Can create files outside `content/blog/`.                                                    |
-| R10 | **Password stored in component ref**          | ⬜      | `src/App.vue`               | `cmsPassword` ref persists in memory for lifetime of the app. Should be volatile / session-scoped.                                                      |
-| R11 | **GitHub token console exposure**             | ⬜      | `vite.config.ts`            | Token could leak via `console.warn()` in dev mode error paths.                                                                                          |
+| #   | Issue                                      | Status | Location                   | Description                                                                                                      |
+| --- | ------------------------------------------ | ------ | -------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| R6  | **`sanitizeUrl()` case-variant bypass**    | ✅      | `src/lib/model.ts`         | Doesn't catch `JaVaScRiPt:` or mixed-case schemes — only lowercase `javascript:` is blocked.                     |
+| R7  | **Audio conversion race condition**        | ⬜      | `vite.config.ts` upload    | HTTP response sent before ffmpeg conversion completes. Client sees success but converted file may not exist yet. |
+| R8  | **localStorage QuotaExceededError silent** | ✅      | `src/lib/persistence.ts`   | `localStorage.setItem()` failure is silently caught — user loses edits with no notification.                     |
+| R9  | **Blog slug path traversal**               | ✅      | `vite.config.ts` blog POST | Slug like `../../etc/passwd` not stripped of path segments. Can create files outside `content/blog/`.            |
+| R10 | **Password stored in component ref**       | ⬜      | `src/App.vue`              | `cmsPassword` ref persists in memory for lifetime of the app. Should be volatile / session-scoped.               |
+| R11 | **GitHub token console exposure**          | ⬜      | `vite.config.ts`           | Token could leak via `console.warn()` in dev mode error paths.                                                   |
 
 ### Medium
 
-| #   | Issue                                          | Status | Location                          | Description                                                                                                                                                 |
-| --- | ---------------------------------------------- | ------ | --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| R12 | **Concurrent CMS saves → data loss**          | ✅      | `vite.config.ts` CMS POST        | Two simultaneous POSTs to `/__cms-data` — second overwrites first without merging or locking.                                                               |
-| R13 | **`deepMergeConfig` null handling**            | ⬜      | `vite.config.ts`                  | `{ server: null }` in user config overwrites target with null instead of being skipped.                                                                     |
-| R14 | **Commit message injection**                   | ⬜      | `vite.config.ts` git commands     | Commit message not JSON-escaped before passing to env var / shell.                                                                                         |
-| R15 | **Malformed data.json crashes dev server**     | ✅      | `vite.config.ts`, `model.ts`     | Bad JSON syntax in `cms-data.json` causes unguarded `JSON.parse()` crash.                                                                                   |
-| R16 | **Blog dir creation failure unhandled**        | ⬜      | `vite.config.ts`                  | `mkdirSync()` failure (permissions) throws unhandled exception, crashes server.                                                                             |
-| R17 | **Promise rejections swallowed**               | ⬜      | `src/router.ts`                   | `router.replace().catch(() => {})` silently ignores navigation failures.                                                                                    |
-| R18 | **Theme dep install from untrusted sources**   | ⬜      | `scripts/install-layout-deps.mjs` | Any theme directory with a `package.json` triggers `pnpm add` with no package verification.                                                                |
-| R19 | **No FormKit schema validation at load time**  | ⬜      | Theme manifests                   | Malformed FormKit schema not caught until user tries to edit content. Should validate at manifest load.                                                     |
-| R20 | **No error boundary for admin panel**          | ⬜      | `src/App.vue`                     | If `CmsDialog` component crashes, entire app is broken. Should wrap in `<ErrorBoundary>`.                                                                  |
-| R21 | **Route cleanup leak in component resolver**   | ⬜      | `src/lib/component-resolver.ts`    | If `onScopeDispose()` not called, dynamically-added routes stay registered.                                                                                 |
-| R22 | **Old theme data accumulates in layoutThemes** | ⬜      | `src/lib/model.ts`                | Switching themes adds old theme to `layoutThemes` — grows indefinitely in data.json.                                                                       |
+| #   | Issue                                          | Status | Location                          | Description                                                                                             |
+| --- | ---------------------------------------------- | ------ | --------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| R12 | **Concurrent CMS saves → data loss**           | ✅      | `vite.config.ts` CMS POST         | Two simultaneous POSTs to `/__cms-data` — second overwrites first without merging or locking.           |
+| R13 | **`deepMergeConfig` null handling**            | ⬜      | `vite.config.ts`                  | `{ server: null }` in user config overwrites target with null instead of being skipped.                 |
+| R14 | **Commit message injection**                   | ⬜      | `vite.config.ts` git commands     | Commit message not JSON-escaped before passing to env var / shell.                                      |
+| R15 | **Malformed data.json crashes dev server**     | ✅      | `vite.config.ts`, `model.ts`      | Bad JSON syntax in `cms-data.json` causes unguarded `JSON.parse()` crash.                               |
+| R16 | **Blog dir creation failure unhandled**        | ⬜      | `vite.config.ts`                  | `mkdirSync()` failure (permissions) throws unhandled exception, crashes server.                         |
+| R17 | **Promise rejections swallowed**               | ⬜      | `src/router.ts`                   | `router.replace().catch(() => {})` silently ignores navigation failures.                                |
+| R18 | **Theme dep install from untrusted sources**   | ⬜      | `scripts/install-layout-deps.mjs` | Any theme directory with a `package.json` triggers `pnpm add` with no package verification.             |
+| R19 | **No FormKit schema validation at load time**  | ⬜      | Theme manifests                   | Malformed FormKit schema not caught until user tries to edit content. Should validate at manifest load. |
+| R20 | **No error boundary for admin panel**          | ⬜      | `src/App.vue`                     | If `CmsDialog` component crashes, entire app is broken. Should wrap in `<ErrorBoundary>`.               |
+| R21 | **Route cleanup leak in component resolver**   | ⬜      | `src/lib/component-resolver.ts`   | If `onScopeDispose()` not called, dynamically-added routes stay registered.                             |
+| R22 | **Old theme data accumulates in layoutThemes** | ⬜      | `src/lib/model.ts`                | Switching themes adds old theme to `layoutThemes` — grows indefinitely in data.json.                    |
 
 ### Low
 
-| #   | Issue                                     | Status | Location             | Description                                                                                                               |
-| --- | ----------------------------------------- | ------ | -------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| R23 | **layoutData no depth limit**             | ⬜      | `src/lib/model.ts`   | Deeply nested user-provided `layoutData` has no recursion depth cap — could cause stack overflow on serialization.         |
-| R24 | **Collection array lengths unbounded**    | ⬜      | `src/lib/model.ts`   | `items` arrays have no max length — 100K items causes slow serialization.                                                 |
-| R25 | **Excessive `any` type usage**            | ⬜      | model.ts, vite.config | Multiple `as any` casts lose type safety and hinder refactoring.                                                          |
-| R26 | **Sync file reads at config load time**   | ⬜      | `vite.config.ts`     | Blocking I/O at startup — low impact since it only runs once but could be async.                                          |
-| R27 | **No component resolution caching**       | ⬜      | component-resolver.ts | Every `computed()` re-resolves from glob modules instead of memoizing.                                                    |
+| #   | Issue                                   | Status | Location              | Description                                                                                                        |
+| --- | --------------------------------------- | ------ | --------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| R23 | **layoutData no depth limit**           | ⬜      | `src/lib/model.ts`    | Deeply nested user-provided `layoutData` has no recursion depth cap — could cause stack overflow on serialization. |
+| R24 | **Collection array lengths unbounded**  | ⬜      | `src/lib/model.ts`    | `items` arrays have no max length — 100K items causes slow serialization.                                          |
+| R25 | **Excessive `any` type usage**          | ⬜      | model.ts, vite.config | Multiple `as any` casts lose type safety and hinder refactoring.                                                   |
+| R26 | **Sync file reads at config load time** | ⬜      | `vite.config.ts`      | Blocking I/O at startup — low impact since it only runs once but could be async.                                   |
+| R27 | **No component resolution caching**     | ⬜      | component-resolver.ts | Every `computed()` re-resolves from glob modules instead of memoizing.                                             |
 
 ### Extensibility Design Principles
 

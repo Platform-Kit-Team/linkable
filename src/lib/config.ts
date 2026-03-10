@@ -191,7 +191,12 @@ export interface PlatformKitConfig {
   };
 
   /** Override default file paths. */
-  paths?: Record<string, never>;
+  paths?: {
+    /** Directory for themes. Default: "src/themes" */
+    themeDir?: string;
+    /** Directory for global overrides. Default: "src/overrides" */
+    overrideDir?: string;
+  };
 
   /** RSS feed generation. */
   rss?: {

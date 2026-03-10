@@ -6,30 +6,86 @@ A design-forward, open-source link-in-bio page with a built-in CMS. Built with V
 
 ## Features
 
-- **Glassmorphism design** — frosted-glass cards, soft shadows, smooth transitions
-- **Built-in CMS** — edit your profile, links, gallery, blog, resume, embeds, and theme
-- **Banner image** — full-width hero image displayed inside the profile card
-- **Social links** — Instagram, GitHub, Email, etc. with 400+ Lucide icons
-- **Image uploads** — drag-and-drop image uploads for avatar, banner, and link thumbnails
-- **Gallery** — masonry grid with images and video (YouTube, Vimeo, MP4), lightbox, and tags
-- **Blog** — Markdown editor with syntax highlighting, cover images, tags, RSS feed, and per-post OG meta
-- **Resume / CV** — employment, education, skills, and achievements sections
-- **Custom embeds** — arbitrary HTML/iframe injection as separate tabs (Spotify, donation widgets, etc.)
-- **Content scheduling** — publish dates and expiration dates on links, gallery items, embeds, and blog posts
-- **Theming** — 20+ CSS variables, light/dark/custom presets, glassmorphism, border-radius control
-- **Newsletter** — email signup, subscriber management, scheduled broadcasts with cover images and tags
-- **Search & filtering** — per-section search bars with multi-select tag filters
-- **Tab navigation** — customizable labels and Lucide icons, default tab setting
-- **GitHub sync** — push/pull content to a private GitHub repo
-- **CMS password protection** — PBKDF2 + AES-256-GCM encrypted GitHub token
-- **PWA** — installable, standalone manifest generated from CMS data
-- **SEO** — OG meta tags, custom favicon, per-post OG for blog, robots.txt
-- **RSS feed** — auto-generated RSS 2.0 feed for blog posts
-- **CLI / npx support** — serve your site with one command, no cloning required
-- **Responsive** — works on mobile and desktop
-- **Static export** — builds to a static `dist/` folder, deployable anywhere
-- **Drag-and-drop reordering** — reorder links, embeds, socials, gallery items, and resume sections
-- **Schema migrations** — auto-upgrades data model across versions
+**Build Hooks** — TTS, image optimization, OG meta pre-rendering; extendable via theme/user config
+**Custom Collections** — add new content types via config; see guide below
+**Widget System** — animated text, backgrounds, interactive elements; see guide below
+**Docs** — Markdown docs, nav tree, search, section filters; extensible via _meta.json
+**Error Handling & Security** — file upload validation, path sanitization, password encryption, CMS auth (UI only); see guide below
+**Extensibility** — theme/override staging, config merging, build hooks, custom collections; see guides below
+### Build Hooks
+
+Build hooks allow you to extend the build process for tasks like TTS audio generation, image optimization, OG meta pre-rendering, and more. Hooks are registered in theme/user config files and run during `vite build`.
+
+**To add a custom build hook:**
+- Create a function matching the BuildHook interface (see `src/lib/config.ts`).
+- Register it in your theme or user config under `buildHooks`.
+- Hooks can run after collection build or after the full bundle.
+
+Example:
+
+```ts
+import { createTtsHook } from "./build-hooks/tts-hook";
+const config = {
+  buildHooks: [createTtsHook({ collection: "blog", voice: "af_heart" })],
+};
+```
+
+See `src/themes/bento/build-hooks/tts-hook.ts` for a real example.
+
+---
+
+### Custom Collections
+
+You can add new content collections (e.g. Projects, Docs, FAQ) by editing your config file:
+
+```ts
+contentCollections: {
+  projects: {
+    directory: "content/projects",
+    format: "markdown",
+    label: "Projects",
+    icon: "Folder",
+    itemSchema: [
+      { $formkit: "text", name: "title", label: "Title" },
+      { $formkit: "date", name: "date", label: "Date" },
+    ],
+    newItem: () => ({ title: "", date: "" }),
+  },
+}
+```
+
+Collections support schema migrations, validation, custom editors, and build hooks. See `src/lib/config.ts` for all options.
+
+---
+
+### Widget System
+
+Widgets are animated text, backgrounds, and interactive elements. To add widgets, use the CMS or extend the theme config. See `src/themes/bento/platformkit.config.ts` for schema options.
+
+---
+
+### Docs Extensibility
+
+Docs are markdown files in `content/docs/`. Add new pages by creating `.md` files. Organize sections with `_meta.json`. The sidebar/nav tree is auto-generated. See `src/themes/bento/DocsSection.vue` for nav logic.
+
+---
+
+### Error Handling & Security
+
+CMS endpoints are UI-protected only; server-side auth is not enforced. File uploads are validated for type, size, and path. Passwords are encrypted in session storage. See TODO.md for known issues and recommended mitigations.
+
+---
+
+### Extensibility
+
+PlatformKit is designed for easy extension:
+- **Themes:** Add new themes in `src/themes/` or your content repo.
+- **Overrides:** Replace any component via `src/overrides/`.
+- **Build Hooks:** Extend the build process (TTS, image optimization, OG meta, etc.) via config.
+- **Custom Collections:** Add new content types via config.
+- **Widgets:** Add animated text/backgrounds via CMS or theme config.
+- **Docs:** Add new docs pages in `content/docs/`, organize with `_meta.json`.
+- **Error Handling:** See TODO.md for known issues and mitigations.
 
 ***
 
@@ -95,11 +151,11 @@ my-platformkit-site/
 - Go to [vercel.com/new](https://vercel.com/new) and import your content repo
 - Configure the project settings:
 
-| Setting              | Value                                      |
-| -------------------- | ------------------------------------------ |
+| Setting              | Value                                         |
+| -------------------- | --------------------------------------------- |
 | **Build Command**    | `npx github:platform-kit/platformkit build .` |
-| **Output Directory** | `dist`                                     |
-| **Install Command**  | _(leave blank)_                            |
+| **Output Directory** | `dist`                                        |
+| **Install Command**  | _(leave blank)_                               |
 
 **3. Deploy**
 
@@ -176,15 +232,15 @@ Options:
 
 ### Content files
 
-| File                | Committed? | Purpose                         |
-| ------------------- | ---------- | ------------------------------- |
-| `default-data.json`         | Yes        | Template data for new users             |
-| `cms-data.json`             | No         | Your personal CMS data                  |
-| `public/content/data.json`  | No         | Production build content                |
-| `public/content/uploads/`   | No         | Uploaded images                         |
-| `public/content/rss.xml`    | No         | Generated RSS feed                      |
-| `public/content/blog/`      | No         | Static blog JSON (build output)         |
-| `content/blog/`             | No         | Blog post Markdown source files         |
+| File                       | Committed? | Purpose                         |
+| -------------------------- | ---------- | ------------------------------- |
+| `default-data.json`        | Yes        | Template data for new users     |
+| `cms-data.json`            | No         | Your personal CMS data          |
+| `public/content/data.json` | No         | Production build content        |
+| `public/content/uploads/`  | No         | Uploaded images                 |
+| `public/content/rss.xml`   | No         | Generated RSS feed              |
+| `public/content/blog/`     | No         | Static blog JSON (build output) |
+| `content/blog/`            | No         | Blog post Markdown source files |
 
 On first run, `default-data.json` is automatically copied to `cms-data.json` and `public/content/data.json` if they don't exist.
 
@@ -381,18 +437,18 @@ Inject custom JavaScript or HTML into your page via the CMS:
 
 ## Environment Variables
 
-| Variable                      | Required     | Purpose                                                       |
-| ----------------------------- | ------------ | ------------------------------------------------------------- |
-| `VITE_SITE_URL`               | For SEO      | Base URL for RSS feeds, OG meta, and absolute URLs            |
-| `VITE_SCHEDULE_EXCLUDE_BUILD` | No           | Strip expired/future scheduled content at build time          |
-| `VITE_PRERENDER`              | No           | Enable Puppeteer pre-rendering at build time (off by default) |
-| `GITHUB_OWNER`                | For sync     | GitHub repo owner                                             |
-| `GITHUB_REPO`                 | For sync     | GitHub repo name                                              |
-| `GITHUB_BRANCH`               | No           | GitHub branch (default: `main`)                               |
-| `GITHUB_TOKEN`                | For sync     | GitHub personal access token                                  |
-| `CMS_PASSWORD`                | For CMS lock | Password for encrypting the GitHub token in the build         |
-| `SUPABASE_ACCESS_TOKEN`       | For deploy   | Supabase personal access token (for `platformkit deploy` in CI)  |
-| `SUPABASE_PROJECT_REF`        | For deploy   | Supabase project ref ID (for `platformkit deploy` in CI)         |
+| Variable                      | Required     | Purpose                                                         |
+| ----------------------------- | ------------ | --------------------------------------------------------------- |
+| `VITE_SITE_URL`               | For SEO      | Base URL for RSS feeds, OG meta, and absolute URLs              |
+| `VITE_SCHEDULE_EXCLUDE_BUILD` | No           | Strip expired/future scheduled content at build time            |
+| `VITE_PRERENDER`              | No           | Enable Puppeteer pre-rendering at build time (off by default)   |
+| `GITHUB_OWNER`                | For sync     | GitHub repo owner                                               |
+| `GITHUB_REPO`                 | For sync     | GitHub repo name                                                |
+| `GITHUB_BRANCH`               | No           | GitHub branch (default: `main`)                                 |
+| `GITHUB_TOKEN`                | For sync     | GitHub personal access token                                    |
+| `CMS_PASSWORD`                | For CMS lock | Password for encrypting the GitHub token in the build           |
+| `SUPABASE_ACCESS_TOKEN`       | For deploy   | Supabase personal access token (for `platformkit deploy` in CI) |
+| `SUPABASE_PROJECT_REF`        | For deploy   | Supabase project ref ID (for `platformkit deploy` in CI)        |
 
 ***
 

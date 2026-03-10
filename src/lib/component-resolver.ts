@@ -21,12 +21,17 @@ import { THEME_PRESETS } from "./model";
 import type { Router } from "vue-router";
 import type { PlatformKitConfig } from "./config";
 
+// Read config to determine theme/override directories
+import systemConfig from "../../platformkit.config";
+const themeDir = systemConfig.paths?.themeDir || "../themes";
+const overrideDir = systemConfig.paths?.overrideDir || "../overrides";
+
 const overrideModules = import.meta.glob<{ default: Component }>(
-  "../overrides/*.vue",
+  `${overrideDir}/*.vue`,
 );
 
 const layoutModules = import.meta.glob<{ default: Component }>(
-  "../themes/**/*.vue",
+  `${themeDir}/**/*.vue`,
 );
 
 // ── Three-level config loading ──────────────────────────────────────
@@ -40,13 +45,16 @@ const systemConfig: PlatformKitConfig =
 
 // 2. Theme configs (loaded per-theme)
 const themeConfigModules = import.meta.glob<{ default: PlatformKitConfig }>(
-  "../themes/**/platformkit.config.ts",
+  `${themeDir}/**/platformkit.config.ts`,
   { eager: true },
 );
 
 // 3. User overrides (final say)
 const userConfigModules = import.meta.glob<{ default: Partial<PlatformKitConfig> }>(
-  ["../overrides/platformkit.config.ts", "../overrides/platformkit.config.js"],
+  [
+    `${overrideDir}/platformkit.config.ts`,
+    `${overrideDir}/platformkit.config.js`
+  ],
   { eager: true },
 );
 const userConfig: Partial<PlatformKitConfig> | null =

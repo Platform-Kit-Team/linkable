@@ -1,13 +1,14 @@
 <template>
-  <div class="mb-3">
+  <div class="mb-3 flex justify-center">
     <div
       :class="[
-        'search-bar flex items-center gap-2.5 rounded-xl border px-3 py-2 backdrop-blur-md transition-all duration-200',
+        'search-bar flex items-center gap-2.5 rounded-xl border px-3 py-2 backdrop-blur-md transition-all duration-200 !rounded-full',
         modelValue.trim()
           ? 'search-bar--active border-transparent'
           : 'border-transparent',
         'focus-within:border-[var(--color-brand)] focus-within:ring-1 focus-within:ring-[var(--color-brand)]',
       ]"
+      style="max-width:450px;width:100%"
     >
       <i
         v-if="showSearch"
@@ -64,8 +65,11 @@ export default defineComponent({
 
 <style>
 /* Light mode: darken the search bar against the lighter glass container */
+
 .search-bar {
   background: rgba(0, 0, 0, 0.06);
+  margin-left: auto;
+  margin-right: auto;
 }
 .search-bar:hover,
 .search-bar--active,
