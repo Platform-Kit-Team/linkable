@@ -22,17 +22,8 @@ import type { Router } from "vue-router";
 import type { PlatformKitConfig } from "./config";
 
 // Read config to determine theme/override directories
-import systemConfig from "../../platformkit.config";
-const themeDir = systemConfig.paths?.themeDir || "../themes";
-const overrideDir = systemConfig.paths?.overrideDir || "../overrides";
 
-const overrideModules = import.meta.glob<{ default: Component }>(
-  `${overrideDir}/*.vue`,
-);
 
-const layoutModules = import.meta.glob<{ default: Component }>(
-  `${themeDir}/**/*.vue`,
-);
 
 // ── Three-level config loading ──────────────────────────────────────
 // 1. System / root config
@@ -43,20 +34,39 @@ const systemConfigModules = import.meta.glob<{ default: PlatformKitConfig }>(
 const systemConfig: PlatformKitConfig =
   Object.values(systemConfigModules)[0]?.default ?? {};
 
+let themeDir: string;
+let overrideDir: string;
+if (typeof systemConfig !== "undefined" && systemConfig.paths) {
+  themeDir = systemConfig.paths.themeDir || "../themes";
+  overrideDir = systemConfig.paths.overrideDir || "../overrides";
+} else {
+  themeDir = "../themes";
+  overrideDir = "../overrides";
+}
+
+const overrideModules = {
+  ...import.meta.glob("../overrides/*.vue"),
+  ...import.meta.glob("../overrides/user/*.vue"),
+};
+
+const layoutModules = {
+  ...import.meta.glob("../themes/**/*.vue"),
+  ...import.meta.glob("../themes/user/**/*.vue"),
+};
+
 // 2. Theme configs (loaded per-theme)
-const themeConfigModules = import.meta.glob<{ default: PlatformKitConfig }>(
-  `${themeDir}/**/platformkit.config.ts`,
-  { eager: true },
-);
+const themeConfigModules = {
+  ...import.meta.glob("../themes/**/platformkit.config.ts", { eager: true }),
+  ...import.meta.glob("../themes/user/**/platformkit.config.ts", { eager: true }),
+};
 
 // 3. User overrides (final say)
-const userConfigModules = import.meta.glob<{ default: Partial<PlatformKitConfig> }>(
-  [
-    `${overrideDir}/platformkit.config.ts`,
-    `${overrideDir}/platformkit.config.js`
-  ],
-  { eager: true },
-);
+const userConfigModules = {
+  ...import.meta.glob("../overrides/platformkit.config.ts", { eager: true }),
+  ...import.meta.glob("../overrides/platformkit.config.js", { eager: true }),
+  ...import.meta.glob("../overrides/user/platformkit.config.ts", { eager: true }),
+  ...import.meta.glob("../overrides/user/platformkit.config.js", { eager: true }),
+};
 const userConfig: Partial<PlatformKitConfig> | null =
   Object.values(userConfigModules)[0]?.default ?? null;
 

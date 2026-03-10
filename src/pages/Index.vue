@@ -62,7 +62,12 @@ export default defineComponent({
 
     // Dynamically resolve the layout root component
     const activeLayout = computed(() => model.value.theme?.layout || "bento");
-    const LayoutRoot = useComponent("Root", null, activeLayout);
+    // Minimal fallback component to avoid blank page
+    const FallbackRoot = defineComponent({
+      name: "FallbackRoot",
+      template: `<div class='text-red-600 p-8 text-center'>Root layout component not found.</div>`
+    });
+    const LayoutRoot = useComponent("Root", FallbackRoot, activeLayout);
     const route = useRoute();
     const router = useRouter();
     // Pass route info to layout root
