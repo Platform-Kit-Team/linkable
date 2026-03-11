@@ -217,7 +217,7 @@
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, defineAsyncComponent, ref, watchEffect, onMounted, onUnmounted, type PropType } from "vue";
+import { computed, defineComponent, defineAsyncComponent, ref, watchEffect, onMounted, onUnmounted, type PropType, nextTick } from "vue";
 import type { WidgetItem } from "./collection-types";
 
 // Text components — lazy so GSAP/animation libs don't block initial parse
@@ -272,6 +272,50 @@ export default defineComponent({
     widget: { type: Object as PropType<WidgetItem>, required: true },
   },
   setup(props) {
+    // Auto-scaling font size logic
+    const textRefs = ref<HTMLElement[]>([]);
+    const minFontSize = 10;
+    const maxFontSize = 120;
+    const maxRatio = 0.7; // Max ratio of text to container height
+    const resizeObservers: ResizeObserver[] = [];
+
+    const scaleText = (el: HTMLElement, container: HTMLElement) => {
+      if (!el || !container) return;
+      let fontSize = maxFontSize;
+      el.style.fontSize = fontSize + "px";
+      let fits = false;
+      for (let i = maxFontSize; i >= minFontSize; i--) {
+        el.style.fontSize = i + "px";
+        const rect = el.getBoundingClientRect();
+        const cRect = container.getBoundingClientRect();
+        if (rect.height <= cRect.height * maxRatio && rect.width <= cRect.width * 0.98) {
+          fontSize = i;
+          fits = true;
+          break;
+        }
+      }
+      el.style.fontSize = fontSize + "px";
+      return fits;
+    };
+
+    onMounted(() => {
+      nextTick(() => {
+        const container = rootRef.value;
+        if (!container) return;
+        textRefs.value = Array.from(container.querySelectorAll('.widget-text')) as HTMLElement[];
+        textRefs.value.forEach((el) => {
+          scaleText(el, container);
+          const ro = new ResizeObserver(() => scaleText(el, container));
+          ro.observe(container);
+          ro.observe(el);
+          resizeObservers.push(ro);
+        });
+      });
+    });
+
+    onUnmounted(() => {
+      resizeObservers.forEach((ro) => ro.disconnect());
+    });
     const rootRef = ref<HTMLElement | null>(null);
     const bgVisible = ref(true);
     let bgUnmountTimer: ReturnType<typeof setTimeout> | null = null;
@@ -626,7 +670,8 @@ export default defineComponent({
       "--vb-font-size": `${Math.max(10, props.widget.fontSize || 20)}px`,
       "--vb-font-family": props.widget.fontFamily ? `'${props.widget.fontFamily}', sans-serif` : "inherit",
       "--vb-font-weight": props.widget.fontWeight || "",
-      "--vb-letter-spacing": props.widget.letterSpacing || "",
+      "--vb-letter-spacing": props.widget.kerning || props.widget.letterSpacing || "0px",
+      "--vb-line-height": props.widget.lineHeight || "1.2",
       "--vb-text-speed": String(props.widget.textPresetSpeed || 1),
       "--vb-text-intensity": String(props.widget.textPresetIntensity || 1),
       "--vb-bg-speed": String(props.widget.backgroundPresetSpeed || 1),
@@ -649,6 +694,8 @@ export default defineComponent({
       return {
         "--vb-play-state": paused,
         color,
+        lineHeight: props.widget.lineHeight || "1.2",
+        letterSpacing: props.widget.kerning || props.widget.letterSpacing || "0px",
       };
     });
 
@@ -734,6 +781,8 @@ export default defineComponent({
   font-family: var(--vb-font-family, inherit);
   font-weight: var(--vb-font-weight, inherit);
   letter-spacing: var(--vb-letter-spacing, inherit);
+  line-height: var(--vb-line-height, 1.2);
+  transition: font-size 0.2s;
 }
 
 /* Text variants */

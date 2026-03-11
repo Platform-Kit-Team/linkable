@@ -75,6 +75,9 @@ const embedItemSchema: FormKitSchemaNode[] = [
   { $formkit: "text", name: "label", label: "Tab label", placeholder: "e.g. Book a Call" },
   { $formkit: "iconSelect", name: "icon", label: "Icon" },
   { $formkit: "textarea", name: "html", label: "Embed HTML or URL", placeholder: "Paste embed code or a URL…" },
+  { $formkit: "number", name: "fontSize", label: "Font size (px)", min: 10, max: 120, step: 1 },
+  { $formkit: "number", name: "lineHeight", label: "Line height", min: 0.8, max: 3, step: 0.01 },
+  { $formkit: "number", name: "kerning", label: "Kerning (letter spacing, px)", min: -5, max: 20, step: 0.1 },
   { $formkit: "date", name: "publishDate", label: "Publish date" },
   { $formkit: "date", name: "expirationDate", label: "Expiration date" },
 ];
@@ -133,6 +136,8 @@ const widgetCoreSchema: FormKitSchemaNode[] = [
 const widgetTextBaseSchema: FormKitSchemaNode[] = [
   { $formkit: "color", name: "textColor", label: "Text color" },
   { $formkit: "number", name: "fontSize", label: "Font size (px)", min: 10, max: 120, step: 1 },
+  { $formkit: "number", name: "lineHeight", label: "Line height", min: 0.8, max: 3, step: 0.01 },
+  { $formkit: "number", name: "kerning", label: "Kerning (letter spacing, px)", min: -5, max: 20, step: 0.1 },
   { $formkit: "number", name: "textPresetSpeed", label: "Text preset speed", min: 0.1, max: 4, step: 0.1 },
   { $formkit: "number", name: "textPresetIntensity", label: "Text preset intensity", min: 0.1, max: 3, step: 0.1 },
   { $formkit: "checkbox", name: "pauseOnHover", label: "Pause CSS-driven variants on hover" },

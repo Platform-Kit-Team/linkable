@@ -107,7 +107,9 @@ export type EmbedItem = {
   fontSize: number;
   fontFamily: string;
   fontWeight: string;
-  letterSpacing: string;
+  letterSpacing: string; // kerning
+  lineHeight: string;
+  kerning: string;
 };
 
 export const newEmbed = (): EmbedItem => ({
@@ -122,6 +124,8 @@ export const newEmbed = (): EmbedItem => ({
   fontFamily: "",
   fontWeight: "",
   letterSpacing: "",
+  lineHeight: "1.2",
+  kerning: "0",
 });
 
 // ── Widget ────────────────────────────────────────────────────────
@@ -138,7 +142,9 @@ export type WidgetItem = {
   fontSize: number;
   fontFamily: string;
   fontWeight: string;
-  letterSpacing: string;
+  letterSpacing: string; // kerning
+  lineHeight: string;
+  kerning: string;
   backgroundColor: string;
   buttonColor: string;
   buttonTextColor: string;
@@ -426,6 +432,8 @@ export const newWidget = (): WidgetItem => ({
   fontFamily: "",
   fontWeight: "",
   letterSpacing: "",
+  lineHeight: "1.2",
+  kerning: "0",
   backgroundColor: "",
   buttonColor: "#ffffff",
   buttonTextColor: "#0f172a",

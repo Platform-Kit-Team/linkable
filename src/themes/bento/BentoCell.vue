@@ -298,7 +298,8 @@ export default defineComponent({
       if (d.fontSize) style.fontSize = `${d.fontSize}px`;
       if (d.fontFamily) style.fontFamily = `'${d.fontFamily}', sans-serif`;
       if (d.fontWeight) style.fontWeight = d.fontWeight;
-      if (d.letterSpacing) style.letterSpacing = d.letterSpacing;
+      style.lineHeight = d.lineHeight || "1.2";
+      style.letterSpacing = d.kerning || d.letterSpacing || "0px";
       return style;
     });
 
