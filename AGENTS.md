@@ -162,3 +162,10 @@ contentCollections: {
 - To apply new migrations, **always** use `npm run supabase:migrate:up` (`npx supabase migration up --local`). This applies only pending migrations without touching existing data.
 - Never run destructive database commands (DROP TABLE, TRUNCATE, DELETE without WHERE, etc.) without explicit user confirmation.
 - When creating new migrations, use `npm run supabase:migrate <name>` to generate the file, then edit it.
+
+# Agent QA Policy
+
+- You MUST always verify that the app loads and the main page works after any change, before reporting a task as complete.
+- Never claim a fix is complete unless you have checked for runtime errors and confirmed the page loads in the browser or dev server output.
+- If you cannot verify runtime success, clearly state that the work is not yet confirmed and further validation is needed.
+- When running `npm run dev` or similar long-running commands, ALWAYS use a timeout to avoid hanging the agent or blocking further actions. Capture output and kill the process after a reasonable interval (e.g., 8–30 seconds) to ensure the workflow continues smoothly.

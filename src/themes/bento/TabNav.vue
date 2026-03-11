@@ -32,7 +32,7 @@ const BENTO_TAB_MAP: Record<string, string> = {
 };
 
 /** Only these tabs appear in the bento nav */
-const BENTO_TAB_ORDER = ["links", "resume", "gallery", "blog", "docs"];
+const BENTO_TAB_ORDER = ["links", "resume", "gallery", "blog", "shop", "docs"];
 
 export default defineComponent({
   name: "BentoTabNav",

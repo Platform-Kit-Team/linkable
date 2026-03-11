@@ -6,6 +6,7 @@ import AudioUploadInput from "../admin/formkit/AudioUploadInput.vue";
 import TagListInput from "../admin/formkit/TagListInput.vue";
 import IconSelectInput from "../admin/formkit/IconSelectInput.vue";
 import GoogleFontPickerInput from "../admin/formkit/GoogleFontPickerInput.vue";
+import ListPanelInput from "../admin/formkit/ListPanelInput.vue";
 
 /**
  * Custom FormKit inputs registered globally.
@@ -18,6 +19,9 @@ import GoogleFontPickerInput from "../admin/formkit/GoogleFontPickerInput.vue";
  *   { $formkit: 'googleFontPicker', name: 'fontFamily', label: 'Font family' }
  */
 const customInputs: DefaultConfigOptions["inputs"] = {
+    listPanel: createInput(ListPanelInput, {
+      props: [],
+    }),
   colorpicker: createInput(ColorPickerInput, {
     props: ["placeholder"],
   }),

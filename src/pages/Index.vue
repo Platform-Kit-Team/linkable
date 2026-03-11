@@ -65,7 +65,7 @@ export default defineComponent({
     // Minimal fallback component to avoid blank page
     const FallbackRoot = defineComponent({
       name: "FallbackRoot",
-      template: `<div class='text-red-600 p-8 text-center'>Root layout component not found.</div>`
+      template: `<div class='text-center opacity-0'>Root layout component not found.</div>`
     });
     const LayoutRoot = useComponent("Root", FallbackRoot, activeLayout);
     const route = useRoute();

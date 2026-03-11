@@ -50,6 +50,7 @@
         @load-post="openBlogPost"
         @back="goBackFromBlogPost"
       />
+      <EcommerceSection v-if="activeTab === 'shop'" />
       <EmbedSection
         v-if="activeTab === 'embeds'"
         :html="''"
@@ -119,6 +120,7 @@ import BlogSection from "./BlogSection.vue";
 import DocsSection from "./DocsSection.vue";
 import EmbedSection from "./EmbedSection.vue";
 import NewsletterSection from "./NewsletterSection.vue";
+import EcommerceSection from "./EcommerceSection.vue";
 import PageFooter from "./PageFooter.vue";
 import LightboxOverlay from "./components/LightboxOverlay.vue";
 import VideoOverlay from "./components/VideoOverlay.vue";
@@ -138,6 +140,7 @@ export default defineComponent({
     ResumeSection,
     GallerySection,
     BlogSection,
+    EcommerceSection,
     DocsSection,
     EmbedSection,
     NewsletterSection,
@@ -394,30 +397,29 @@ export default defineComponent({
   computed: {
     tabs(): Array<{ key: string; label: string; icon: string }> {
       const collectionOrder = [
-        { key: 'links',      label: 'All',        icon: 'Link' },
-        { key: 'resume',     label: 'About Me',   icon: 'FileText' },
-        { key: 'gallery',    label: 'Gallery',    icon: 'Image' },
-        { key: 'blog',       label: 'Blog',       icon: 'BookOpen' },
-        { key: 'embeds',     label: 'Embeds',     icon: 'Code' },
-        { key: 'newsletter', label: 'Newsletter', icon: 'Mail' },
-        { key: 'docs',       label: 'Docs',       icon: 'BookMarked' },
+        { key: 'links',      label: 'All',        icon: 'Link',        collection: 'links' },
+        { key: 'resume',     label: 'About Me',   icon: 'FileText',    collection: 'resume' },
+        { key: 'gallery',    label: 'Gallery',    icon: 'Image',       collection: 'gallery' },
+        { key: 'blog',       label: 'Blog',       icon: 'BookOpen',    collection: 'blog' },
+        { key: 'shop',       label: 'Shop',       icon: 'ShoppingCart',collection: 'products' },
+        { key: 'embeds',     label: 'Embeds',     icon: 'Code',        collection: 'embeds' },
+        { key: 'newsletter', label: 'Newsletter', icon: 'Mail',        collection: 'newsletter' },
+        { key: 'docs',       label: 'Docs',       icon: 'BookMarked',  collection: 'docs' },
       ];
       const path = this.route?.path || '/';
       return collectionOrder
         .filter((def) => {
           if (def.key === 'docs') {
-            // Always show docs pill on /docs or /docs/* routes
             if (path === '/docs' || path.startsWith('/docs/')) return true;
-            // Otherwise, only show if enabled and has items
             if (this.model?.collections?.docs?.enabled !== true) return false;
             if (!this.docItems || this.docItems.length === 0) return false;
             return true;
           }
-          if (this.model?.collections?.[def.key]?.enabled !== true) return false;
+          if (this.model?.collections?.[def.collection]?.enabled !== true) return false;
           return true;
         })
         .map((def) => {
-          const col = this.model?.collections?.[def.key];
+          const col = this.model?.collections?.[def.collection];
           return {
             key: def.key,
             label: col?.label || def.label,
