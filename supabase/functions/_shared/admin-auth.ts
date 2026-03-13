@@ -7,7 +7,7 @@
  * Blob format (base64):  salt(16) ‖ iv(12) ‖ ciphertext+tag
  */
 
-const ITERATIONS = 100_000;
+const ITERATIONS = 250_000;
 const SALT_LEN = 16;
 const IV_LEN = 12;
 const MAX_AGE_SEC = 300; // 5 minutes

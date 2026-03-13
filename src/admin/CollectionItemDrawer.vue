@@ -66,6 +66,18 @@
           Delete
         </Button>
       </div>
+
+      <div v-if="manualSave" class="px-1 pt-1">
+        <Button
+          rounded
+          class="w-full cms__primary"
+          :loading="saving"
+          @click="onSave"
+        >
+          <i class="pi pi-check mr-1" />
+          Save
+        </Button>
+      </div>
     </div>
   </Drawer>
 </template>
@@ -87,11 +99,13 @@ export default defineComponent({
     schemaKey: { type: String, default: "default" },
     modelValue: { type: Object as PropType<Record<string, any>>, required: true },
     title: { type: String, default: "Edit item" },
+    manualSave: { type: Boolean, default: false },
   },
-  emits: ["update:open", "update:modelValue", "duplicate", "delete"],
+  emits: ["update:open", "update:modelValue", "duplicate", "delete", "save"],
   setup(props, { emit }) {
     const expanded = ref(false);
     const visible = ref(props.open);
+    const saving = ref(false);
 
     // Seed the form once per item (keyed by schemaKey). We intentionally do NOT
     // make this reactive to modelValue changes after init — doing so creates a
@@ -112,7 +126,16 @@ export default defineComponent({
       emit("update:modelValue", { ...props.modelValue, enabled: v });
     };
 
-    return { expanded, visible, onInput, onToggle, seedValue };
+    const onSave = async () => {
+      saving.value = true;
+      try {
+        emit("save", props.modelValue);
+      } finally {
+        saving.value = false;
+      }
+    };
+
+    return { expanded, visible, onInput, onToggle, onSave, saving, seedValue };
   },
   watch: {
     open(v) { this.visible = v; },

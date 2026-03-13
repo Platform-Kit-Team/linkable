@@ -618,6 +618,7 @@ const manifest: PlatformKitConfig = {
     {
       key: "products", label: "Products", icon: "ShoppingCart",
       defaultEnabled: false, searchable: true,
+      editorComponent: () => import("./ecommerce/components/ProductCollectionEditor.vue"),
       itemSchema: [
         {
           $formkit: "select",

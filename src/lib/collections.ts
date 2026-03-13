@@ -14,6 +14,7 @@ import {
   stagePendingDelete,
   stagePendingSave,
 } from "./pending";
+import { isDbMode, fetchCollectionFromDb, fetchCollectionItemFromDb, saveCollectionItemToDb, deleteCollectionItemFromDb } from "./persistence-db";
 
 // Build-time injected collection definitions
 const defs: ContentCollectionDef[] =
@@ -31,6 +32,11 @@ export const fetchCollectionItems = async (
   key: string,
 ): Promise<Record<string, unknown>[]> => {
   let items: Record<string, unknown>[];
+
+  if (isDbMode()) {
+    items = await fetchCollectionFromDb(key);
+    return applyPendingToList(key, items, getCollectionDef(key)?.sortField, getCollectionDef(key)?.sortOrder);
+  }
 
   if (import.meta.env.DEV) {
     const res = await fetch(`/__collection/${encodeURIComponent(key)}`, {
@@ -66,6 +72,10 @@ export const fetchCollectionItem = async (
   if (pending === null) return null; // deleted
   if (pending !== undefined) return pending; // staged save
 
+  if (isDbMode()) {
+    return fetchCollectionItemFromDb(key, slug);
+  }
+
   if (import.meta.env.DEV) {
     const res = await fetch(
       `/__collection/${encodeURIComponent(key)}?slug=${encodeURIComponent(slug)}`,
@@ -88,6 +98,10 @@ export const saveCollectionItem = async (
   slug: string,
   data: Record<string, unknown>,
 ): Promise<void> => {
+  if (isDbMode()) {
+    await saveCollectionItemToDb(key, slug, data);
+    return;
+  }
   if (import.meta.env.DEV) {
     await fetch(`/__collection/${encodeURIComponent(key)}`, {
       method: "POST",
@@ -105,6 +119,10 @@ export const deleteCollectionItem = async (
   key: string,
   slug: string,
 ): Promise<void> => {
+  if (isDbMode()) {
+    await deleteCollectionItemFromDb(key, slug);
+    return;
+  }
   if (import.meta.env.DEV) {
     await fetch(
       `/__collection/${encodeURIComponent(key)}?slug=${encodeURIComponent(slug)}`,

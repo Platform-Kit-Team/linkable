@@ -46,12 +46,16 @@ const getAdminHeaders = async (): Promise<Record<string, string>> => {
     "Content-Type": "application/json",
     "x-admin-token": encrypted,
     apikey: supabaseAnonKey,
+    Authorization: `Bearer ${supabaseAnonKey}`,
   };
 };
 
 const readHeaders = (): Record<string, string> => {
   const h: Record<string, string> = { Accept: "application/json" };
-  if (supabaseAnonKey) h.apikey = supabaseAnonKey;
+  if (supabaseAnonKey) {
+    h.apikey = supabaseAnonKey;
+    h.Authorization = `Bearer ${supabaseAnonKey}`;
+  }
   return h;
 };
 
