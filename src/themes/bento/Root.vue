@@ -417,7 +417,12 @@ export default defineComponent({
             if (!this.docItems || this.docItems.length === 0) return false;
             return true;
           }
-          if (this.model?.collections?.[def.collection]?.enabled !== true) return false;
+          const col = this.model?.collections?.[def.collection];
+          if (col?.enabled !== true) return false;
+          // Hide tabs for collections that are enabled but have no items
+          if (['blog', 'shop', 'gallery', 'embeds', 'newsletter'].includes(def.key)) {
+            if (!col.items || col.items.length === 0) return false;
+          }
           return true;
         })
         .map((def) => {

@@ -86,7 +86,7 @@
         <span
           v-for="(skill, i) in resume.skills"
           :key="i"
-          class="rounded-full bg-[color:var(--color-ink)]/[0.05] px-3 py-1 text-xs font-medium text-[color:var(--color-ink)] sm:text-[13px]"
+          class="rounded-lg border border-gray-200 bg-gray-100 px-3 py-1 text-xs font-medium text-[color:var(--color-ink)] sm:text-[13px]"
         >
           {{ skill }}
         </span>

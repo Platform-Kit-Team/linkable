@@ -39,6 +39,7 @@
     "export": "node scripts/export-data.mjs",
     "import": "node scripts/import-from-github.mjs",
     "push": "node scripts/export-to-github.mjs",
+    "commit": "node scripts/commit-framework.mjs",
     "import:build": "node scripts/import-from-github.mjs && vite build",
     "clean-uploads": "node scripts/clean-uploads.mjs",
     "serve:nginx": "./scripts/serve-nginx.sh",
